@@ -32,19 +32,19 @@ function shopTile(tab, id) {
     // The same preview as the board itself: four beds with stones on them
     const item = STYLE_KINDS[tab].find(x => x.id === id);
     buying = confirm ? id : null;
-    return styleTile(tab, item).replace("style-tile", "style-tile shop-item");
+    return styleTile(tab, item).replace("style-tile", "style-tile store-item");
   }
   if (tab === "pond") {
     const d = POND_DECOR.find(x => x.id === id), owned = decorOwned(d), shown = decorShown(d);
     const status = owned ? (shown ? "In your pond" : "Hidden · tap to show") : confirm ? "Tap again to buy" : price(d.price);
-    return `<button class="shop-item pond-tile${owned ? " owned" : ""}${shown ? " on" : ""}${confirm ? " confirm" : ""}${!owned && journey.pearls < d.price ? " short" : ""}" data-id="${id}">`
+    return `<button class="store-item pond-tile${owned ? " owned" : ""}${shown ? " on" : ""}${confirm ? " confirm" : ""}${!owned && journey.pearls < d.price ? " short" : ""}" data-id="${id}">`
       + `<span class="pic"><img src="${d.img}" alt=""></span><b>${d.name}</b><small>${status}</small></button>`;
   }
   const M = MOODS[id], own = moodOwned(id), on = (audio.mood || "garden") === id && !previewMood, hear = previewMood === id;
   const status = on ? (audio.musicOn ? "Playing" : "Chosen · music is off") : own ? "Tap to play"
     : hear ? (journey.pearls >= M.price ? "Listening · tap again to buy" : `Listening · ${M.price - journey.pearls} more pearls`)
     : `${price(M.price)} · tap to listen`;
-  return `<button class="shop-item music-tile${own ? " owned" : ""}${on ? " on" : ""}${hear ? " confirm hear" : ""}" data-id="${id}">`
+  return `<button class="store-item music-tile${own ? " owned" : ""}${on ? " on" : ""}${hear ? " confirm hear" : ""}" data-id="${id}">`
     + `<span class="note" aria-hidden="true">♪</span><b>${M.name}</b><span class="about">${M.about}</span><small>${status}</small></button>`;
 }
 function paintShop() {
@@ -94,7 +94,7 @@ $("shopTabs").addEventListener("click", e => {
 // A bought thing: a burst of gold on its tile and a pulse of the pearl count
 function shopCelebrate(tab, id) {
   paintShop();
-  const tile = $("shopBody").querySelector(`.shop-item[data-id="${id}"]`);
+  const tile = $("shopBody").querySelector(`.store-item[data-id="${id}"]`);
   if (tile) { const r = tile.getBoundingClientRect(); sparkBurst(r.left + r.width / 2, r.top + r.height * 0.4, 26); }
   restartClass($("shopPearls"), "bump");
   bowl(6, 0.05);
@@ -102,7 +102,7 @@ function shopCelebrate(tab, id) {
 }
 function shopShort(id, need) {
   paintShop();
-  const tile = $("shopBody").querySelector(`.shop-item[data-id="${id}"]`);
+  const tile = $("shopBody").querySelector(`.store-item[data-id="${id}"]`);
   if (!tile) return;
   if (need > 0) tile.querySelector("small").textContent = `${need} more pearls needed`;
   restartClass(tile, "nope");
@@ -118,7 +118,7 @@ function shopAsk(key) {
 }
 $("shopBody").addEventListener("click", e => {
   if (e.target.closest("#shopVisitPond")) { shopView.hidden = true; openPond(() => openShop("pond", shopReturn)); return; }
-  const t = e.target.closest(".shop-item");
+  const t = e.target.closest(".store-item");
   if (!t) return;
   const id = t.dataset.id, key = `${shopTab}:${id}`, again = shopBuying === key;
   if (shopTab === "board" || shopTab === "stones") {

@@ -257,6 +257,30 @@ function drawDecor(c, floating, t) {
     c.restore();
   });
 }
+// Standing things are mirrored in the water under them, softly and a little rippled, so they stand in the pond
+// instead of floating over it. Drawn on the surface: over the koi, under the lily pads and floating things.
+function drawReflections(c, t) {
+  decorPieces(false).forEach(p => {
+    const im = decorImage(p.d);
+    if (!im.complete || !im.naturalWidth) return;
+    const base = p.y + p.s * 0.44;
+    c.save();
+    c.globalAlpha = isNight() ? 0.16 : 0.22;
+    // Thin horizontal slices, each nudged sideways a little, the way ripples break up a reflection
+    const slices = 10, sh = p.s / slices;
+    for (let k = 0; k < slices; k++) {
+      const sy = (k / slices) * im.naturalHeight, sH = im.naturalHeight / slices;
+      const dy = base + (slices - 1 - k) * sh * 0.5;
+      const wob = Math.sin(t * 1.3 + k * 0.9 + p.k) * p.s * 0.012 * (1 + (slices - k) / slices);
+      c.save();
+      c.translate(p.x + wob, dy + sh * 0.5);
+      c.scale(1, -0.5);
+      c.drawImage(im, 0, sy, im.naturalWidth, sH, -p.s / 2, -sh / 2, p.s, sh);
+      c.restore();
+    }
+    c.restore();
+  });
+}
 function paintPondShop() {
   $("pondBank").querySelector("b").textContent = journey.pearls;
   $("pondGrid").innerHTML = POND_DECOR.map(d => {
@@ -337,6 +361,7 @@ function drawPond() {
   drawFish(pc, pondFish, 0.97, isNight() ? 0.2 : 0.3, isNight() ? ["#16205a", 0.2] : null);
   // Moonlight lies on the surface: over the koi, under the floating pads
   drawMoonlight(pc, W, H, t, 1);
+  drawReflections(pc, t);
   pads.forEach(p => drawPad(pc, p));
   // Your decorations: floating ones on the water, then the ones standing in it
   drawDecor(pc, true, t);

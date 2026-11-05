@@ -2674,9 +2674,9 @@ html.big { font-size: 120%; }
 .shop-intro { margin: 0 2px 12px; font-size: 0.82rem; line-height: 1.45; color: var(--card-muted); }
 .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .shop-grid.grid-pond { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.shop-item { position: relative; }
-.shop-item small { display: inline-flex; align-items: center; justify-content: center; gap: 3px; flex-wrap: wrap; text-align: center; }
-.shop-item.nope { animation: nope 0.3s ease-in-out; }
+.store-item { position: relative; }
+.store-item small { display: inline-flex; align-items: center; justify-content: center; gap: 3px; flex-wrap: wrap; text-align: center; }
+.store-item.nope { animation: nope 0.3s ease-in-out; }
 /* Pond decorations: the picture on a little patch of water */
 .pond-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 8px; border-radius: 14px; border: 2px solid var(--card-line);
   background: var(--card-well); color: var(--card-fg); font: inherit; cursor: pointer; }
