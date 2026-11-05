@@ -1161,10 +1161,10 @@ html.big { font-size: 120%; }
 /* Pearls: a small round pearl, a pearl count in the corner of a card, and pearls in flight */
 .pearl {
   display: inline-block;
-  width: 12px; height: 12px;
+  width: 13px; height: 13px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffffff 0 18%, #f3ecf7 40%, #c9bfd8 100%);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  background: url(../img/ui/pearl.webp) center / 108% no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
   flex: none;
 }
 .pearl.big { width: 30px; height: 30px; }
@@ -1283,7 +1283,6 @@ html.big { font-size: 120%; }
 /* Bamboo basket: waits, wiggles, then the lid pops off and the gifts rise out on a burst of light */
 .basket-wrap { position: relative; width: 100%; height: 150px; display: grid; place-items: center; }
 .basket { position: relative; z-index: 1; width: 132px; overflow: visible; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.2)); }
-.basket .lid { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.32s var(--ease-out), opacity 0.32s var(--ease-out); }
 .basket-wrap.ready .basket { animation: basket-wait 2.4s ease-in-out infinite; }
 @keyframes basket-wait { 0%, 70%, 100% { transform: none; } 78% { transform: rotate(-3deg); } 86% { transform: rotate(3deg); } 94% { transform: rotate(-1deg); } }
 .basket-wrap.shake .basket { animation: basket-shake 0.5s ease-in-out; }
@@ -1294,8 +1293,6 @@ html.big { font-size: 120%; }
   75% { transform: rotate(3deg) scale(1.07); }
   100% { transform: scale(1.08); }
 }
-.basket-wrap.opened .lid { transform: translate(-14px, -38px) rotate(-22deg); opacity: 0; }
-.basket-wrap.opened .basket { opacity: 0.35; transform: translateY(18px) scale(0.85); transition: transform 0.4s var(--ease-out), opacity 0.4s var(--ease-out); }
 .rays {
   position: absolute;
   width: 220px; height: 220px;
@@ -1352,7 +1349,7 @@ html.big { font-size: 120%; }
   .bank.bump, .pip.bloom, .pip.bloom::after, .map-links .btn.ready::after, .task-pop, .task-pop.out,
   .task-pop circle, .basket-wrap.ready .basket, .basket-wrap.shake .basket, .gift, .basket-wrap.opened .rays { animation: none; }
   .task-pop path { animation: none; stroke-dashoffset: 0; }
-  .basket .lid, .rays, .basket-wrap.opened .basket { transition: none; }
+  .rays, .basket-wrap.opened .basket { transition: none; }
 }
 
 /* ---------- Garden styles ----------
@@ -2170,15 +2167,9 @@ html.big { font-size: 120%; }
 .chest-row .pips i.new { animation: pip-pop 0.5s 0.6s var(--spring) backwards; }
 @keyframes pip-pop { from { transform: scale(0); } }
 .chest { position: relative; width: 30px; height: 26px; flex: none; }
-.chest .box { position: absolute; left: 0; right: 0; bottom: 0; height: 16px; border-radius: 3px 3px 5px 5px;
-  background: linear-gradient(#b5652b, #8a4419); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 2px #e0a33a; }
-.chest .lid { position: absolute; left: -1px; right: -1px; top: 2px; height: 10px; border-radius: 8px 8px 2px 2px;
-  background: linear-gradient(#c97a3a, #9a5220); box-shadow: inset 0 0 0 2px #e0a33a; transform-origin: 10% 100%; }
 .chest-row.open { background: color-mix(in srgb, var(--gold) 26%, transparent); }
-.chest-row.open .lid { animation: lid-open 0.6s 0.6s var(--spring) forwards; }
 .chest-row.open .chest::after { content: ""; position: absolute; left: 50%; top: 6px; width: 36px; height: 36px; margin-left: -18px; border-radius: 50%;
   background: radial-gradient(circle, rgba(255, 230, 140, 0.9), transparent 70%); opacity: 0; animation: chest-glow 1.2s 0.7s ease-out forwards; }
-@keyframes lid-open { to { transform: rotate(-35deg) translateY(-3px); } }
 @keyframes chest-glow { 30% { opacity: 1; transform: scale(1.3); } to { opacity: 0.5; transform: scale(1); } }
 
 /* ---------- One tap to the next level ---------- */
@@ -2194,8 +2185,7 @@ html.big { font-size: 120%; }
 .fail-short:empty { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .board-wrap[data-combo="5"]::after, .combo-chip, .chest-row .pips i.new, .chest-row.open .lid, .chest-row.open .chest::after { animation: none; }
-  .chest-row.open .lid { transform: rotate(-35deg) translateY(-3px); }
+  .board-wrap[data-combo="5"]::after, .combo-chip, .chest-row .pips i.new, .chest-row.open .chest::after { animation: none; }
 }
 
 /* ---------- New in the Journey: shaped boards, frogs, maple leaves and blossom stones ---------- */
@@ -2344,15 +2334,14 @@ html.big { font-size: 120%; }
   font: 800 0.86rem var(--display); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5); }
 
 /* Surprises: the dragonfly resting on a spot, and leaving it */
-.cell.dragonfly::after { content: ""; position: absolute; inset: 4%; z-index: 2; pointer-events: none;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='rgba(200,235,255,0.75)' stroke='rgba(110,165,205,0.95)' stroke-width='0.7'%3E%3Cellipse cx='13' cy='15' rx='10' ry='3.4' transform='rotate(-18 13 15)'/%3E%3Cellipse cx='27' cy='15' rx='10' ry='3.4' transform='rotate(18 27 15)'/%3E%3Cellipse cx='13.5' cy='21' rx='9' ry='3' transform='rotate(14 13.5 21)'/%3E%3Cellipse cx='26.5' cy='21' rx='9' ry='3' transform='rotate(-14 26.5 21)'/%3E%3C/g%3E%3Cpath d='M20 10v24' stroke='%232f8fb0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='9' r='2.8' fill='%231f6f8a'/%3E%3C/svg%3E") center / contain no-repeat;
-  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.25)); animation: dragonfly 1.6s ease-in-out infinite; }
+.cell.dragonfly::after { content: ""; position: absolute; inset: -10%; z-index: 2; pointer-events: none;
+  background: url(../img/ui/dragonfly.webp) center / contain no-repeat;
+  filter: saturate(1.4) contrast(1.15) drop-shadow(0 4px 3px rgba(0, 0, 0, 0.4)); animation: dragonfly 1.6s ease-in-out infinite; }
 .cell.dragonfly::before { content: ""; position: absolute; inset: 18%; border-radius: 50%; z-index: 1; pointer-events: none;
   box-shadow: 0 0 0 2px rgba(120, 200, 240, 0.55), 0 0 12px rgba(120, 200, 240, 0.5); animation: dragonfly-spot 1.6s ease-in-out infinite; }
 @keyframes dragonfly { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-8%) rotate(6deg) scale(1.04); } }
 @keyframes dragonfly-spot { 50% { opacity: 0.45; transform: scale(1.12); } }
 .dragonfly-off { position: fixed; z-index: 46; pointer-events: none; }
-.dragonfly-off svg { width: 100%; height: 100%; }
 
 /* Rings in the water: a tap, and the combo pulsing out from the board */
 .tap-ring { position: fixed; z-index: 0; width: 60px; height: 60px; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
@@ -2449,3 +2438,33 @@ html.big { font-size: 120%; }
 .star-goals.lamps { gap: 3px; font-size: 0.85rem; letter-spacing: 0; }
 .star-goals.lamps span { color: rgba(255, 255, 255, 0.28); }
 .star-goals.lamps span.got { color: var(--gold); text-shadow: 0 0 8px color-mix(in srgb, var(--gold) 60%, transparent); }
+
+/* ---------- The painted basket and chest (assets/ui/, Viewmax) ----------
+   Each is two pictures, shut and open; opening swaps them with a pop while the light and the gifts come out. */
+.basket-wrap { height: 200px; align-items: end; padding-bottom: 6px; box-sizing: border-box; }
+.basket { width: 168px; height: 168px; filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.25)); }
+.basket img, .chest img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; object-fit: contain; }
+.basket img.open, .chest img.open { opacity: 0; }
+.basket-wrap.opened .basket { opacity: 1; transform: translateY(10px) scale(0.86); transition: transform 0.45s var(--spring); }
+.basket-wrap.opened .basket img.shut { opacity: 0; transform: scale(1.08); transition: opacity 0.18s ease-out, transform 0.18s ease-out; }
+.basket-wrap.opened .basket img.open { opacity: 1; animation: painted-pop 0.5s var(--spring); }
+.basket-wrap .rays { top: 6px; }
+.basket-gifts { align-items: flex-start; padding-top: 4px; }
+@keyframes painted-pop { from { transform: scale(0.82) translateY(6px); } }
+.chest { width: 46px; height: 46px; margin: -6px 0; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.25)); }
+.chest-row.open .chest img.shut { animation: chest-shut-out 0.15s 0.6s ease-out forwards; }
+.chest-row.open .chest img.open { animation: chest-open-in 0.55s 0.6s var(--spring) forwards; }
+@keyframes chest-shut-out { to { opacity: 0; transform: scale(1.1); } }
+@keyframes chest-open-in { from { opacity: 1; transform: scale(0.8) rotate(-6deg); } to { opacity: 1; transform: none; } }
+.chest-row.open .chest::after { top: 0; width: 56px; height: 56px; margin-left: -28px; z-index: -1; }
+@media (prefers-reduced-motion: reduce) {
+  .basket-wrap.opened .basket img.open, .chest-row.open .chest img.open, .chest-row.open .chest img.shut { animation: none; }
+  .chest-row.open .chest img.shut { opacity: 0; }
+  .chest-row.open .chest img.open { opacity: 1; }
+}
+
+/* Painted icons (assets/ui/) on the home buttons and the festival card */
+.hb-icon img.paint { width: 40px; height: 40px; object-fit: contain; transform: none; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
+#homeLanterns .hb-icon img.paint { width: 38px; height: 38px; }
+.fest-pic { width: 72px; height: 72px; object-fit: contain; margin: -4px 0 -6px; filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--fest) 55%, transparent)); }
+.dragonfly-off img { width: 100%; height: 100%; }

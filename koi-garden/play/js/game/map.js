@@ -22,8 +22,8 @@ const ZONES = [
 // Painted with Viewmax (assets/map/make_map.py). Upright things stand straight and are drawn larger.
 const DECOR = Object.fromEntries(["pad", "bridge", "blossom", "rock", "lantern", "maple", "pine", "pagoda", "reeds"]
   .map(k => [k, `<img src="img/map/${k}.webp" alt="">`]).concat([
-    ["koi", '<img src="img/koi/04-ogon.png" alt="">'], ["bamboo", '<img src="img/bamboo.webp" alt="">'], ["lotus", '<img src="img/lotus.webp" alt="">']]));
-const DECOR_UPRIGHT = { bridge: 1.3, blossom: 1.5, lantern: 1.1, maple: 1.5, pine: 1.5, pagoda: 1.5, reeds: 1.1, bamboo: 1.2 };
+    ["koi", '<img src="img/koi/04-ogon.png" alt="">'], ["bamboo", '<img src="img/ui/bamboo-clump.webp" alt="">'], ["lotus", '<img src="img/lotus.webp" alt="">']]));
+const DECOR_UPRIGHT = { bridge: 1.3, blossom: 1.5, lantern: 1.1, maple: 1.5, pine: 1.5, pagoda: 1.5, reeds: 1.1, bamboo: 1.5 };
 let mapGeo = null;
 function mapGeometry(maxC, W) {
   const H = MAP_BOTTOM + maxC * (PER_CHAPTER * MAP_STEP + MAP_GATE) + MAP_TOP;
@@ -121,6 +121,7 @@ function mapChapterInView() {
   $("mapChapter").textContent = `Chapter ${c} · ${chapterName(c)}`;
 }
 function openMap() {
+  clearSurprises();
   closeOverlay();
   const view = $("mapView");
   view.hidden = false;
@@ -615,7 +616,7 @@ function paintChest() {
   const row = $("winChest"), n = journey.chest || 0, open = S.chestOpened;
   const pips = [...Array(CHEST_EVERY)].map((_, k) => `<i class="${open || k < n ? "on" : ""}${!open && k === n - 1 ? " new" : ""}"></i>`).join("");
   row.className = "chest-row" + (open ? " open" : "");
-  row.innerHTML = `<span class="chest" aria-hidden="true"><span class="lid"></span><span class="box"></span></span>`
+  row.innerHTML = `<span class="chest" aria-hidden="true"><img class="shut" src="img/ui/chest.webp" alt=""><img class="open" src="img/ui/chest-open.webp" alt=""></span>`
     + `<span class="chest-text">${open
       ? `<b>Chest opened!</b> +${open.pearls} pearls${open.joker ? ` · ${JOKERS[open.joker].name} for your next level` : ""}`
       : `<b>Chest</b> · ${CHEST_EVERY - n} more ${CHEST_EVERY - n === 1 ? "win" : "wins"} to open it`}</span><span class="pips">${pips}</span>`;

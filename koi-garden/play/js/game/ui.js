@@ -205,6 +205,7 @@ function openEvent() {
   checkLanternWeek();
   const f = festivalNow(), goals = f.goals, top = goals[goals.length - 1], ki = festivalKoi(f);
   $("eventCard").dataset.festival = f.id;
+  $("eventPic").src = FEST_PICS[f.id] || FEST_PICS.lantern;
   $("eventTitle").textContent = f.name;
   $("eventStats").innerHTML = `<b>${lanterns.count}</b> ${festUnit(f, lanterns.count)} ${f.verb} this week`;
   $("eventBar").style.width = Math.min(100, (lanterns.count / top) * 100) + "%";

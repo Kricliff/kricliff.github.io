@@ -82,8 +82,8 @@
     </div>
     <h1 class="home-logo" id="homeLogo"><span>Koi</span> <span>Garden</span><small>Block puzzle</small></h1>
     <div class="home-side l">
-      <button class="hb" id="homeTasks"><span class="hb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 12.5l2.2 2.2 4.8-5"/></svg></span><span class="hb-label">Tasks</span></button>
-      <button class="hb" id="homeLanterns"><span class="hb-icon" id="homeFestIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="M9 4h6"/><path d="M8 6.5C5.5 8 5 10 5 12.5S5.5 17 8 18.5h8c2.5-1.5 3-3.5 3-6S18.5 8 16 6.5z"/><path d="M12 6.5v12M8.7 7c-1.2 3-1.2 8 0 11M15.3 7c1.2 3 1.2 8 0 11"/><path d="M10 18.5V21h4v-2.5"/></svg></span><span class="hb-label">Lanterns</span></button>
+      <button class="hb" id="homeTasks"><span class="hb-icon"><img class="paint" src="img/ui/scroll.webp" alt=""></span><span class="hb-label">Tasks</span></button>
+      <button class="hb" id="homeLanterns"><span class="hb-icon" id="homeFestIcon"><img class="paint" src="img/ui/lantern.webp" alt=""></span><span class="hb-label">Lanterns</span></button>
     </div>
     <div class="home-side r">
       <button class="hb" id="homeDaily"><span class="hb-icon cal"><b>1</b></span><span class="hb-label">Daily</span></button>
@@ -365,6 +365,7 @@
   <div class="card" id="eventCard" hidden>
     <div class="fest-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
     <p class="eyebrow" id="eventEyebrow">This week</p>
+    <img class="fest-pic" id="eventPic" src="img/ui/lantern.webp" alt="">
     <h2 id="eventTitle">Lantern Festival</h2>
     <p class="stats" id="eventStats"></p>
     <div class="bar" aria-hidden="true"><i id="eventBar"></i></div>
@@ -457,17 +458,7 @@
     <ul class="milestones tasks" id="tasksList"></ul>
     <div class="basket-wrap" id="basketWrap">
       <div class="rays" aria-hidden="true"></div>
-      <svg class="basket" viewBox="0 0 120 100" aria-hidden="true">
-        <ellipse cx="60" cy="94" rx="44" ry="5" fill="rgba(0,0,0,0.18)"/>
-        <path d="M14 42 H106 L95 90 Q60 96 25 90 Z" fill="#d6a35a"/>
-        <path d="M18 54 H102 M21 66 H99 M23 78 H97" stroke="#a8722f" stroke-width="3" stroke-linecap="round"/>
-        <path d="M32 44 L36 90 M48 44 L50 92 M60 44 V93 M72 44 L70 92 M88 44 L84 90" stroke="#b9823d" stroke-width="2.5"/>
-        <g class="lid">
-          <path d="M8 34 Q60 12 112 34 L110 44 Q60 36 10 44 Z" fill="#c58d43"/>
-          <path d="M14 38 Q60 20 106 38" stroke="#e7bd78" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          <circle cx="60" cy="21" r="5.5" fill="#a8722f"/>
-        </g>
-      </svg>
+      <div class="basket" aria-hidden="true"><img class="shut" src="img/ui/basket.webp" alt=""><img class="open" src="img/ui/basket-open.webp" alt=""></div>
       <div class="basket-gifts" id="basketGifts"></div>
     </div>
     <p class="note" id="basketNote"></p>

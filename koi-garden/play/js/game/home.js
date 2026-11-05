@@ -144,7 +144,10 @@ const FEST_ICONS = {
   sakura: '<path d="M12 12c-1.8-2.2-2.2-5.2 0-7.5 2.2 2.3 1.8 5.3 0 7.5z"/><path d="M12 12c2.6-1.1 5.6-.5 7.2 2.2-2.8 1.3-5.6.4-7.2-2.2z"/><path d="M12 12c.6 2.7-.4 5.6-3.4 6.8-.9-3 .6-5.6 3.4-6.8z"/><path d="M12 12c-.6 2.7.4 5.6 3.4 6.8.9-3-.6-5.6-3.4-6.8z"/><path d="M12 12c-2.6-1.1-5.6-.5-7.2 2.2 2.8 1.3 5.6.4 7.2-2.2z"/>',
   firefly: '<path d="M12 9v9"/><circle cx="12" cy="7" r="2"/><path d="M12 10c-3-3.5-7-2.5-7 0s4 2.5 7 0zM12 10c3-3.5 7-2.5 7 0s-4 2.5-7 0z"/><circle cx="12" cy="19" r="2.2" fill="currentColor"/><path d="M6 19.5l-1 .5M18 19.5l1 .5M12 22.5v.5"/>'
 };
-const festIcon = id => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${FEST_ICONS[id] || FEST_ICONS.lantern}</svg>`;
+// Painted with Viewmax (assets/ui/); the line drawings above stay as a fallback for a festival without a picture
+const FEST_PICS = { lantern: "img/ui/lantern.webp", moon: "img/ui/moon.webp", sakura: "img/ui/sakura.webp", firefly: "img/ui/firefly.webp" };
+const festIcon = id => FEST_PICS[id] ? `<img class="paint" src="${FEST_PICS[id]}" alt="">`
+  : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${FEST_ICONS[id] || FEST_ICONS.lantern}</svg>`;
 const homeEl = $("home"), moonCv = $("moonCanvas"), mc = moonCv.getContext("2d");
 let homeLoop = 0, homeLast = 0, moonAng = 0, moonBoost = 0;
 const journeyResume = () => G.journey && !G.journey.over && G.journey.placed > 0;
@@ -210,6 +213,7 @@ function startMoon() {
 }
 function showHome(animate) {
   if (drag) return;
+  clearSurprises();
   closeOverlay();
   paintHome();
   homeEl.hidden = false;

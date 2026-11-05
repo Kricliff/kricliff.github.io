@@ -331,53 +331,30 @@ function luckyKoi() {
   if (sfxOk()) { const t = ac.currentTime; bell(hz(12), t, 0.025); bell(hz(14), t + 0.12, 0.02); }
 }
 // This week's festival sends something up from the board after a big move
+// Each festival's thing is a painted picture (assets/ui/) on a soft glow of its own colour
 const FLOAT_LOOK = {
-  lantern: (c, p) => {
-    const f = 0.85 + 0.15 * Math.sin(p.t * 9);
-    const gr = c.createRadialGradient(0, 0, 0, 0, 0, 30);
-    gr.addColorStop(0, `rgba(255, 190, 90, ${0.55 * f})`);
-    gr.addColorStop(1, "rgba(255, 150, 60, 0)");
-    c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 30, 0, 6.283); c.fill();
-    c.fillStyle = `rgb(${Math.round(240 * f)}, ${Math.round(120 * f)}, 50)`;
-    c.beginPath(); c.ellipse(0, 0, 11, 14, 0, 0, 6.283); c.fill();
-    c.strokeStyle = "rgba(120, 40, 10, 0.5)"; c.lineWidth = 1;
-    c.beginPath(); c.ellipse(0, 0, 5, 14, 0, 0, 6.283); c.stroke();
-    c.fillStyle = "#4a2a14";
-    c.fillRect(-6, -16, 12, 3); c.fillRect(-6, 13, 12, 3);
-  },
-  moon: (c, p) => {
-    const gr = c.createRadialGradient(0, 0, 0, 0, 0, 30);
-    gr.addColorStop(0, "rgba(220, 230, 255, 0.7)");
-    gr.addColorStop(1, "rgba(180, 200, 255, 0)");
-    c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 30, 0, 6.283); c.fill();
-    c.fillStyle = "#f4f1e2"; c.beginPath(); c.arc(0, 0, 12, 0, 6.283); c.fill();
-    c.fillStyle = "rgba(190, 185, 160, 0.5)";
-    c.beginPath(); c.arc(-4, -3, 3, 0, 6.283); c.arc(4, 4, 2, 0, 6.283); c.fill();
-  },
-  sakura: (c, p) => {
-    const im = worldImage("img/blossom.webp");
-    const gr = c.createRadialGradient(0, 0, 0, 0, 0, 30);
-    gr.addColorStop(0, "rgba(255, 200, 225, 0.6)");
-    gr.addColorStop(1, "rgba(255, 180, 210, 0)");
-    c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 30, 0, 6.283); c.fill();
-    if (im.complete && im.naturalWidth) { c.rotate(p.t * 0.8); c.drawImage(im, -15, -15, 30, 30); }
-  },
-  firefly: (c, p) => {
-    const f = 0.5 + 0.5 * Math.max(0, Math.sin(p.t * 5));
-    const gr = c.createRadialGradient(0, 0, 0, 0, 0, 28);
-    gr.addColorStop(0, `rgba(255, 240, 140, ${0.35 + 0.5 * f})`);
-    gr.addColorStop(1, "rgba(220, 255, 120, 0)");
-    c.fillStyle = gr; c.beginPath(); c.arc(0, 0, 28, 0, 6.283); c.fill();
-    c.fillStyle = "#fff6b0"; c.beginPath(); c.arc(0, 0, 5, 0, 6.283); c.fill();
-    c.fillStyle = "rgba(255, 255, 255, 0.45)";
-    c.beginPath(); c.ellipse(-5, -4, 5, 2.5, -0.5, 0, 6.283); c.ellipse(5, -4, 5, 2.5, 0.5, 0, 6.283); c.fill();
-  }
+  lantern: { img: "img/ui/lantern.webp", glow: "255, 170, 80", size: 34, flicker: true },
+  moon: { img: "img/ui/moon.webp", glow: "200, 215, 255", size: 34 },
+  sakura: { img: "img/ui/sakura.webp", glow: "255, 190, 215", size: 36, spin: true },
+  firefly: { img: "img/ui/firefly.webp", glow: "250, 235, 120", size: 30, flicker: true }
 };
+function drawFloat(c, p, look) {
+  const f = look.flicker ? 0.8 + 0.2 * Math.sin(p.t * 9) : 1, R = look.size;
+  const gr = c.createRadialGradient(0, 0, 0, 0, 0, R);
+  gr.addColorStop(0, `rgba(${look.glow}, ${0.55 * f})`);
+  gr.addColorStop(1, `rgba(${look.glow}, 0)`);
+  c.fillStyle = gr;
+  c.beginPath(); c.arc(0, 0, R, 0, 6.283); c.fill();
+  const im = worldImage(look.img);
+  if (!im.complete || !im.naturalWidth) return;
+  if (look.spin) c.rotate(Math.sin(p.t * 1.6) * 0.3);
+  c.drawImage(im, -R * 0.8, -R * 0.8, R * 1.6, R * 1.6);
+}
 function festivalFloat() {
   if (!surpriseOn() || !overlay.hidden) return;
   const fest = festivalNow(), b = boardEl.getBoundingClientRect();
   const x0 = b.left + b.width * (0.2 + Math.random() * 0.6), y0 = b.bottom - b.height * 0.1, y1 = b.top - 40;
-  const look = FLOAT_LOOK[fest.id];
+  const look = FLOAT_LOOK[fest.id] || FLOAT_LOOK.lantern;
   spawn({ type: "float", x: x0, y: y0, life: 7, g: 0, catchable: true, hit: 36,
     path(p) {
       const k = p.t / p.life;
@@ -389,7 +366,7 @@ function festivalFloat() {
       const k = p.t / p.life;
       c.globalAlpha = Math.min(1, k * 5, (1 - k) * 4);
       c.save();
-      look(c, p);
+      drawFloat(c, p, look);
       c.restore();
       // A small tag under it says what it is worth
       c.rotate(-p.rot);
@@ -399,7 +376,7 @@ function festivalFloat() {
       c.strokeStyle = "rgba(0, 0, 0, 0.45)";
       c.lineWidth = 3;
       const tag = `+${fest.float}`;
-      c.strokeText(tag, 0, 32); c.fillText(tag, 0, 32);
+      c.strokeText(tag, 0, 38); c.fillText(tag, 0, 38);
     },
     caught(p) {
       sparkBurst(p.x, p.y, 22);
@@ -424,7 +401,7 @@ function catchSurprise(x, y) {
 // When a card opens, surprises still on the way go quietly
 function clearSurprises() { parts.forEach(p => { if (p.catchable) { p.catchable = false; p.t = p.life; } }); }
 // The dragonfly leaves the board, darting off in a curve
-const DRAGONFLY_SVG = '<svg viewBox="0 0 40 40" aria-hidden="true"><g fill="rgba(200,235,255,0.7)" stroke="rgba(120,170,210,0.9)" stroke-width="0.6"><ellipse cx="13" cy="15" rx="10" ry="3.4" transform="rotate(-18 13 15)"/><ellipse cx="27" cy="15" rx="10" ry="3.4" transform="rotate(18 27 15)"/><ellipse cx="13.5" cy="21" rx="9" ry="3" transform="rotate(14 13.5 21)"/><ellipse cx="26.5" cy="21" rx="9" ry="3" transform="rotate(-14 26.5 21)"/></g><path d="M20 10v24" stroke="#2f8fb0" stroke-width="2.6" stroke-linecap="round"/><circle cx="20" cy="9" r="2.8" fill="#1f6f8a"/></svg>';
+const DRAGONFLY_SVG = '<img src="img/ui/dragonfly.webp" alt="">';
 function flyOff(i, happy) {
   if (reduceMotion) return;
   const { x, y, w } = cellCenter(i);
