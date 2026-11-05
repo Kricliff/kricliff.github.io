@@ -2649,3 +2649,64 @@ html.big { font-size: 120%; }
 .mood.hear small::before { content: "♪"; animation: mood-note 0.8s ease-in-out infinite alternate; }
 @keyframes mood-note { to { transform: translateY(-2px); } }
 @media (prefers-reduced-motion: reduce) { .mood.hear small::before { animation: none; } }
+
+/* ---------- The shop: boards, stones, pond decorations and music, in four tabs ---------- */
+.shop-view { position: fixed; inset: 0; z-index: 55; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 0; background: linear-gradient(180deg, var(--water), var(--water-deep)); color: var(--on-water); }
+.shop-top { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 480px; flex: none; }
+.shop-title { flex: 1; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.shop-title b { font: 900 1.35rem var(--display); }
+.shop-title span { font-size: 0.74rem; color: var(--on-water-muted); }
+.shop-bank { position: static; flex: none; color: var(--card-fg); padding: 5px 12px 5px 7px; font-size: 1rem; }
+.shop-bank.bump { animation: bump 0.35s cubic-bezier(0.3, 1.8, 0.5, 1); }
+.shop-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; max-width: 480px; flex: none; }
+.shop-tab { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 4px 6px; border-radius: 14px; cursor: pointer;
+  border: 1px solid var(--glass-line); background: color-mix(in srgb, var(--water-deep) 70%, transparent); color: var(--on-water); font: inherit; }
+.shop-tab img, .shop-tab svg, .shop-tab .tab-board { width: 30px; height: 30px; object-fit: contain; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3)); }
+.shop-tab .tab-board { display: block; border-radius: 7px; background: url(../img/boards/sand-bed.webp) center / cover; box-shadow: 0 0 0 3px #b57d45, 0 0 0 4px #7e5126; transform: scale(0.8); }
+.shop-tab svg { color: var(--gold); }
+.shop-tab b { font-size: 0.8rem; }
+.shop-tab small { font-size: 0.66rem; font-weight: 700; color: var(--on-water-muted); font-variant-numeric: tabular-nums; }
+.shop-tab[aria-selected="true"] { background: var(--card); color: var(--card-fg); border-color: var(--card); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25); }
+.shop-tab[aria-selected="true"] small { color: var(--card-muted); }
+.shop-body { flex: 1; min-height: 0; width: 100%; max-width: 480px; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+  padding: 14px 12px 16px; box-sizing: border-box; border-radius: 22px 22px 0 0; background: var(--card); color: var(--card-fg); }
+.shop-intro { margin: 0 2px 12px; font-size: 0.82rem; line-height: 1.45; color: var(--card-muted); }
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.shop-grid.grid-pond { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.shop-item { position: relative; }
+.shop-item small { display: inline-flex; align-items: center; justify-content: center; gap: 3px; flex-wrap: wrap; text-align: center; }
+.shop-item.nope { animation: nope 0.3s ease-in-out; }
+/* Pond decorations: the picture on a little patch of water */
+.pond-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px 8px; border-radius: 14px; border: 2px solid var(--card-line);
+  background: var(--card-well); color: var(--card-fg); font: inherit; cursor: pointer; }
+.pond-tile .pic { display: grid; place-items: center; width: 100%; aspect-ratio: 1.25; border-radius: 10px;
+  background: radial-gradient(circle at 50% 40%, var(--water-hi), var(--water) 70%); }
+.pond-tile img { width: 76%; height: 92%; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3)); }
+.pond-tile b { font-size: 0.78rem; line-height: 1.15; text-align: center; margin-top: 3px; }
+.pond-tile small { font-size: 0.68rem; font-weight: 700; color: var(--card-muted); }
+.pond-tile.on { border-color: var(--good); }
+.pond-tile.on small { color: var(--good); }
+.pond-tile.owned:not(.on) img { opacity: 0.5; }
+.pond-tile.short:not(.confirm) .pic { filter: saturate(0.5); }
+.pond-tile.confirm, .music-tile.confirm { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card-well)); }
+.pond-tile.confirm small, .music-tile.confirm small { color: var(--accent); }
+/* Music moods */
+.music-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 12px 10px; border-radius: 14px; border: 2px solid var(--card-line);
+  background: var(--card-well); color: var(--card-fg); font: inherit; text-align: left; cursor: pointer; }
+.music-tile .note { display: grid; place-items: center; width: 34px; height: 34px; margin-bottom: 4px; border-radius: 50%; font-size: 1.1rem; font-weight: 900;
+  background: color-mix(in srgb, var(--gold) 35%, transparent); color: #8a5a00; }
+.music-tile.on .note, .music-tile.hear .note { animation: mood-note 0.8s ease-in-out infinite alternate; }
+.music-tile b { font-size: 0.9rem; }
+.music-tile .about { font-size: 0.74rem; color: var(--card-muted); }
+.music-tile small { justify-content: flex-start; margin-top: 4px; font-size: 0.7rem; font-weight: 800; color: var(--card-muted); }
+.music-tile.on { border-color: var(--good); }
+.music-tile.on small { color: var(--good); }
+.shop-visit { width: 100%; margin-top: 12px; }
+.shop-warn { margin-top: 10px; text-align: center; }
+.shop-earn { flex: none; width: 100%; max-width: 480px; margin: 0; padding: 10px 16px calc(env(safe-area-inset-bottom) + 12px); box-sizing: border-box;
+  background: var(--card); color: var(--card-muted); font-size: 0.72rem; line-height: 1.4; text-align: center; border-top: 1px solid var(--card-line); }
+/* On the home screen the pearl count is a way into the shop */
+#homePearls { cursor: pointer; }
+.home-top .home-chip:first-child { cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .music-tile.on .note, .music-tile.hear .note, .shop-bank.bump { animation: none; } }

@@ -275,15 +275,12 @@ $("pondShopClose").addEventListener("click", () => { $("pondShop").hidden = true
 $("pondGrid").addEventListener("click", e => {
   const b = e.target.closest(".pond-item");
   if (!b) return;
-  const d = POND_DECOR.find(x => x.id === b.dataset.id), st = pondState();
+  const d = POND_DECOR.find(x => x.id === b.dataset.id);
   clearTimeout(pondBuyTimer);
   if (decorOwned(d)) {
-    st.hidden = decorShown(d) ? st.hidden.concat(d.id) : st.hidden.filter(x => x !== d.id);
-    saveJourney();
+    toggleDecor(d);
     pondBuying = null;
-    tick();
     paintPondShop();
-    if (reduceMotion) drawPond();
     return;
   }
   if (journey.pearls < d.price) {
@@ -303,10 +300,7 @@ $("pondGrid").addEventListener("click", e => {
   }
   // Bought: it appears in the pond with a splash and a ring of gold where it stands
   pondBuying = null;
-  journey.pearls -= d.price;
-  st.owned.push(d.id);
-  saveJourney();
-  track("buy", { data: { kind: "pond", id: d.id, pearls: d.price } });
+  buyDecor(d);
   paintPondShop();
   const p = decorPieces(!!d.float).find(q => q.d === d);
   if (p) { sparkBurst(p.x, p.y, 26); splash(p.x, p.y + p.s * 0.3, 0); }
@@ -314,6 +308,22 @@ $("pondGrid").addEventListener("click", e => {
   buzz([12, 30, 12]);
   if (reduceMotion) drawPond();
 });
+// Shared with the shop
+function buyDecor(d) {
+  if (decorOwned(d) || journey.pearls < d.price) return false;
+  journey.pearls -= d.price;
+  pondState().owned.push(d.id);
+  saveJourney();
+  track("buy", { data: { kind: "pond", id: d.id, pearls: d.price } });
+  return true;
+}
+function toggleDecor(d) {
+  const st = pondState();
+  st.hidden = decorShown(d) ? st.hidden.concat(d.id) : st.hidden.filter(x => x !== d.id);
+  saveJourney();
+  tick();
+  if (pondOpen && reduceMotion) drawPond();
+}
 function drawPond() {
   const W = innerWidth, H = innerHeight;
   pc.clearRect(0, 0, W, H);

@@ -376,14 +376,7 @@ $("moodRow").addEventListener("click", e => {
   if (moodOwned(id)) { clearTimeout(moodTimer); previewMood = null; moodBuying = null; setMood(id); paintMoods(); return; }
   // First tap: listen for a little while. Second tap while it plays: buy it.
   if (previewMood === id && journey.pearls >= M.price) {
-    journey.pearls -= M.price;
-    if (!journey.owned) journey.owned = [];
-    journey.owned.push("music-" + id);
-    saveJourney();
-    track("buy", { data: { kind: "music", id, pearls: M.price } });
-    clearTimeout(moodTimer);
-    previewMood = null;
-    setMood(id);
+    buyMood(id);
     paintMoods();
     const r = b.getBoundingClientRect();
     sparkBurst(r.left + r.width / 2, r.top + r.height / 2, 22);
@@ -391,13 +384,31 @@ $("moodRow").addEventListener("click", e => {
     buzz([12, 30, 12]);
     return;
   }
+  listenMood(id);
+  paintMoods();
+});
+// Shared with the shop
+function buyMood(id) {
+  const M = MOODS[id];
+  if (moodOwned(id) || journey.pearls < M.price) return false;
+  journey.pearls -= M.price;
+  if (!journey.owned) journey.owned = [];
+  journey.owned.push("music-" + id);
+  saveJourney();
+  track("buy", { data: { kind: "music", id, pearls: M.price } });
+  clearTimeout(moodTimer);
+  previewMood = null;
+  setMood(id);
+  return true;
+}
+function listenMood(id) {
+  audioInit();
   previewMood = id;
   restartMusic();
   if (!musicTimer && audio.musicOn) startMusic();
   clearTimeout(moodTimer);
-  moodTimer = setTimeout(endPreview, 16000);
-  paintMoods();
-});
+  moodTimer = setTimeout(() => { endPreview(); if (typeof paintShop === "function" && !$("shopView").hidden) paintShop(); }, 16000);
+}
 // Leaving the app quiets everything; coming back picks up where it was
 document.addEventListener("visibilitychange", () => {
   if (!ac) return;

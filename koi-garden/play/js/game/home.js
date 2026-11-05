@@ -256,6 +256,9 @@ $("homeMap").addEventListener("click", () => enterGame(openMap));
 $("homeEndless").addEventListener("click", () => enterGame(() => switchMode("endless")));
 $("homeDaily").addEventListener("click", () => enterGame(() => switchMode("daily")));
 $("homeTasks").addEventListener("click", () => openTasks(closeOverlay));
+$("homeShop").addEventListener("click", () => { if (overlay.hidden) openShop("board"); });
+// The pearl count opens the shop too: that is where pearls are spent
+$("homePearls").parentElement.addEventListener("click", () => { if (overlay.hidden) openShop(); });
 $("homeLanterns").addEventListener("click", () => { eventBack = closeOverlay; openEvent(); });
 $("homeKoi").addEventListener("click", () => { koiBack = closeOverlay; openKoi(); });
 $("homeStyle").addEventListener("click", () => { if (overlay.hidden) openStyles(closeOverlay); });

@@ -82,6 +82,7 @@
     </div>
     <h1 class="home-logo" id="homeLogo"><span>Koi</span> <span>Garden</span><small>Block puzzle</small></h1>
     <div class="home-side l">
+      <button class="hb" id="homeShop"><span class="hb-icon"><img class="paint" src="img/ui/chest-open.webp" alt=""></span><span class="hb-label">Shop</span></button>
       <button class="hb" id="homeTasks"><span class="hb-icon"><img class="paint" src="img/ui/scroll.webp" alt=""></span><span class="hb-label">Tasks</span></button>
       <button class="hb" id="homeLanterns"><span class="hb-icon" id="homeFestIcon"><img class="paint" src="img/ui/lantern.webp" alt=""></span><span class="hb-label">Lanterns</span></button>
     </div>
@@ -486,18 +487,6 @@
     </div>
   </div>
 
-  <div class="card" id="styleCard" hidden>
-    <span class="bank" id="styleBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
-    <p class="eyebrow">Garden style</p>
-    <h2>Board &amp; stones</h2>
-    <p class="style-head">Board</p>
-    <div class="style-grid" id="styleBoards"></div>
-    <p class="style-head">Stones</p>
-    <div class="style-grid" id="styleStones"></div>
-    <p class="note">Every colour keeps its own stone shape in every style.</p>
-    <div class="btns"><button class="btn primary" id="styleDone">Done</button></div>
-  </div>
-
   <div class="card" id="testerCard" hidden>
     <p class="eyebrow">Tester tools</p>
     <h2>Jump ahead</h2>
@@ -555,6 +544,22 @@
   <ul class="garden-items" id="gardenItems"></ul>
 </div>
 
+<div class="shop-view" id="shopView" hidden>
+  <div class="shop-top">
+    <button class="icon-btn" id="shopClose" aria-label="Back" title="Back">✕</button>
+    <div class="shop-title"><b>Shop</b><span>Everything you buy is yours for good</span></div>
+    <span class="bank shop-bank" id="shopPearls" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+  </div>
+  <div class="shop-tabs" role="tablist" id="shopTabs">
+    <button class="shop-tab" role="tab" data-tab="board"><i class="tab-board" aria-hidden="true"></i><b>Boards</b><small></small></button>
+    <button class="shop-tab" role="tab" data-tab="stones"><img src="img/stones/river-4.webp" alt=""><b>Stones</b><small></small></button>
+    <button class="shop-tab" role="tab" data-tab="pond"><img src="img/ui/fountain.webp" alt=""><b>Pond</b><small></small></button>
+    <button class="shop-tab" role="tab" data-tab="music"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.8" fill="currentColor"/><circle cx="17.5" cy="16" r="2.8" fill="currentColor"/></svg><b>Music</b><small></small></button>
+  </div>
+  <div class="shop-body" id="shopBody" role="tabpanel"></div>
+  <p class="shop-earn">Earn pearls by winning levels, finishing pond tasks and festivals, opening chests and catching lucky koi.</p>
+</div>
+
 <div class="pond-view" id="pondView" hidden>
   <canvas id="pondCanvas" aria-label="Your koi pond"></canvas>
   <div class="pond-bar">
@@ -592,6 +597,7 @@
 <script src="js/game/ui.js"></script>
 <script src="js/game/home.js"></script>
 <script src="js/game/garden.js"></script>
+<script src="js/game/shop.js"></script>
 <script src="js/game/tester.js"></script>
 <script src="js/game/results.js"></script>
 <script src="js/game/audio.js"></script>

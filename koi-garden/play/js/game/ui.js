@@ -2,7 +2,7 @@
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
 /* ---------- Overlays ---------- */
-const cards = ["promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "styleCard", "testerCard", "jokerCard", "shopCard"];
+const cards = ["promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "testerCard", "jokerCard", "shopCard"];
 function openCard(id) {
   clearSurprises();
   overlay.hidden = false;
@@ -297,18 +297,18 @@ function styleTile(kind, item) {
     + `<span class="pv-board"><i></i><i class="alt"></i><i class="alt"></i><i></i>${stones}</span>`
     + `<b>${item.name}</b><small>${status}</small></button>`;
 }
-let buying = null, buyTimer = null, stylesBack = null;
-function paintStyles() {
-  $("styleBoards").innerHTML = BOARDS.map(b => styleTile("board", b)).join("");
-  $("styleStones").innerHTML = STONES.map(st => styleTile("stones", st)).join("");
-  $("styleBank").querySelector("b").textContent = journey.pearls;
-}
-function openStyles(back) {
-  stylesBack = back || closeOverlay;
-  buying = null;
-  checkStyleUnlocks(true);
-  paintStyles();
-  openCard("styleCard");
+let buying = null;
+// The brush on the home screen and Board & stones in Settings open the shop on its Boards tab
+function openStyles(back) { openShop("board", back); }
+function buyStyle(kind, item) {
+  if (ownsStyle(item) || !item.price || journey.pearls < item.price) return false;
+  journey.pearls -= item.price;
+  if (!journey.owned) journey.owned = [];
+  journey.owned.push(item.id);
+  track("style", { data: { id: item.id } });
+  saveJourney();
+  useStyle(kind, item.id);
+  return true;
 }
 function useStyle(kind, id) {
   look[kind] = id;
@@ -317,39 +317,4 @@ function useStyle(kind, id) {
   restartClass($("boardWrap"), "restyle");
   tick();
 }
-$("styleCard").addEventListener("click", e => {
-  const t = e.target.closest(".style-tile");
-  if (!t) return;
-  const kind = t.dataset.kind, item = STYLE_KINDS[kind].find(x => x.id === t.dataset.id);
-  clearTimeout(buyTimer);
-  if (ownsStyle(item)) { buying = null; useStyle(kind, item.id); paintStyles(); return; }
-  if (item.price && journey.pearls >= item.price && buying === item.id) {
-    // Bought: pearls fly out of the count and the style is put on straight away
-    buying = null;
-    journey.pearls -= item.price;
-    journey.owned.push(item.id);
-    track("style", { data: { id: item.id } });
-    saveJourney();
-    useStyle(kind, item.id);
-    paintStyles();
-    const r = $("styleCard").querySelector(`.style-tile[data-id="${item.id}"]`).getBoundingClientRect();
-    sparkBurst(r.left + r.width / 2, r.top + r.height * 0.4);
-    bowl(6, 0.05);
-    buzz([12, 30, 12]);
-    return;
-  }
-  if (item.price && journey.pearls >= item.price) {
-    buying = item.id;
-    paintStyles();
-    buyTimer = setTimeout(() => { buying = null; paintStyles(); }, 3500);
-    return;
-  }
-  buying = null;
-  paintStyles();
-  const tile = $("styleCard").querySelector(`.style-tile[data-id="${item.id}"]`);
-  restartClass(tile, "nope");
-  if (item.price) tile.querySelector("small").textContent = `${item.price - journey.pearls} more pearls needed`;
-  knock();
-});
-$("styleDone").addEventListener("click", () => stylesBack());
-$("settingsStyle").addEventListener("click", () => openStyles(() => { syncSettings(); openCard("settingsCard"); }));
+$("settingsStyle").addEventListener("click", () => { closeOverlay(); openStyles(() => { syncSettings(); openCard("settingsCard"); }); });
