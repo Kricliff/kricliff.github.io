@@ -5,7 +5,7 @@
    A path of stepping stones winds up a stream through the garden, level 1 at the bottom. Each
    chapter is its own stretch with its own colours and scenery, and a wooden gate with its name.
    Your koi circles the stone you are on, and after a win it hops across to the next one. */
-const MAP_STEP = 96, MAP_GATE = 190, MAP_BOTTOM = 190, MAP_TOP = 120;
+const MAP_STEP = 100, MAP_GATE = 330, MAP_BOTTOM = 300, MAP_TOP = 150;
 // Scenery for each chapter: a wash of colour over the water and the things growing along the path
 const ZONES = [
   { tint: "rgba(30, 150, 140, 0.18)", decor: ["pad", "reeds", "koi"] },
@@ -55,29 +55,39 @@ function buildMap() {
   pts.push({ x: W / 2, y: 30 });
   const doneTo = Math.min(cur, last);
   let html = "";
+  const own = journey.koi.filter(i => koiImages[i]);
   // The chapters' stretches of garden
   for (let c = 1; c <= maxC; c++) {
     const z = ZONES[(c - 1) % ZONES.length];
     const top = g.gateY(c) - MAP_GATE / 2, bottom = c === 1 ? g.H : g.gateY(c - 1) - MAP_GATE / 2;
     html += `<div class="zone" style="top:${top}px;height:${bottom - top}px;--tint:${z.tint}"></div>`;
-    // Scenery on whichever side of the path has room
+    // At each gate a view into the chapter's garden, which the stream runs through
+    const gy = c === 1 ? g.H - 150 : g.gateY(c - 1), open = cur > (c - 1) * PER_CHAPTER;
+    html += `<div class="gate-garden${open ? "" : " shut"}" style="top:${gy - 170}px;background-image:url(${sceneImg(sceneOfChapter(c))})"></div>`;
+    // Scenery along both banks: something every stone or so, alternating sides, never on the path
     const rnd = seeded(hashSeed("map-zone-" + c));
-    for (let k = 0; k < 7; k++) {
-      const n = (c - 1) * PER_CHAPTER + 1 + Math.floor(rnd() * PER_CHAPTER);
+    for (let k = 0; k < 16; k++) {
+      const n = (c - 1) * PER_CHAPTER + 1 + Math.floor((k + rnd() * 0.9) * PER_CHAPTER / 16);
       const p = g.pos(n), side = p.x > W / 2 ? -1 : 1;
-      const x = W / 2 + side * W * (0.36 + rnd() * 0.08), y = p.y + (rnd() - 0.5) * MAP_STEP;
-      const kind = z.decor[k % z.decor.length], up = DECOR_UPRIGHT[kind], size = (44 + rnd() * 26) * (up || 1);
+      const kind = z.decor[k % z.decor.length], up = DECOR_UPRIGHT[kind], size = (40 + rnd() * 30) * (up || 1);
+      const x = W / 2 + side * W * (0.33 + rnd() * 0.12), y = p.y + (rnd() - 0.5) * MAP_STEP;
       const turn = Math.round((rnd() - 0.5) * 40);
       html += `<div class="decor d-${kind}" style="left:${x - size / 2}px;top:${y - size / 2}px;width:${size}px;height:${size}px;--r:${up ? 0 : turn}deg">${DECOR[kind]}</div>`;
+    }
+    // Two koi from your collection drift about in every chapter's water
+    for (let k = 0; k < 2; k++) {
+      const n = (c - 1) * PER_CHAPTER + 3 + k * 7, p = g.pos(n), side = p.x > W / 2 ? -1 : 1;
+      const img = ALL_KOI[own.length ? own[(c * 3 + k) % own.length] : [0, 3][k]].img;
+      html += `<div class="map-fish" style="left:${W / 2 + side * W * 0.3}px;top:${p.y}px;--d:${-(c * 2.3 + k * 5.1).toFixed(1)}s;--s:${side}"><img src="${img}" alt=""></div>`;
     }
   }
   // The stream, and the part of it already travelled
   html += `<svg class="stream" width="${W}" height="${g.H}" viewBox="0 0 ${W} ${g.H}" aria-hidden="true">`
-    + `<path class="water" d="${smoothPath(pts)}"/><path class="shine" d="${smoothPath(pts)}"/>`
+    + `<path class="bank" d="${smoothPath(pts)}"/><path class="water" d="${smoothPath(pts)}"/><path class="deep" d="${smoothPath(pts)}"/><path class="shine" d="${smoothPath(pts)}"/>`
     + `<path class="trail" d="${smoothPath(pts.slice(0, doneTo + 1))}"/></svg>`;
   // A gate at the start of every chapter after the first
   for (let c = 1; c <= maxC; c++) {
-    const y = c === 1 ? g.H - 110 : g.gateY(c - 1);
+    const y = c === 1 ? g.H - 150 : g.gateY(c - 1);
     const open = cur > (c - 1) * PER_CHAPTER;
     // The gate also shows the koi waiting for whoever finishes the chapter before it
     const ki = chapterKoiIndex(c - 1), got = ki >= 0 && journey.koi.includes(ki);
@@ -94,7 +104,6 @@ function buildMap() {
       + (done ? `<span class="step-stars">${"★".repeat(st)}<i>${"★".repeat(3 - st)}</i></span>` : "") + `</button>`;
   }
   // Your koi
-  const own = journey.koi.filter(i => koiImages[i]);
   html += `<div class="map-koi" id="mapKoi"><img src="${ALL_KOI[own.length ? own[own.length - 1] : 0].img}" alt=""></div>`;
   world.innerHTML = html;
 }
@@ -103,10 +112,12 @@ function placeMapKoi(n) {
   el.style.left = p.x + "px";
   el.style.top = p.y + "px";
 }
+let mapChapterNow = 1;
 function mapChapterInView() {
   const sc = $("mapScroll"), mid = sc.scrollTop + sc.clientHeight / 2;
   let c = 1;
-  for (let k = 1; mapGeo && k <= 200; k++) { if (mapGeo.gateY(k) - MAP_GATE / 2 > mid) c = k + 1; else break; }
+  for (let k = 1; mapGeo && k <= 200; k++) { if (mapGeo.gateY(k) > mid) c = k + 1; else break; }
+  mapChapterNow = c;
   $("mapChapter").textContent = `Chapter ${c} · ${chapterName(c)}`;
 }
 function openMap() {
@@ -147,9 +158,40 @@ function openMap() {
   } else placeMapKoi(cur);
   journey.mapSeen = cur;
   saveJourney();
+  startMapLife();
 }
-function closeMap() { $("mapView").hidden = true; }
+function closeMap() { $("mapView").hidden = true; stopMapLife(); }
 $("mapScroll").addEventListener("scroll", () => { if (mapGeo) mapChapterInView(); }, { passive: true });
+/* Light moving on the water, and the chapter's petals, leaves, snow or fireflies drifting over the map */
+const mapCv = $("mapFx"), mapCx = mapCv.getContext("2d");
+let mapLife = null;
+function startMapLife() {
+  stopMapLife();
+  if (reduceMotion) return;
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  const life = mapLife = { raf: 0, last: performance.now(), kindName: "", list: [], W: 0, H: 0 };
+  const frame = now => {
+    if (mapLife !== life || $("mapView").hidden) return;
+    life.raf = requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (now - life.last) / 1000);
+    life.last = now;
+    const W = mapCv.clientWidth, H = mapCv.clientHeight;
+    if (W !== life.W || H !== life.H) { life.W = W; life.H = H; mapCv.width = W * dpr; mapCv.height = H * dpr; }
+    mapCx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    mapCx.clearRect(0, 0, W, H);
+    drawShimmer(mapCx, W, H, now / 1000, 0.75);
+    const kindName = SCENES[sceneOfChapter(mapChapterNow)].air, kind = AIR[kindName];
+    if (kindName !== life.kindName) {
+      life.kindName = kindName;
+      if (kind && kind.img) worldImage(kind.img);
+      life.list = kind ? [...Array(Math.round(kind.n * (prefs.calm ? 0.5 : 1)))].map(() => airBit(kind, W, H, false)) : [];
+    }
+    drawAirBits(mapCx, kind, life.list, W, H, dt, now);
+    mapCx.globalAlpha = 1;
+  };
+  life.raf = requestAnimationFrame(frame);
+}
+function stopMapLife() { if (mapLife) cancelAnimationFrame(mapLife.raf); mapLife = null; mapCx.clearRect(0, 0, mapCv.width, mapCv.height); }
 $("mapWorld").addEventListener("click", e => {
   const b = e.target.closest(".step");
   if (!b) return;

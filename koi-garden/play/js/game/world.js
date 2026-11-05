@@ -118,12 +118,9 @@ function airBit(kind, W, H, top) {
   return { x: airRand(0, W), y: top ? airRand(-40, -5) : airRand(0, H), s: airRand(kind.size[0], kind.size[1]) * 1.25,
     v: kind.fall ? airRand(kind.fall[0], kind.fall[1]) * 2.2 : 0, rot: airRand(0, 6.3), spin: airRand(-1.5, 1.5), ph: airRand(0, 6.3) };
 }
-function drawWorld(c, W, H, t) {
-  if (!sceneInfo) return;
-  const now = performance.now(), dt = Math.min(0.05, (now - (worldAir.last || now)) / 1000);
-  worldAir.last = now;
-  const kind = worldAir.kind;
-  if (kind) worldAir.list.forEach((p, i) => {
+// Petals, leaves, snow or fireflies drifting over a canvas: used round the board and on the map
+function drawAirBits(c, kind, list, W, H, dt, now) {
+  if (kind) list.forEach((p, i) => {
     if (kind.float) {
       p.ph += dt * 0.6;
       p.x += Math.cos(p.ph + i) * dt * 9;
@@ -166,6 +163,12 @@ function drawWorld(c, W, H, t) {
       c.shadowBlur = 0;
     }
   });
+}
+function drawWorld(c, W, H, t) {
+  if (!sceneInfo) return;
+  const now = performance.now(), dt = Math.min(0.05, (now - (worldAir.last || now)) / 1000);
+  worldAir.last = now;
+  drawAirBits(c, worldAir.kind, worldAir.list, W, H, dt, now);
   // Dusk: lantern light drifting over the water
   worldAir.glows.forEach((g, i) => {
     g.ph += dt * 0.4;

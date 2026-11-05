@@ -1921,11 +1921,12 @@ html.big { font-size: 120%; }
 
 /* ---------- Journey map: stepping stones up a stream through the garden ---------- */
 .map-view { position: fixed; inset: 0; z-index: 25; background: linear-gradient(180deg, var(--water-deep), var(--water)); }
-.map-scroll { background: url(../img/map/pond.webp) center top / 480px auto local; }
-:root[data-garden="night"] .map-scroll { background: linear-gradient(rgba(10, 14, 50, 0.6), rgba(10, 14, 50, 0.6)) local, url(../img/map/pond.webp) center top / 480px auto local; }
+/* The water is painted on the world itself, at its full width, so its tiles never show a seam */
+.map-world { background: url(../img/map/pond.webp) center top / 100% auto repeat-y; }
+:root[data-garden="night"] .map-world { background: linear-gradient(rgba(10, 14, 50, 0.6), rgba(10, 14, 50, 0.6)), url(../img/map/pond.webp) center top / 100% auto repeat-y; }
 .map-scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
-.map-world { position: relative; margin: 0 auto; }
-.zone { position: absolute; left: -50vw; right: -50vw; background: linear-gradient(180deg, transparent, var(--tint) 12%, var(--tint) 88%, transparent); pointer-events: none; }
+.map-world { position: relative; margin: 0 auto; overflow: hidden; }
+.zone { position: absolute; left: 0; right: 0; background: linear-gradient(180deg, transparent, var(--tint) 12%, var(--tint) 88%, transparent); pointer-events: none; }
 .decor { position: absolute; transform: rotate(var(--r)); opacity: 0.92; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25)); }
 .decor svg, .decor img { width: 100%; height: 100%; max-width: none; object-fit: contain; }
 .decor.d-koi { animation: map-koi-drift 9s ease-in-out infinite; opacity: 0.8; }
@@ -1933,7 +1934,9 @@ html.big { font-size: 120%; }
 @keyframes map-koi-drift { 50% { transform: rotate(var(--r)) translate(14px, -10px); } }
 .stream { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
 .stream path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.stream .water { stroke: color-mix(in srgb, var(--water-hi) 70%, #bfeaf0); stroke-width: 46; opacity: 0.55; }
+.stream .bank { stroke: rgba(4, 34, 40, 0.28); stroke-width: 66; }
+.stream .water { stroke: color-mix(in srgb, var(--water-hi) 60%, #c6eef2); stroke-width: 50; opacity: 0.6; }
+.stream .deep { stroke: color-mix(in srgb, var(--water-hi) 80%, #e8fbfb); stroke-width: 24; opacity: 0.35; }
 .stream .shine { stroke: rgba(255, 255, 255, 0.35); stroke-width: 3; stroke-dasharray: 2 26; animation: stream-flow 3s linear infinite; }
 .stream .trail { stroke: color-mix(in srgb, var(--gold) 70%, white); stroke-width: 5; stroke-dasharray: 1 13; opacity: 0.9; }
 @keyframes stream-flow { to { stroke-dashoffset: -56; } }
@@ -1941,13 +1944,13 @@ html.big { font-size: 120%; }
 /* A stepping stone: a painted stone, tinted by its state (multiply keeps the stone's texture) */
 .step {
   position: absolute;
-  width: 66px; height: 66px;
-  margin: -33px 0 0 -33px;
+  width: 72px; height: 72px;
+  margin: -36px 0 0 -36px;
   border: 0;
   border-radius: 50%;
   background: none;
   color: #4a4234;
-  font: 900 1.3rem var(--display);
+  font: 900 1.4rem var(--display);
   cursor: pointer;
   filter: drop-shadow(0 4px 0 rgba(40, 30, 10, 0.35)) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.3));
   transition: transform 0.12s var(--ease-out);
@@ -1976,7 +1979,8 @@ html.big { font-size: 120%; }
 .step.locked::before { background-image: url(../img/map/step-grey.webp); -webkit-mask-image: url(../img/map/step-grey.webp); mask-image: url(../img/map/step-grey.webp); --stone-tint: #b8c0c6; }
 .step.hard:not(.locked) { outline: 3px solid #c8402e; outline-offset: 0; }
 .hard-tag { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); padding: 1px 6px; border-radius: 999px; background: #c8402e; color: #fff; font: 700 0.55rem var(--body); letter-spacing: 0.1em; text-shadow: none; }
-.step-stars { position: absolute; left: 50%; bottom: -20px; transform: translateX(-50%); font-size: 0.85rem; letter-spacing: 1px; white-space: nowrap; color: var(--gold); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
+.step-stars { position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%); padding: 1px 7px 2px; border-radius: 999px; line-height: 1.1;
+  background: rgba(6, 38, 44, 0.72); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25); font-size: 0.78rem; letter-spacing: 1px; white-space: nowrap; color: var(--gold); text-shadow: none; }
 .step-stars i { font-style: normal; color: rgba(255, 255, 255, 0.35); }
 /* A newly opened stone rises out of the water */
 .step.rising { transform: scale(0.6); opacity: 0.4; }
@@ -2029,9 +2033,14 @@ html.big { font-size: 120%; }
   align-items: center;
   gap: 10px;
   padding: calc(env(safe-area-inset-top, 0px) + 10px) max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px));
-  background: linear-gradient(180deg, var(--water-deep) 55%, transparent);
+  padding-bottom: 30px;
+  background: linear-gradient(180deg, var(--water-deep) 0, color-mix(in srgb, var(--water-deep) 85%, transparent) 55%, transparent);
+  pointer-events: none;
 }
-.map-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; color: var(--on-water); text-align: center; }
+.map-top > * { pointer-events: auto; }
+.map-title { flex: 0 1 auto; margin: 0 auto; min-width: 0; display: flex; flex-direction: column; align-items: center; color: var(--on-water); text-align: center;
+  padding: 6px 14px 7px; border-radius: 18px; background: color-mix(in srgb, var(--water-deep) 70%, transparent); box-shadow: inset 0 0 0 1px var(--glass-line);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .map-title > b { font: 900 1.15rem var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .map-title span { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: var(--on-water-muted); }
 .map-title span b { color: var(--gold); }
@@ -2406,3 +2415,30 @@ html.big { font-size: 120%; }
   .cell.dragonfly::after, .cell.dragonfly::before, .cell.filled.glow, .cell.nudge, .card.thump, .fest-sky i, .fest-koi img, .tap-ring, .board-pulse { animation: none; }
 }
 .calm .cell.filled.glow, .calm .cell.nudge, .calm .card.thump { animation: none; }
+
+/* ---------- The map, made livelier ---------- */
+.map-fx { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+/* A view into each chapter's garden at its gate, softly fading into the water */
+.gate-garden { position: absolute; left: 50%; width: min(130%, 560px); height: 360px; margin-top: -30px; transform: translateX(-50%); pointer-events: none;
+  background: center 48% / cover no-repeat; opacity: 0.95;
+  -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 40%, rgba(0, 0, 0, 0.6) 62%, transparent 100%);
+  mask-image: radial-gradient(ellipse 50% 50% at 50% 50%, #000 40%, rgba(0, 0, 0, 0.6) 62%, transparent 100%); }
+.gate-garden.shut { filter: saturate(0.65) brightness(0.82); opacity: 0.85; }
+:root[data-garden="night"] .gate-garden { filter: brightness(0.55) saturate(0.75); }
+:root[data-garden="night"] .gate-garden.shut { filter: saturate(0.5) brightness(0.45); }
+.gate-sign { box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 2px #b5452e; }
+/* Koi from your collection swimming lazy loops in the water beside the path */
+.map-fish { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 0; animation: map-fish 16s linear infinite; animation-delay: var(--d, 0s); }
+.map-fish img { position: absolute; left: -30px; top: -11px; width: 60px; max-width: none; opacity: 0.85; filter: drop-shadow(4px 8px 4px rgba(0, 0, 0, 0.3));
+  animation: map-fish-wiggle 0.9s ease-in-out infinite alternate; }
+@keyframes map-fish {
+  0% { transform: translate(0, 0) rotate(-90deg); }
+  25% { transform: translate(calc(var(--s) * 34px), -60px) rotate(-30deg); }
+  50% { transform: translate(0, -120px) rotate(90deg); }
+  75% { transform: translate(calc(var(--s) * -34px), -60px) rotate(150deg); }
+  100% { transform: translate(0, 0) rotate(270deg); }
+}
+@keyframes map-fish-wiggle { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+.decor { filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.28)); }
+.step.locked { opacity: 0.9; }
+@media (prefers-reduced-motion: reduce) { .map-fish, .map-fish img { animation: none; } }
