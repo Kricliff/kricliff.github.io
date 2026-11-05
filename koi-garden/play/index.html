@@ -89,7 +89,7 @@
     <div class="home-side r">
       <button class="hb" id="homeDaily"><span class="hb-icon cal"><b>1</b></span><span class="hb-label">Daily</span></button>
       <button class="hb" id="homeKoi"><span class="hb-icon"><img src="img/koi/01-kohaku.png" alt=""></span><span class="hb-label">Koi</span></button>
-      <button class="hb" id="homeGarden"><span class="hb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16"/><path d="M6 21v-5h12v5"/><path d="M4 16h16L12 9z"/><path d="M12 9V5"/><path d="M9.5 5h5"/></svg><i class="hb-dot" id="gardenDot" hidden></i></span><span class="hb-label">Garden</span></button>
+      <button class="hb" id="homeGarden"><span class="hb-icon"><img class="paint" src="img/ui/bonsai.webp" alt=""><i class="hb-dot" id="gardenDot" hidden></i></span><span class="hb-label">Garden</span></button>
     </div>
     <div class="home-bottom">
       <button class="home-play" id="homePlay"><b>Level 1</b><small></small><span class="home-boost" id="homeBoost" hidden>×1</span></button>
@@ -159,6 +159,7 @@
 
   <div class="card" id="winCard" hidden>
     <span class="bank" id="winBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+    <img class="win-leap" src="img/ui/koi-leap.webp" alt="">
     <p class="eyebrow" id="winEyebrow">Level 1 complete</p>
     <div class="big-stars" id="winStars">★★★</div>
     <div class="big-num" id="winScore">0</div>
@@ -175,6 +176,7 @@
   </div>
 
   <div class="card" id="failCard" hidden>
+    <img class="card-pic frog" src="img/ui/frog-pad.webp" alt="">
     <p class="eyebrow" id="failEyebrow">Out of pieces</p>
     <h2 id="failTitle">So close</h2>
     <span class="goal-badge" id="failProgress"></span>
@@ -384,7 +386,7 @@
   <div class="card" id="streakCard" hidden>
     <span class="bank" id="streakBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
     <p class="eyebrow">Daily streak</p>
-    <div class="medal" id="streakNum">7</div>
+    <div class="medal charm" id="streakNum">7</div>
     <h2 id="streakTitle">Save your streak?</h2>
     <p id="streakText">You missed yesterday’s Daily. Save your streak and keep going from today.</p>
     <div class="btns">
@@ -403,6 +405,7 @@
   </div>
 
   <div class="card" id="breakCard" hidden>
+    <img class="card-pic cairn" src="img/ui/cairn.webp" alt="">
     <p class="eyebrow">Mind break · 3 breaths</p>
     <div class="breath"><div class="ring" id="ring"></div><div class="label"><span id="breathText">Get ready</span><span class="count" id="breathCount"></span></div></div>
     <p id="tip"></p>
