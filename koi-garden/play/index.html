@@ -234,6 +234,7 @@
         <ul class="rules">
           <li><b>Endless:</b> the higher your score, the bigger the pieces. From 800 points a rock falls into the pond every 8 moves.</li>
           <li><b>Daily:</b> everyone gets the same board and the same 30 pieces. Your first try counts for your streak. Hint, undo and swap are off.</li>
+          <li>Missed a day? Save your streak with pearls or a short video, once a week.</li>
         </ul>
       </details>
       <details>
@@ -313,6 +314,8 @@
       <label class="field toggle" for="musicOn"><span>Music<small>Calm koto and water, made as you play</small></span><input type="checkbox" id="musicOn"></label>
       <input type="range" class="vol" id="musicVol" min="0" max="100" step="5" aria-label="Music volume">
     </div>
+    <div class="mood-head"><span>Music mood</span><span class="mood-bank"><i class="pearl"></i><b id="moodBank">0</b></span></div>
+    <div class="mood-row" id="moodRow"></div>
     <label class="field toggle" for="bigToggle"><span>Big &amp; clear<small>Larger pieces and text</small></span><input type="checkbox" id="bigToggle"></label>
     <label class="field toggle" for="calmToggle"><span>Calm effects<small>No shaking, fewer particles</small></span><input type="checkbox" id="calmToggle"></label>
     <label class="field toggle" for="statsOn" id="statsRow" hidden><span>Share anonymous play stats<small>Which levels are hard and how far players get. Never who you are.</small></span><input type="checkbox" id="statsOn"></label>
@@ -375,6 +378,20 @@
     <p class="note" id="eventHow">Clear lines in any mode to light lanterns. A Harmony square lights three.</p>
     <p class="eyebrow" id="eventNext"></p>
     <div class="btns"><button class="btn primary" id="eventDone">Back</button></div>
+  </div>
+
+  <div class="card" id="streakCard" hidden>
+    <span class="bank" id="streakBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+    <p class="eyebrow">Daily streak</p>
+    <div class="medal" id="streakNum">7</div>
+    <h2 id="streakTitle">Save your streak?</h2>
+    <p id="streakText">You missed yesterday’s Daily. Save your streak and keep going from today.</p>
+    <div class="btns">
+      <button class="btn primary" id="streakPearls"></button>
+      <button class="btn" id="streakVideo"><span class="tag">Ad</span>Watch a short video</button>
+      <button class="btn" id="streakLater">Not now</button>
+    </div>
+    <p class="note">You can save a streak once a week.</p>
   </div>
 
   <div class="card" id="infoCard" hidden>
@@ -542,9 +559,21 @@
   <canvas id="pondCanvas" aria-label="Your koi pond"></canvas>
   <div class="pond-bar">
     <div class="pond-title"><b>Your koi pond</b><span id="pondCount"></span></div>
-    <button class="btn primary" id="pondDone">Back</button>
+    <span class="pond-btns">
+      <button class="btn" id="pondDecorate"><img src="img/map/lantern.webp" alt=""> Decorate</button>
+      <button class="btn primary" id="pondDone">Back</button>
+    </span>
   </div>
   <p class="pond-hint" id="pondHint">Tap the water and your koi swim over. Tap a koi to see its name.</p>
+  <div class="pond-shop" id="pondShop" hidden>
+    <div class="pond-shop-head">
+      <b>Decorate your pond</b>
+      <span class="bank" id="pondBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+      <button class="icon-btn" id="pondShopClose" aria-label="Close">✕</button>
+    </div>
+    <p class="note" id="pondShopNote">Buy with pearls. Tap something you own to show or hide it.</p>
+    <div class="pond-grid" id="pondGrid"></div>
+  </div>
 </div>
 
 <canvas class="fx" id="fx" aria-hidden="true"></canvas>

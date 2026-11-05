@@ -522,24 +522,49 @@ function updateModes() {
   $("modeDaily").classList.toggle("new", !playedOfficial() && S.mode !== "daily");
   const nudge = $("nudge");
   let msg = "";
-  if (canRestore()) msg = `Your <b>${daily.streak}-day streak</b> slipped yesterday. Watch a short video to save it.`;
+  if (canRestore()) msg = `Your <b>${daily.streak}-day streak</b> slipped yesterday. Tap to save it with pearls or a short video.`;
   else if (S.mode !== "daily" && daily.last === dayOffset(-1) && daily.streak > 0) msg = `Keep your <b>${daily.streak}-day streak</b> alive. Today’s daily is waiting.`;
   nudge.innerHTML = msg;
   if (nudge.hidden === !!msg) { nudge.hidden = !msg; requestAnimationFrame(layout); }
 }
 $("nudge").addEventListener("click", () => {
   if (!overlay.hidden || drag) return;
-  if (canRestore()) {
-    showAd("streak", () => {
-      daily.last = dayOffset(-1);
-      daily.restoredOn = today().key;
-      saveDaily();
-      closeOverlay();
-      render();
-      bowl(4);
-    });
-  } else switchMode("daily");
+  if (canRestore()) openStreakSave();
+  else switchMode("daily");
 });
+/* Saving a slipped Daily streak: with pearls, or with a short video. Either way at most once a week. */
+const STREAK_SAVE_COST = 150;
+function restoreStreak() {
+  daily.last = dayOffset(-1);
+  daily.restoredOn = today().key;
+  saveDaily();
+  closeOverlay();
+  render();
+  bowl(4);
+  setTimeout(() => toast(`${daily.streak}-day streak saved`), 200);
+}
+function openStreakSave() {
+  $("streakNum").textContent = daily.streak;
+  $("streakTitle").textContent = `Save your ${daily.streak}-day streak?`;
+  $("streakBank").querySelector("b").textContent = journey.pearls;
+  const b = $("streakPearls"), can = journey.pearls >= STREAK_SAVE_COST;
+  b.disabled = !can;
+  b.innerHTML = `<span class="cost-tag"><i class="pearl"></i>${STREAK_SAVE_COST}</span>Save with pearls`
+    + (can ? "" : ` <small>· ${STREAK_SAVE_COST - journey.pearls} more needed</small>`);
+  openCard("streakCard");
+}
+$("streakPearls").addEventListener("click", () => {
+  if (!canRestore() || journey.pearls < STREAK_SAVE_COST) return;
+  journey.pearls -= STREAK_SAVE_COST;
+  saveJourney();
+  track("buy", { data: { kind: "streak", pearls: STREAK_SAVE_COST } });
+  const r = $("streakNum").getBoundingClientRect();
+  sparkBurst(r.left + r.width / 2, r.top + r.height / 2, 26);
+  chime(true);
+  restoreStreak();
+});
+$("streakVideo").addEventListener("click", () => { if (canRestore()) showAd("streak", restoreStreak); });
+$("streakLater").addEventListener("click", () => closeOverlay());
 
 function notifCopy() {
   const s = liveStreak();

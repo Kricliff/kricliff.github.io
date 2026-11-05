@@ -2,7 +2,7 @@
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
 /* ---------- Overlays ---------- */
-const cards = ["promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "styleCard", "testerCard", "jokerCard", "shopCard"];
+const cards = ["promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "styleCard", "testerCard", "jokerCard", "shopCard"];
 function openCard(id) {
   clearSurprises();
   overlay.hidden = false;

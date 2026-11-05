@@ -205,16 +205,30 @@ function stillSound() { if (sfxOk()) { const t = ac.currentTime; [10, 12, 14, 15
 const SCALE = [0, 2, 5, 7, 9];  // a Japanese yo scale on D: D E G A B
 const ROOT = 146.83;             // D3
 const hz = deg => { const o = Math.floor(deg / 5), k = ((deg % 5) + 5) % 5; return ROOT * 2 ** (o + SCALE[k] / 12); };
-const CHORDS = [[0, 3, 6], [2, 5, 7], [-1, 1, 3], [1, 3, 6]];
-const BAR = 4.8;                 // four slow beats
+/* Music moods: the same garden music in other weathers. Koi Garden is free; the others are bought with pearls in
+   Settings and kept in journey.owned as "music-<id>", so iCloud keeps them. Each mood sets the chords, the pace
+   (one bar is four beats), how high and how busy the koto melody is, how dark the pad, and its own extra layer:
+   rain and drips, high night bells, or a soft taiko drum. */
+const MOODS = {
+  garden: { name: "Koi Garden", about: "Koto and water", price: 0, bar: 4.8, chords: [[0, 3, 6], [2, 5, 7], [-1, 1, 3], [1, 3, 6]],
+    melody: [4, 13], density: 0.38, cut: 760, nightCut: 520, padGain: 0.03, root: -5, bells: 0.2 },
+  rain: { name: "Rain on the Pond", about: "Slow and soft, with rain", price: 200, bar: 6.4, chords: [[0, 2, 4], [-2, 1, 3], [-1, 2, 4], [-3, 0, 2]],
+    melody: [3, 10], density: 0.22, cut: 560, nightCut: 430, padGain: 0.034, root: -5, bells: 0.06, rain: true },
+  night: { name: "Moon Night", about: "Deep, with night bells", price: 250, bar: 5.6, chords: [[-2, 1, 3], [-1, 2, 4], [-3, 0, 3], [-2, 0, 2]],
+    melody: [2, 9], density: 0.26, cut: 470, nightCut: 400, padGain: 0.036, root: -10, bells: 0.45, highBells: true },
+  festival: { name: "Lantern Festival", about: "Bright, with a taiko drum", price: 300, bar: 3.8, chords: [[0, 3, 6], [1, 3, 6], [2, 5, 7], [0, 2, 5]],
+    melody: [6, 15], density: 0.5, cut: 940, nightCut: 660, padGain: 0.024, root: -5, bells: 0.15, drum: true }
+};
+let previewMood = null;
+const mood = () => MOODS[previewMood || audio.mood] || MOODS.garden;
 let musicTimer = 0, nextBar = 0, bar = 0, melody = 7, water = null;
 function pad(chord, t, len) {
-  const lp = ac.createBiquadFilter(), g = ac.createGain();
+  const lp = ac.createBiquadFilter(), g = ac.createGain(), M = mood();
   lp.type = "lowpass";
-  lp.frequency.value = isNight() ? 520 : 760;
+  lp.frequency.value = isNight() ? M.nightCut : M.cut;
   g.gain.setValueAtTime(0, t);
-  g.gain.linearRampToValueAtTime(0.03, t + 2.5);
-  g.gain.setValueAtTime(0.03, t + len - 1);
+  g.gain.linearRampToValueAtTime(M.padGain, t + 2.5);
+  g.gain.setValueAtTime(M.padGain, t + len - 1);
   g.gain.linearRampToValueAtTime(0, t + len + 2);
   chord.forEach(d => [-4, 4].forEach(cents => {
     const o = ac.createOscillator();
@@ -228,24 +242,64 @@ function pad(chord, t, len) {
   lp.connect(g).connect(musicBus);
   send(g, musicRev, 0.5);
 }
+// A soft taiko: a low skin tone that drops in pitch, and a little thud of noise
+function taiko(t, vol) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = "sine";
+  o.frequency.setValueAtTime(110, t);
+  o.frequency.exponentialRampToValueAtTime(48, t + 0.35);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+  o.connect(g).connect(musicBus);
+  send(g, musicRev, 0.25);
+  o.start(t);
+  o.stop(t + 0.65);
+}
 function playBar(t, n) {
-  const chord = CHORDS[Math.floor(n / 2) % CHORDS.length];
+  const M = mood(), BAR = M.bar;
+  const chord = M.chords[Math.floor(n / 2) % M.chords.length];
   if (n % 2 === 0) pad(chord, t, BAR * 2);
-  pluck(hz(chord[0] - 5), t, 0.05, 3.5, true, 0.3);
+  pluck(hz(chord[0] + M.root), t, 0.05, 3.5, true, 0.3);
   // A short phrase on three bars of four; the fourth rests
   if (n % 4 !== 3) {
-    const beats = [0, 0.5, 1, 1.5, 2, 2.5, 3].filter(() => Math.random() < 0.38);
+    const beats = [0, 0.5, 1, 1.5, 2, 2.5, 3].filter(() => Math.random() < M.density);
     beats.forEach(b => {
-      melody = Math.max(4, Math.min(13, melody + [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)]));
+      melody = Math.max(M.melody[0], Math.min(M.melody[1], melody + [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)]));
       pluck(hz(melody), t + b * BAR / 4, 0.045 + Math.random() * 0.02, 2.4, true, 0.5);
     });
   }
-  if (Math.random() < 0.2) bell(hz(12 + Math.floor(Math.random() * 5)), t + Math.random() * BAR, 0.012, true);
+  if (Math.random() < M.bells) bell(hz((M.highBells ? 15 : 12) + Math.floor(Math.random() * 5)), t + Math.random() * BAR, 0.012, true);
+  // Rain: drops falling off the eaves into the pond, high and quiet
+  if (M.rain) for (let k = 0; k < 3; k++) if (Math.random() < 0.6) pluck(hz(16 + Math.floor(Math.random() * 4)), t + Math.random() * BAR, 0.01, 0.5, true, 0.6);
+  // The festival drum: on the first and third beat, with a light double hit before the bar ends now and then
+  if (M.drum) {
+    taiko(t, 0.07);
+    taiko(t + BAR / 2, 0.05);
+    if (n % 2 === 1) { taiko(t + BAR * 0.875, 0.03); taiko(t + BAR * 0.9375, 0.035); }
+  }
 }
 function scheduleMusic() {
   if (!ac || ac.state !== "running") return;
   if (nextBar < ac.currentTime) nextBar = ac.currentTime + 0.1;
-  while (nextBar < ac.currentTime + 1.5) { playBar(nextBar, bar++); nextBar += BAR; }
+  while (nextBar < ac.currentTime + 1.5) { playBar(nextBar, bar++); nextBar += mood().bar; }
+}
+// Rain on the pond: a soft hiss that comes and goes, under the music
+function startRain() {
+  const n = ac.createBufferSource(), hp = ac.createBiquadFilter(), lp = ac.createBiquadFilter(), g = ac.createGain(), lfo = ac.createOscillator(), depth = ac.createGain();
+  n.buffer = noiseBuf;
+  n.loop = true;
+  n.playbackRate.value = 0.9;
+  hp.type = "highpass"; hp.frequency.value = 1800;
+  lp.type = "lowpass"; lp.frequency.value = 6500;
+  g.gain.value = 0.011;
+  lfo.frequency.value = 0.11;
+  depth.gain.value = 0.004;
+  lfo.connect(depth).connect(g.gain);
+  n.connect(hp).connect(lp).connect(g).connect(musicBus);
+  n.start();
+  lfo.start();
+  return { stop: () => { try { n.stop(); lfo.stop(); } catch (e) {} } };
 }
 // Quiet water under everything: low filtered noise that swells and settles
 function startWater() {
@@ -263,10 +317,12 @@ function startWater() {
   lfo.start();
   return { stop: () => { try { n.stop(); lfo.stop(); } catch (e) {} } };
 }
+let rain = null;
 function startMusic() {
   if (musicTimer || !ac) return;
   nextBar = ac.currentTime + 0.3;
   water = startWater();
+  if (mood().rain) rain = startRain();
   scheduleMusic();
   musicTimer = setInterval(scheduleMusic, 400);
 }
@@ -274,7 +330,74 @@ function stopMusic() {
   clearInterval(musicTimer);
   musicTimer = 0;
   if (water) { water.stop(); water = null; }
+  if (rain) { rain.stop(); rain = null; }
 }
+// A new mood starts on the next bar: what is already sounding rings out
+function restartMusic() {
+  if (!musicTimer) return;
+  stopMusic();
+  melody = Math.round((mood().melody[0] + mood().melody[1]) / 2);
+  startMusic();
+}
+const moodOwned = id => !MOODS[id].price || (journey.owned || []).includes("music-" + id);
+let moodBuying = null, moodTimer = 0;
+function setMood(id) {
+  audio.mood = id;
+  saveAudio();
+  restartMusic();
+}
+function endPreview() {
+  clearTimeout(moodTimer);
+  if (!previewMood) return;
+  previewMood = null;
+  moodBuying = null;
+  restartMusic();
+  paintMoods();
+}
+function paintMoods() {
+  const row = $("moodRow");
+  if (!row) return;
+  if (!MOODS[audio.mood] || !moodOwned(audio.mood)) audio.mood = "garden";
+  $("moodBank").textContent = journey.pearls;
+  row.innerHTML = Object.entries(MOODS).map(([id, M]) => {
+    const own = moodOwned(id), on = (audio.mood || "garden") === id && !previewMood, hear = previewMood === id;
+    const listen = audio.musicOn ? "tap to listen" : "turn on music to listen";
+    const status = on ? (audio.musicOn ? "Playing" : "Chosen") : own ? "Tap to play"
+      : hear ? (journey.pearls >= M.price ? `Tap again to buy · ${M.price}` : `${M.price - journey.pearls} more pearls`)
+      : `<i class="pearl"></i> ${M.price} · ${listen}`;
+    return `<button class="mood${on ? " on" : ""}${hear ? " hear" : ""}${own ? "" : " locked"}" data-id="${id}"><b>${M.name}</b><span>${M.about}</span><small>${status}</small></button>`;
+  }).join("");
+}
+$("moodRow").addEventListener("click", e => {
+  const b = e.target.closest(".mood");
+  if (!b) return;
+  const id = b.dataset.id, M = MOODS[id];
+  audioInit();
+  if (moodOwned(id)) { clearTimeout(moodTimer); previewMood = null; moodBuying = null; setMood(id); paintMoods(); return; }
+  // First tap: listen for a little while. Second tap while it plays: buy it.
+  if (previewMood === id && journey.pearls >= M.price) {
+    journey.pearls -= M.price;
+    if (!journey.owned) journey.owned = [];
+    journey.owned.push("music-" + id);
+    saveJourney();
+    track("buy", { data: { kind: "music", id, pearls: M.price } });
+    clearTimeout(moodTimer);
+    previewMood = null;
+    setMood(id);
+    paintMoods();
+    const r = b.getBoundingClientRect();
+    sparkBurst(r.left + r.width / 2, r.top + r.height / 2, 22);
+    bowl(6, 0.05);
+    buzz([12, 30, 12]);
+    return;
+  }
+  previewMood = id;
+  restartMusic();
+  if (!musicTimer && audio.musicOn) startMusic();
+  clearTimeout(moodTimer);
+  moodTimer = setTimeout(endPreview, 16000);
+  paintMoods();
+});
 // Leaving the app quiets everything; coming back picks up where it was
 document.addEventListener("visibilitychange", () => {
   if (!ac) return;
@@ -284,6 +407,7 @@ document.addEventListener("visibilitychange", () => {
 
 /* Settings: a switch and a slider for effects, and the same for music */
 function syncAudioUI() {
+  paintMoods();
   [["sfx", "sfxOn", "sfxVol"], ["music", "musicOn", "musicVol"]].forEach(([k, on, vol]) => {
     $(on).checked = audio[k + "On"];
     const r = $(vol);

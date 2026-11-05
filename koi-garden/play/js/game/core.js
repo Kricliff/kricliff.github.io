@@ -351,7 +351,8 @@ const parseOr = (v, d) => { try { return v ? JSON.parse(v) : d; } catch (e) { re
 function journeyRank(v) {
   const j = parseOr(v, {});
   const stars = Object.values(j.stars || {}).reduce((a, b) => a + (+b || 0), 0);
-  return [j.unlocked || 0, (j.koi || []).length, stars, (j.owned || []).length, ((j.garden || {}).bought || []).length, j.rev || 0];
+  return [j.unlocked || 0, (j.koi || []).length, stars, (j.owned || []).length, ((j.garden || {}).bought || []).length,
+    ((j.pond || {}).owned || []).length, j.rev || 0];
 }
 const dailyRank = v => { const d = parseOr(v, {}); return [d.last || "", d.streak || 0]; };
 const ahead = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] > b[i]; return false; };

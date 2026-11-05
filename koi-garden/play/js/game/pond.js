@@ -191,6 +191,129 @@ function drawPad(c, p) {
   c.drawImage(sp.cv, -sp.half, -sp.half, sp.half * 2, sp.half * 2);
   c.restore();
 }
+/* ---------- Decorations for the pond, bought with pearls ----------
+   Each has its own place, kept clear of the others and of the open water in the middle where the koi swim. Floating
+   things (lilies, lotus, lanterns) ride the water under the koi; the rest stand over them, so a koi can pass under the
+   bridge. Owned decorations live in journey.pond (so iCloud keeps them); hidden ones stay owned. */
+const POND_DECOR = [
+  { id: "lilies", name: "Water lilies", img: "img/map/pad.webp", price: 80, spots: [[0.2, 0.62, 0.17], [0.8, 0.5, 0.14], [0.3, 0.27, 0.13]], float: true },
+  { id: "reeds", name: "Reeds", img: "img/map/reeds.webp", price: 100, spots: [[0.07, 0.5, 0.22], [0.94, 0.62, 0.2]] },
+  { id: "rocks", name: "Mossy rocks", img: "img/map/rock.webp", price: 120, spots: [[0.9, 0.86, 0.22]] },
+  { id: "lotus", name: "White lotus", img: "img/ui/lotus-white.webp", price: 150, spots: [[0.7, 0.78, 0.22]], float: true },
+  { id: "toro", name: "Floating lanterns", img: "img/ui/toro.webp", price: 200, spots: [[0.42, 0.7, 0.24]], float: true, glow: true },
+  { id: "lantern", name: "Stone lantern", img: "img/map/lantern.webp", price: 220, spots: [[0.12, 0.17, 0.26]] },
+  { id: "basin", name: "Stone basin", img: "img/ui/basin.webp", price: 250, spots: [[0.88, 0.17, 0.24]] },
+  { id: "bamboo", name: "Bamboo grove", img: "img/ui/bamboo-clump.webp", price: 260, spots: [[0.09, 0.9, 0.34]] },
+  { id: "fountain", name: "Bamboo fountain", img: "img/ui/fountain.webp", price: 320, spots: [[0.88, 0.36, 0.27]] },
+  { id: "pine", name: "Island pine", img: "img/map/pine.webp", price: 380, spots: [[0.13, 0.37, 0.3]] },
+  { id: "bridge", name: "Red bridge", img: "img/map/bridge.webp", price: 450, spots: [[0.52, 0.47, 0.62]] },
+  { id: "cherry", name: "Cherry tree", img: "img/map/blossom.webp", price: 500, spots: [[0.86, 0.7, 0.36]] },
+  { id: "maple", name: "Red maple", img: "img/map/maple.webp", price: 500, spots: [[0.14, 0.74, 0.34]] },
+  { id: "torii", name: "Torii gate", img: "img/map/torii.webp", price: 650, spots: [[0.5, 0.17, 0.42]] },
+  { id: "pagoda", name: "Pagoda", img: "img/map/pagoda.webp", price: 800, spots: [[0.5, 0.9, 0.3]] }
+];
+const pondDecorImages = {};
+const pondState = () => journey.pond || (journey.pond = { owned: [], hidden: [] });
+const decorOwned = d => pondState().owned.includes(d.id);
+const decorShown = d => decorOwned(d) && !pondState().hidden.includes(d.id);
+function decorImage(d) {
+  if (!pondDecorImages[d.img]) { pondDecorImages[d.img] = new Image(); pondDecorImages[d.img].src = d.img; }
+  return pondDecorImages[d.img];
+}
+// Every placed piece, nearest the bottom drawn last, so things lower on the screen stand in front
+function decorPieces(floating) {
+  const W = innerWidth, H = innerHeight, unit = Math.min(W, H * 0.62);
+  const list = [];
+  POND_DECOR.forEach(d => {
+    if (!decorShown(d) || !!d.float !== floating) return;
+    d.spots.forEach(([fx, fy, fs], k) => list.push({ d, k, x: fx * W, y: fy * H, s: fs * unit }));
+  });
+  return list.sort((a, b) => a.y - b.y);
+}
+function drawDecor(c, floating, t) {
+  decorPieces(floating).forEach(p => {
+    const im = decorImage(p.d);
+    if (!im.complete || !im.naturalWidth) return;
+    c.save();
+    let x = p.x, y = p.y;
+    if (floating) { x += Math.sin(t * 0.4 + p.k * 2) * 3; y += Math.cos(t * 0.33 + p.k) * 2; }
+    c.translate(x, y);
+    if (floating) c.rotate(Math.sin(t * 0.25 + p.k) * 0.05);
+    if (p.d.glow) {
+      const g = c.createRadialGradient(0, 0, 0, 0, 0, p.s * 0.75);
+      g.addColorStop(0, `rgba(255, 190, 110, ${isNight() ? 0.45 : 0.25})`);
+      g.addColorStop(1, "rgba(255, 170, 90, 0)");
+      c.fillStyle = g;
+      c.beginPath(); c.arc(0, 0, p.s * 0.75, 0, 6.283); c.fill();
+    }
+    // A soft shadow on the water under things that stand in it
+    if (!floating) {
+      c.fillStyle = "rgba(0, 20, 25, 0.22)";
+      c.beginPath(); c.ellipse(p.s * 0.06, p.s * 0.36, p.s * 0.4, p.s * 0.12, 0, 0, 6.283); c.fill();
+    }
+    if (isNight() && !p.d.glow) c.filter = "brightness(0.6) saturate(0.8)";
+    c.drawImage(im, -p.s / 2, -p.s / 2, p.s, p.s);
+    c.filter = "none";
+    c.restore();
+  });
+}
+function paintPondShop() {
+  $("pondBank").querySelector("b").textContent = journey.pearls;
+  $("pondGrid").innerHTML = POND_DECOR.map(d => {
+    const owned = decorOwned(d), shown = decorShown(d);
+    const status = owned ? (shown ? "In your pond" : "Hidden · tap to show")
+      : pondBuying === d.id ? "Tap again to buy" : `<i class="pearl"></i> ${d.price}`;
+    return `<button class="pond-item${owned ? " owned" : ""}${shown ? " on" : ""}${pondBuying === d.id ? " confirm" : ""}${!owned && journey.pearls < d.price ? " short" : ""}" data-id="${d.id}">`
+      + `<img src="${d.img}" alt=""><b>${d.name}</b><small>${status}</small></button>`;
+  }).join("");
+  const n = pondState().owned.length;
+  $("pondShopNote").textContent = n ? `${n} of ${POND_DECOR.length} decorations. Tap one you own to show or hide it.` : "Buy decorations with pearls. They stay in your pond for good.";
+}
+let pondBuying = null, pondBuyTimer = 0;
+$("pondDecorate").addEventListener("click", () => { pondBuying = null; paintPondShop(); $("pondShop").hidden = false; $("pondHint").hidden = true; });
+$("pondShopClose").addEventListener("click", () => { $("pondShop").hidden = true; $("pondHint").hidden = false; });
+$("pondGrid").addEventListener("click", e => {
+  const b = e.target.closest(".pond-item");
+  if (!b) return;
+  const d = POND_DECOR.find(x => x.id === b.dataset.id), st = pondState();
+  clearTimeout(pondBuyTimer);
+  if (decorOwned(d)) {
+    st.hidden = decorShown(d) ? st.hidden.concat(d.id) : st.hidden.filter(x => x !== d.id);
+    saveJourney();
+    pondBuying = null;
+    tick();
+    paintPondShop();
+    if (reduceMotion) drawPond();
+    return;
+  }
+  if (journey.pearls < d.price) {
+    pondBuying = null;
+    paintPondShop();
+    const tile = $("pondGrid").querySelector(`[data-id="${d.id}"]`);
+    tile.querySelector("small").textContent = `${d.price - journey.pearls} more pearls needed`;
+    restartClass(tile, "nope");
+    knock();
+    return;
+  }
+  if (pondBuying !== d.id) {
+    pondBuying = d.id;
+    paintPondShop();
+    pondBuyTimer = setTimeout(() => { pondBuying = null; paintPondShop(); }, 3500);
+    return;
+  }
+  // Bought: it appears in the pond with a splash and a ring of gold where it stands
+  pondBuying = null;
+  journey.pearls -= d.price;
+  st.owned.push(d.id);
+  saveJourney();
+  track("buy", { data: { kind: "pond", id: d.id, pearls: d.price } });
+  paintPondShop();
+  const p = decorPieces(!!d.float).find(q => q.d === d);
+  if (p) { sparkBurst(p.x, p.y, 26); splash(p.x, p.y + p.s * 0.3, 0); }
+  bowl(6, 0.05);
+  buzz([12, 30, 12]);
+  if (reduceMotion) drawPond();
+});
 function drawPond() {
   const W = innerWidth, H = innerHeight;
   pc.clearRect(0, 0, W, H);
@@ -205,6 +328,9 @@ function drawPond() {
   // Moonlight lies on the surface: over the koi, under the floating pads
   drawMoonlight(pc, W, H, t, 1);
   pads.forEach(p => drawPad(pc, p));
+  // Your decorations: floating ones on the water, then the ones standing in it
+  drawDecor(pc, true, t);
+  drawDecor(pc, false, t);
 }
 function pondLoop(now) {
   if (!pondOpen) return;
@@ -234,6 +360,9 @@ function openPond(back) {
     : "Two visitors, until your first koi arrives";
   makePads();
   pondFood = null;
+  $("pondShop").hidden = true;
+  $("pondHint").hidden = false;
+  POND_DECOR.forEach(d => { if (decorShown(d)) decorImage(d).onload = () => { if (reduceMotion) drawPond(); }; });
   if (reduceMotion) { drawPond(); return; }
   pondLast = performance.now();
   requestAnimationFrame(pondLoop);
