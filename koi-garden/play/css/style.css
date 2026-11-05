@@ -2734,3 +2734,6 @@ html.big { font-size: 120%; }
   filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.2)); animation: win-leap 2.6s ease-in-out infinite; }
 @keyframes win-leap { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-8px) rotate(-6deg); } }
 @media (prefers-reduced-motion: reduce) { .card-pic.frog, .win-leap { animation: none; } }
+/* The pond's hint fades after a few seconds */
+.pond-hint { transition: opacity 0.8s ease; }
+.pond-hint.gone { opacity: 0; }

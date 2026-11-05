@@ -14,7 +14,9 @@ function makePads() {
   pads = [];
   const W = innerWidth, H = innerHeight;
   // Lily pads float near the edges so the middle stays open for the koi
-  const spots = [[0.08, 0.3], [0.92, 0.22], [0.85, 0.7], [0.12, 0.82], [0.55, 0.92], [0.4, 0.14]];
+  const decorated = POND_DECOR.some(d => decorShown(d));
+  // A decorated pond has its own lilies to buy; the drawn ones stay out of the open water
+  const spots = decorated ? [] : [[0.08, 0.3], [0.92, 0.22], [0.85, 0.7], [0.12, 0.82], [0.55, 0.92], [0.4, 0.14]];
   spots.forEach(([fx, fy], i) => pads.push({ x: fx * W, y: fy * H, r: 32 + Math.random() * 24, rot: Math.random() * Math.PI * 2,
     flower: i === 1 || i === 3, seed: Math.floor(Math.random() * 1e9), sprite: null, night: null }));
 }
@@ -195,23 +197,33 @@ function drawPad(c, p) {
    Each has its own place, kept clear of the others and of the open water in the middle where the koi swim. Floating
    things (lilies, lotus, lanterns) ride the water under the koi; the rest stand over them, so a koi can pass under the
    bridge. Owned decorations live in journey.pond (so iCloud keeps them); hidden ones stay owned. */
+// Places are [x, y, size] as shares of the screen (size of its width). Everything sits on the banks round the pond:
+// a row along the top under the title, a column down each side and a row along the bottom. The open water in the
+// middle stays free, and when there is anything standing on the banks the koi keep to that open water.
 const POND_DECOR = [
-  { id: "lilies", name: "Water lilies", img: "img/map/pad.webp", price: 80, spots: [[0.2, 0.62, 0.17], [0.8, 0.5, 0.14], [0.3, 0.27, 0.13]], float: true },
-  { id: "reeds", name: "Reeds", img: "img/map/reeds.webp", price: 100, spots: [[0.07, 0.5, 0.22], [0.94, 0.62, 0.2]] },
-  { id: "rocks", name: "Mossy rocks", img: "img/map/rock.webp", price: 120, spots: [[0.9, 0.86, 0.22]] },
-  { id: "lotus", name: "White lotus", img: "img/ui/lotus-white.webp", price: 150, spots: [[0.7, 0.78, 0.22]], float: true },
-  { id: "toro", name: "Floating lanterns", img: "img/ui/toro.webp", price: 200, spots: [[0.42, 0.7, 0.24]], float: true, glow: true },
-  { id: "lantern", name: "Stone lantern", img: "img/map/lantern.webp", price: 220, spots: [[0.12, 0.17, 0.26]] },
-  { id: "basin", name: "Stone basin", img: "img/ui/basin.webp", price: 250, spots: [[0.88, 0.17, 0.24]] },
-  { id: "bamboo", name: "Bamboo grove", img: "img/ui/bamboo-clump.webp", price: 260, spots: [[0.09, 0.9, 0.34]] },
-  { id: "fountain", name: "Bamboo fountain", img: "img/ui/fountain.webp", price: 320, spots: [[0.88, 0.36, 0.27]] },
-  { id: "pine", name: "Island pine", img: "img/map/pine.webp", price: 380, spots: [[0.13, 0.37, 0.3]] },
-  { id: "bridge", name: "Red bridge", img: "img/map/bridge.webp", price: 450, spots: [[0.52, 0.47, 0.62]] },
-  { id: "cherry", name: "Cherry tree", img: "img/map/blossom.webp", price: 500, spots: [[0.86, 0.7, 0.36]] },
-  { id: "maple", name: "Red maple", img: "img/map/maple.webp", price: 500, spots: [[0.14, 0.74, 0.34]] },
-  { id: "torii", name: "Torii gate", img: "img/map/torii.webp", price: 650, spots: [[0.5, 0.17, 0.42]] },
-  { id: "pagoda", name: "Pagoda", img: "img/map/pagoda.webp", price: 800, spots: [[0.5, 0.9, 0.3]] }
+  { id: "lilies", name: "Water lilies", img: "img/map/pad.webp", price: 80, spots: [[0.24, 0.24, 0.12], [0.77, 0.48, 0.11], [0.25, 0.77, 0.11]], float: true },
+  { id: "reeds", name: "Reeds", img: "img/map/reeds.webp", price: 100, spots: [[0.06, 0.5, 0.17], [0.95, 0.56, 0.15]] },
+  { id: "rocks", name: "Mossy rocks", img: "img/map/rock.webp", price: 120, spots: [[0.91, 0.86, 0.19]] },
+  { id: "lotus", name: "White lotus", img: "img/ui/lotus-white.webp", price: 150, spots: [[0.76, 0.77, 0.14]], float: true },
+  { id: "toro", name: "Floating lanterns", img: "img/ui/toro.webp", price: 200, spots: [[0.24, 0.62, 0.14]], float: true, glow: true },
+  { id: "lantern", name: "Stone lantern", img: "img/map/lantern.webp", price: 220, spots: [[0.09, 0.16, 0.2]] },
+  { id: "basin", name: "Stone basin", img: "img/ui/basin.webp", price: 250, spots: [[0.91, 0.16, 0.19]] },
+  { id: "bamboo", name: "Bamboo grove", img: "img/ui/bamboo-clump.webp", price: 260, spots: [[0.08, 0.85, 0.22]] },
+  { id: "fountain", name: "Bamboo fountain", img: "img/ui/fountain.webp", price: 320, spots: [[0.92, 0.34, 0.2]] },
+  { id: "pine", name: "Island pine", img: "img/map/pine.webp", price: 380, spots: [[0.08, 0.33, 0.22]] },
+  { id: "bridge", name: "Red bridge", img: "img/map/bridge.webp", price: 450, spots: [[0.33, 0.87, 0.27]] },
+  { id: "cherry", name: "Cherry tree", img: "img/map/blossom.webp", price: 500, spots: [[0.9, 0.68, 0.24]] },
+  { id: "maple", name: "Red maple", img: "img/map/maple.webp", price: 500, spots: [[0.1, 0.68, 0.24]] },
+  { id: "torii", name: "Torii gate", img: "img/map/torii.webp", price: 650, spots: [[0.5, 0.15, 0.26]] },
+  { id: "pagoda", name: "Pagoda", img: "img/map/pagoda.webp", price: 800, spots: [[0.64, 0.86, 0.22]] }
 ];
+// The open water the koi swim in: all of it, or the middle when something stands on the banks
+function pondWater() {
+  const W = innerWidth, H = innerHeight;
+  if (!POND_DECOR.some(d => !d.float && decorShown(d))) return { x: 0, y: 0, w: W, h: H };
+  const x = W * 0.17, y = H * 0.24;
+  return { x, y, w: W - 2 * x, h: H * 0.76 - y };
+}
 const pondDecorImages = {};
 const pondState = () => journey.pond || (journey.pond = { owned: [], hidden: [] });
 const decorOwned = d => pondState().owned.includes(d.id);
@@ -222,7 +234,7 @@ function decorImage(d) {
 }
 // Every placed piece, nearest the bottom drawn last, so things lower on the screen stand in front
 function decorPieces(floating) {
-  const W = innerWidth, H = innerHeight, unit = Math.min(W, H * 0.62);
+  const W = innerWidth, H = innerHeight, unit = Math.min(W, H * 0.6);
   const list = [];
   POND_DECOR.forEach(d => {
     if (!decorShown(d) || !!d.float !== floating) return;
@@ -339,6 +351,7 @@ function buyDecor(d) {
   pondState().owned.push(d.id);
   saveJourney();
   track("buy", { data: { kind: "pond", id: d.id, pearls: d.price } });
+  if (pondOpen) makePads();
   return true;
 }
 function toggleDecor(d) {
@@ -346,6 +359,7 @@ function toggleDecor(d) {
   st.hidden = decorShown(d) ? st.hidden.concat(d.id) : st.hidden.filter(x => x !== d.id);
   saveJourney();
   tick();
+  if (pondOpen) makePads();
   if (pondOpen && reduceMotion) drawPond();
 }
 function drawPond() {
@@ -378,7 +392,15 @@ function pondLoop(now) {
     pondFood.left -= dt;
     if (!pondFood.bits.length || pondFood.left <= 0) pondFood = null;
   }
-  pondFish.forEach(f => stepFish(f, dt, innerWidth, innerHeight, pondFood));
+  // The koi swim in the open water; one still on the banks (decorations just went in) glides back into it
+  const wa = pondWater();
+  const food = pondFood && { bits: pondFood.bits.map(b => ({ x: b.x - wa.x, y: b.y - wa.y })) };
+  pondFish.forEach(f => {
+    f.x -= wa.x; f.y -= wa.y;
+    stepFish(f, dt, wa.w, wa.h, food);
+    f.x = Math.min(wa.w + 30, Math.max(-30, f.x)); f.y = Math.min(wa.h + 30, Math.max(-30, f.y));
+    f.x += wa.x; f.y += wa.y;
+  });
   padTime += dt;
   drawPond();
   requestAnimationFrame(pondLoop);
@@ -389,7 +411,8 @@ function openPond(back) {
   $("pondView").hidden = false;
   sizePond();
   const owned = journey.koi.length ? journey.koi : [0, 3];
-  pondFish = owned.map(k => makeFish(k, innerWidth, innerHeight, 92, 140));
+  const wa = pondWater();
+  pondFish = owned.map(k => { const f = makeFish(k, wa.w, wa.h, 92, 140); f.x += wa.x; f.y += wa.y; return f; });
   $("pondCount").textContent = journey.koi.length
     ? `${journey.koi.length} of ${ALL_KOI.length} koi`
     : "Two visitors, until your first koi arrives";
@@ -397,6 +420,11 @@ function openPond(back) {
   pondFood = null;
   $("pondShop").hidden = true;
   $("pondHint").hidden = false;
+  // The hint says how the pond works, then fades so nothing covers the banks
+  const hint = $("pondHint");
+  hint.classList.remove("gone");
+  clearTimeout(hint.fadeTimer);
+  hint.fadeTimer = setTimeout(() => hint.classList.add("gone"), 6000);
   POND_DECOR.forEach(d => { if (decorShown(d)) decorImage(d).onload = () => { if (reduceMotion) drawPond(); }; });
   if (reduceMotion) { drawPond(); return; }
   pondLast = performance.now();
@@ -437,7 +465,9 @@ pondCv.addEventListener("pointerdown", e => {
   ring.style.top = y + "px";
   $("pondView").appendChild(ring);
   setTimeout(() => ring.remove(), 1200);
-  pondFood = { left: 8, bits: [...Array(6)].map(() => ({ x: x + (Math.random() - 0.5) * 34, y: y + (Math.random() - 0.5) * 34 })) };
+  // Food lands in the open water, so the koi can reach it
+  const wa = pondWater(), fx = Math.min(wa.x + wa.w - 20, Math.max(wa.x + 20, x)), fy = Math.min(wa.y + wa.h - 20, Math.max(wa.y + 20, y));
+  pondFood = { left: 8, bits: [...Array(6)].map(() => ({ x: fx + (Math.random() - 0.5) * 34, y: fy + (Math.random() - 0.5) * 34 })) };
   voice(520, 0, 0.12, 0.03, 380);
 });
 window.addEventListener("resize", () => { if (pondOpen) { sizePond(); makePads(); if (reduceMotion) drawPond(); } });
