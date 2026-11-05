@@ -3,7 +3,43 @@
 
 /* ---------- Render ---------- */
 let shownScore = 0, scoreAnim = null;
+// In a Journey level with a goal other than points (free koi, clear stones, lotus, frogs, Harmony, bamboo) the
+// header shows that goal instead of the score: how many are done and how many are left. Points still give the stars.
+const goalHead = () => S && S.mode === "journey" && !S.tut && levelDef(S.level).goal !== "score";
+// What is left, in a word or two: "3 koi left", "1 Harmony left"
+const GOAL_HEAD = { koi: ["koi", "koi", "all koi free"], harmony: ["Harmony", "Harmony", "all Harmony made"], clear: ["stone", "stones", "all stones cleared"],
+  lotus: ["lotus", "lotus", "all lotus picked"], frog: ["frog", "frogs", "all frogs home"] };
+let shownGoal = "";
+function paintGoalHead() {
+  const L = levelDef(S.level), t = goalTarget(L), el = $("score");
+  cancelAnimationFrame(scoreAnim);
+  el.classList.remove("rolling");
+  let big, label;
+  if (L.goal === "bamboo") {
+    const left = bambooLeft();
+    big = String(left);
+    label = left ? "bamboo left" : "all clear";
+  } else {
+    const got = Math.min(goalProgress(), t), left = t - got;
+    big = `${got}<small>/${t}</small>`;
+    const w = GOAL_HEAD[L.goal];
+    label = left ? `${left} ${w[left === 1 ? 0 : 1]} left` : w[2];
+  }
+  const key = `${S.level}|${big}`;
+  if (key !== shownGoal) {
+    // Each koi freed (or stone cleared, flower picked…) bumps the number, but not the first paint of a level
+    if (shownGoal.split("|")[0] === String(S.level)) restartClass(el, "bump");
+    shownGoal = key;
+    el.innerHTML = big;
+  }
+  $("bestLabel").textContent = label;
+  $("best").textContent = "";
+  shownScore = S.score;
+}
 function paintScore() {
+  $("score").classList.toggle("goal", goalHead());
+  if (goalHead()) { paintGoalHead(); return; }
+  shownGoal = "";
   const target = S.score;
   cancelAnimationFrame(scoreAnim);
   const from = shownScore, t0 = performance.now();
@@ -26,6 +62,16 @@ function paintStarGoals() {
   const el = $("starGoals"), L = S.mode === "journey" && !S.tut ? levelDef(S.level) : null;
   el.hidden = !(L && L.s2);
   if (el.hidden) return;
+  // With a goal in the header there are no points to compare with, so the stars simply light up: the first for the
+  // goal, the next two for a high score (pieces and jokers left still add theirs at the end)
+  el.classList.toggle("lamps", goalHead());
+  if (goalHead()) {
+    const lit = !goalMet() ? 0 : S.score >= L.s3 ? 3 : S.score >= L.s2 ? 2 : 1;
+    el.innerHTML = [0, 1, 2].map(k => `<span class="${k < lit ? "got" : ""}">★</span>`).join("");
+    el.setAttribute("aria-label", `${lit} of 3 stars so far`);
+    return;
+  }
+  el.removeAttribute("aria-label");
   const goal = (n, at) => `<span class="${S.score >= at ? "got" : ""}">${"★".repeat(n)} ${at}</span>`;
   el.innerHTML = goal(2, L.s2) + goal(3, L.s3);
 }
@@ -77,7 +123,8 @@ function render() {
   renderTray();
   paintScore();
   applyScene();
-  if (S.mode === "journey") { $("bestLabel").textContent = "Level"; $("best").textContent = S.level; }
+  if (S.mode === "journey" && goalHead()) { /* the goal is in the header, painted by paintScore() */ }
+  else if (S.mode === "journey") { $("bestLabel").textContent = "Level"; $("best").textContent = S.level; }
   else if (S.mode === "daily") { $("bestLabel").textContent = "Best"; $("best").textContent = Math.max(daily.best[S.day] || 0, S.practice ? 0 : S.score); }
   else { $("bestLabel").textContent = "Best"; $("best").textContent = Math.max(best, S.score); }
   paintStarGoals();
@@ -92,7 +139,8 @@ function render() {
     const L = levelDef(S.level);
     // On bamboo boards the pill counts down to the next growth
     const grow = L.grow && bambooLeft() ? ` <span class="dim">· grows in ${S.growIn}</span>` : "";
-    pill.innerHTML = `${goalShort()} <span class="dim">· ${left} ${left === 1 ? "piece" : "pieces"}</span>${grow}`;
+    // When the goal is in the header, the pill says which level this is instead
+    pill.innerHTML = `${goalHead() ? `Level ${S.level}` : goalShort()} <span class="dim">· ${left} ${left === 1 ? "piece" : "pieces"}</span>${grow}`;
   }
   const playing = !S.over && !S.tut && S.mode !== "daily";
   const icon = d => `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;

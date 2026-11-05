@@ -2146,17 +2146,18 @@ html.big { font-size: 120%; }
 .board-wrap[data-combo="4"]::after { opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, #ff9a3c 75%, transparent), 0 0 38px color-mix(in srgb, #ff9a3c 55%, transparent); }
 .board-wrap[data-combo="5"]::after { opacity: 1; box-shadow: 0 0 0 3px #ff7a45, 0 0 50px color-mix(in srgb, #ff5a3c 65%, transparent); animation: combo-pulse 1.2s ease-in-out infinite; }
 @keyframes combo-pulse { 50% { box-shadow: 0 0 0 3px #ffb347, 0 0 64px color-mix(in srgb, #ff7a45 75%, transparent); } }
+/* The chip sits on the board's top edge, so it never covers the Journey, Endless and Daily tabs above */
 .combo-chip {
-  position: absolute; left: 50%; top: -14px; transform: translate(-50%, -100%); z-index: 4; pointer-events: none;
-  display: flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px;
-  background: color-mix(in srgb, var(--gold) 90%, #fff); color: #4a2a00; font: 800 0.8rem var(--display);
+  position: absolute; left: 50%; top: 0; transform: translate(-50%, -50%); z-index: 4; pointer-events: none;
+  display: flex; align-items: center; gap: 7px; padding: 2px 11px; border-radius: 999px; line-height: 1.3;
+  background: color-mix(in srgb, var(--gold) 90%, #fff); color: #4a2a00; font: 800 0.74rem var(--display);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); animation: chip-in 0.3s var(--spring);
 }
 .board-wrap[data-combo="4"] .combo-chip, .board-wrap[data-combo="5"] .combo-chip { background: #ff8a4c; color: #fff; }
 .combo-chip .misses { display: flex; gap: 3px; }
 .combo-chip .misses i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.85; }
 .combo-chip .misses i.used { opacity: 0.2; }
-@keyframes chip-in { from { transform: translate(-50%, -100%) scale(0.6); opacity: 0; } }
+@keyframes chip-in { from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; } }
 
 /* ---------- The chest on the win card ---------- */
 .chest-row { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; padding: 8px 12px; border-radius: 14px;
@@ -2442,3 +2443,9 @@ html.big { font-size: 120%; }
 .decor { filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.28)); }
 .step.locked { opacity: 0.9; }
 @media (prefers-reduced-motion: reduce) { .map-fish, .map-fish img { animation: none; } }
+
+/* A goal level shows the goal in the header: "3/6", koi freed · 3 left, and three stars that light up */
+.score .now.goal small { font-size: 0.55em; opacity: 0.7; margin-left: 1px; }
+.star-goals.lamps { gap: 3px; font-size: 0.85rem; letter-spacing: 0; }
+.star-goals.lamps span { color: rgba(255, 255, 255, 0.28); }
+.star-goals.lamps span.got { color: var(--gold); text-shadow: 0 0 8px color-mix(in srgb, var(--gold) 60%, transparent); }

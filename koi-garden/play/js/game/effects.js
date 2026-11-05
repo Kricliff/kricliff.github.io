@@ -511,7 +511,9 @@ const swimmers = [];
 let lastKoi = 0, koiPaused = false;
 function initKoi() {
   swimmers.length = 0;
-  pondKoi().forEach(k => swimmers.push(makeFish(k, innerWidth, innerHeight, 66, 100)));
+  // Start in the water below the garden picture, so no koi begins on the grass
+  const top = sceneTop();
+  pondKoi().forEach(k => { const f = makeFish(k, innerWidth, innerHeight - top, 66, 100); f.y += top; swimmers.push(f); });
 }
 /* ---------- Light in the water ----------
    Shimmer: the moving net of light on the bottom of shallow water, made from one small
@@ -650,7 +652,13 @@ function koiLoop(now) {
     // With a garden above the board the koi keep to the water below it, and a big combo draws them in
     const top = sceneTop(), lure = koiAttractor();
     if (lure) lure.bits[0] = { x: lure.bits[0].x, y: lure.bits[0].y - top };
-    swimmers.forEach(f => { f.y -= top; stepFish(f, dt, innerWidth, innerHeight - top, lure); f.y += top; });
+    swimmers.forEach(f => {
+      f.y -= top;
+      stepFish(f, dt, innerWidth, innerHeight - top, lure);
+      // A koi still up by the picture (the garden just appeared) glides down into the water
+      if (f.y < 0) f.y += Math.min(-f.y, 120 * dt);
+      f.y += top;
+    });
     drawSwimmers();
   }
 }
