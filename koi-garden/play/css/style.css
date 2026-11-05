@@ -1,0 +1,2408 @@
+/* Fonts ship with the app, so text looks right offline */
+@font-face { font-family: "Zen Maru Gothic"; font-weight: 500; font-display: swap; src: url(../fonts/zen-maru-gothic-500.woff2) format("woff2"); }
+@font-face { font-family: "Zen Maru Gothic"; font-weight: 700; font-display: swap; src: url(../fonts/zen-maru-gothic-700.woff2) format("woff2"); }
+@font-face { font-family: "Zen Maru Gothic"; font-weight: 900; font-display: swap; src: url(../fonts/zen-maru-gothic-900.woff2) format("woff2"); }
+@font-face { font-family: "Zen Kaku Gothic New"; font-weight: 400; font-display: swap; src: url(../fonts/zen-kaku-gothic-new-400.woff2) format("woff2"); }
+@font-face { font-family: "Zen Kaku Gothic New"; font-weight: 500; font-display: swap; src: url(../fonts/zen-kaku-gothic-new-500.woff2) format("woff2"); }
+@font-face { font-family: "Zen Kaku Gothic New"; font-weight: 700; font-display: swap; src: url(../fonts/zen-kaku-gothic-new-700.woff2) format("woff2"); }
+
+/* Base reset (the prototype viewer added this for us) */
+/* The safe-area padding must sit inside the screen height, or the page grows past the bottom edge */
+:root { box-sizing: border-box; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; font-size: 14px; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+/* Layout: one-screen koi pond. Teal water around a wooden-framed 9×9 sand garden in nine beds,
+   jewel-coloured stones, two-piece tray, ad slot kept clear of the play area */
+:root {
+  --water: #0f5a5e;
+  --water-deep: #0a3c43;
+  --water-hi: #1d8a83;
+  --on-water: #f3fbf8;
+  --on-water-muted: #a7d6ce;
+  --glass: rgba(255, 255, 255, 0.10);
+  --glass-line: rgba(255, 255, 255, 0.20);
+  --card: #fff8ec;
+  --card-fg: #24302e;
+  --card-muted: #6d7b77;
+  --card-line: #eadfca;
+  --card-well: #f6ecd7;
+  --sand: #f8e9c9;
+  --sand-alt: #efdbb1;
+  --rake: rgba(150, 110, 50, 0.13);
+  --frame: #b57d45;
+  --frame-dark: #7e5126;
+  --accent: #ff7a45;
+  --on-accent: #2b1408;
+  --gold: #ffc93c;
+  --good: #19b48a;
+  --p1: #ff5d4f;   /* koi red */
+  --p2: #ffb21f;   /* saffron */
+  --p3: #16b386;   /* jade */
+  --p4: #3b7cf5;   /* lapis */
+  --p5: #ff86bd;   /* sakura */
+  --p6: #9a5ee0;   /* plum */
+  --p7: #ffcf3a;   /* golden koi */
+  --p8: #8f99a3;   /* rock */
+  /* Each colour also has its own stone shape, so colour-blind players can match them */
+  --r1: 50%;
+  --r2: 24%;
+  --r3: 50% 14% 50% 14%;
+  --r4: 38% 44% 40% 46%;
+  --r5: 50% 50% 22% 22%;
+  --r6: 14% 50% 14% 50%;
+  --r7: 50%;
+  --r8: 34% 48% 30% 52%;
+  --display: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Segoe UI", system-ui, sans-serif;
+  --body: "Zen Kaku Gothic New", "Hiragino Sans", "Segoe UI", system-ui, sans-serif;
+  --board: 360px;
+  color-scheme: dark;
+}
+/* Night Pond: unlocked by a 7-day daily streak */
+:root[data-garden="night"] {
+  --water: #172056;
+  --water-deep: #0b1131;
+  --water-hi: #33479a;
+  --on-water: #eef1ff;
+  --on-water-muted: #a9b4e4;
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-line: rgba(255, 255, 255, 0.16);
+  --card: #222b5c;
+  --card-fg: #eef0ff;
+  --card-muted: #a6aed8;
+  --card-line: #363f7e;
+  --card-well: #2b356c;
+  --sand: #2d3670;
+  --sand-alt: #283063;
+  --rake: rgba(200, 210, 255, 0.07);
+  --frame: #0f1538;
+  --frame-dark: #070a20;
+  --accent: #ff8f66;
+  --on-accent: #26110a;
+  --gold: #ffd75e;
+  --good: #3fdcae;
+  --p1: #ff7466;
+  --p2: #ffc24a;
+  --p3: #39d6a6;
+  --p4: #6d9dff;
+  --p5: #ff9fd0;
+  --p6: #b88cff;
+  --p7: #ffd75e;
+  --p8: #6e7899;
+}
+html, body { height: 100%; }
+body {
+  background:
+    radial-gradient(120% 60% at 50% -5%, var(--water-hi), transparent 62%),
+    linear-gradient(180deg, var(--water), var(--water-deep));
+  background-color: var(--water-deep);
+  color: var(--on-water);
+  font-family: var(--body);
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Slow ripples drifting across the pond */
+.pond { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.pond i {
+  position: absolute;
+  width: 220px; height: 220px;
+  margin: -110px 0 0 -110px;
+  border-radius: 50%;
+  border: 1.5px solid var(--glass-line);
+  animation: pond 9s ease-out infinite;
+  opacity: 0;
+}
+.pond i:nth-child(1) { left: 12%; top: 22%; }
+.pond i:nth-child(2) { left: 88%; top: 58%; animation-delay: 3s; }
+.pond i:nth-child(3) { left: 20%; top: 86%; animation-delay: 6s; }
+@keyframes pond { 0% { transform: scale(0.2); opacity: 0.8; } 100% { transform: scale(1.8); opacity: 0; } }
+
+.app {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Header */
+header {
+  width: var(--board);
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.brand { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.brand b { font-family: var(--display); font-weight: 900; font-size: 1.1rem; letter-spacing: -0.01em; }
+.brand span {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--on-water-muted);
+}
+.score { text-align: center; }
+.score .now {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 2.3rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.25);
+}
+.score .best {
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-water-muted);
+  font-variant-numeric: tabular-nums;
+}
+.score .best em { color: var(--gold); font-style: normal; font-weight: 700; }
+.star-goals { display: flex; justify-content: center; gap: 8px; margin-top: 2px; font-size: 0.64rem; font-weight: 700; color: var(--on-water-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.star-goals span.got { color: var(--gold); }
+.tools { display: flex; justify-content: flex-end; gap: 5px; }
+.icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-line);
+  background: var(--glass);
+  color: var(--on-water);
+  display: grid; place-items: center;
+  cursor: pointer;
+  font: 700 0.95rem var(--display);
+}
+.icon-btn svg { width: 17px; height: 17px; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.modes {
+  grid-column: 1 / -1;
+  justify-self: center;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+}
+.mode {
+  position: relative;
+  font: 700 0.8rem var(--body);
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--on-water-muted);
+  cursor: pointer;
+}
+.mode[aria-pressed="true"] { background: var(--on-water); color: var(--water-deep); }
+.mode.new::after {
+  content: "";
+  position: absolute;
+  top: 4px; right: 6px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.mode:disabled { opacity: 0.4; cursor: default; }
+.nudge {
+  grid-column: 1 / -1;
+  justify-self: center;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 18%, transparent);
+  color: var(--on-water);
+  font: 600 0.78rem var(--body);
+  cursor: pointer;
+  text-wrap: balance;
+}
+.nudge b { color: var(--gold); }
+
+/* Board: wooden frame around nine raked sand beds */
+.board-wrap { position: relative; width: var(--board); max-width: 100%; margin-top: auto; }
+.board {
+  --gap: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 5px;
+  border-radius: 16px;
+  background: var(--frame);
+  box-shadow: 0 0 0 3px var(--frame-dark), 0 18px 40px rgba(0, 0, 0, 0.35);
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  gap: var(--gap);
+}
+.bed {
+  margin: -1px;
+  border-radius: 9px;
+  background: repeating-linear-gradient(0deg, transparent 0 5px, var(--rake) 5px 6px), var(--sand);
+  transition: box-shadow 0.3s;
+}
+.bed.alt { background: repeating-linear-gradient(0deg, transparent 0 5px, var(--rake) 5px 6px), var(--sand-alt); }
+.bed.near {
+  box-shadow: inset 0 0 0 2.5px var(--good), inset 0 0 18px color-mix(in srgb, var(--good) 40%, transparent);
+  animation: breathe 2.4s ease-in-out infinite;
+}
+.bed.near.mono {
+  box-shadow: inset 0 0 0 2.5px var(--gold), inset 0 0 22px color-mix(in srgb, var(--gold) 55%, transparent);
+  animation-name: breathe-gold;
+}
+@keyframes breathe { 50% { box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--good) 45%, transparent), inset 0 0 6px transparent; } }
+@keyframes breathe-gold { 50% { box-shadow: inset 0 0 0 2.5px color-mix(in srgb, var(--gold) 45%, transparent), inset 0 0 6px transparent; } }
+.cell { position: relative; z-index: 1; border-radius: 30%; }
+.cell.filled, .piece i {
+  background:
+    radial-gradient(circle at 32% 26%, color-mix(in srgb, white 62%, var(--c)) 0, var(--c) 46%, color-mix(in srgb, black 20%, var(--c)) 100%);
+  border-radius: var(--rad, 40%);
+  box-shadow: 0 2px 3px rgba(60, 40, 10, 0.35), inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+}
+.cell.ghost { background: color-mix(in srgb, var(--c) 45%, transparent); border-radius: var(--rad, 40%); }
+.cell.glow { box-shadow: 0 0 0 2px var(--on-accent) inset, 0 0 12px color-mix(in srgb, var(--gold) 70%, transparent); }
+.cell.filled.glow { filter: brightness(1.15) saturate(1.1); }
+.cell.target::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  border: 2.5px dashed var(--accent);
+  animation: target 1.4s ease-in-out infinite;
+}
+@keyframes target { 50% { transform: scale(0.75); opacity: 0.5; } }
+.cell.pop { animation: pop 0.38s ease-in forwards; }
+@keyframes pop { 35% { transform: scale(1.15); } to { transform: scale(0.1) translateY(-4px); opacity: 0; } }
+
+.ripple {
+  position: absolute;
+  z-index: 2;
+  width: 60px; height: 60px;
+  margin: -30px 0 0 -30px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--p4) 70%, white);
+  pointer-events: none;
+  animation: ripple 0.9s ease-out forwards;
+}
+.ripple.gold { border: 3px solid var(--gold); }
+@keyframes ripple { from { transform: scale(0.2); opacity: 0.9; } to { transform: scale(2.6); opacity: 0; } }
+
+.burst {
+  position: absolute;
+  z-index: 3;
+  left: 50%; top: 45%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+  animation: rise 1.25s ease-out forwards;
+}
+.burst b {
+  display: block;
+  font-family: var(--display);
+  font-size: 2.3rem;
+  font-weight: 900;
+  color: var(--accent);
+  -webkit-text-stroke: 1.5px var(--card);
+  paint-order: stroke fill;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.burst.gold b { color: var(--gold); -webkit-text-stroke-color: var(--frame-dark); }
+.burst span {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--card-fg);
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+@keyframes rise {
+  0% { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.06); }
+  100% { opacity: 0; transform: translate(-50%, -105%) scale(1); }
+}
+
+/* Tray */
+.tray {
+  width: var(--board);
+  max-width: 100%;
+  height: calc(var(--board) * 0.34);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: var(--glass);
+  border: 1px solid var(--glass-line);
+  cursor: grab;
+  touch-action: none;
+}
+.slot.has::after {
+  content: "↻";
+  position: absolute;
+  top: 5px; right: 9px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--on-water-muted);
+}
+.slot.turn::after { color: var(--gold); animation: nudge-turn 1.2s ease-in-out infinite; }
+@keyframes nudge-turn { 50% { transform: rotate(90deg); } }
+.slot.picked .piece { opacity: 0.12; }
+/* A piece with no room anywhere keeps its colour, fades a little and says why */
+.slot.nofit { border-style: dashed; }
+.slot.nofit .piece { opacity: 0.45; }
+.slot.nofit::before {
+  content: "No room";
+  position: absolute;
+  left: 50%; bottom: 7px;
+  transform: translateX(-50%);
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--water-deep);
+  color: var(--on-water);
+  font: 700 0.68rem var(--body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.piece {
+  display: grid;
+  gap: var(--g);
+  grid-template-columns: repeat(var(--w), var(--s));
+  grid-template-rows: repeat(var(--h), var(--s));
+}
+.piece.spin { animation: spin 0.22s ease-out; }
+@keyframes spin { from { transform: rotate(-90deg) scale(0.9); } }
+.piece i.e { background: none; box-shadow: none; }
+.float {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 20;
+  pointer-events: none;
+  filter: drop-shadow(0 14px 12px rgba(0, 0, 0, 0.35));
+}
+.below {
+  width: var(--board);
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 2.4em;
+}
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  background: var(--glass);
+  color: var(--on-water);
+  font: 700 0.8rem var(--body);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+button.chip { cursor: pointer; }
+.chip span.dim { color: var(--on-water-muted); font-weight: 500; }
+.tag {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+.hint {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--on-water-muted);
+  text-wrap: balance;
+}
+.hint b { color: var(--gold); }
+
+/* Ad banner placeholder, kept well apart from the pieces you drag */
+.banner {
+  flex-shrink: 0;
+  margin-top: auto;
+  width: min(320px, 100%);
+  height: 50px;
+  box-sizing: border-box;
+  border: 1px dashed var(--glass-line);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 0.64rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--on-water-muted);
+}
+
+/* Overlays */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  /* Keep cards clear of the clock, the home bar and, in the app, the ad banner */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px + var(--banner-room, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: color-mix(in srgb, var(--water-deep) 70%, transparent);
+  backdrop-filter: blur(6px);
+}
+.card {
+  width: min(370px, 100%);
+  box-sizing: border-box;
+  padding: 24px 20px 20px;
+  border-radius: 24px;
+  background: var(--card);
+  color: var(--card-fg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+.card h2 { margin: 0; font-family: var(--display); font-weight: 900; font-size: 1.55rem; line-height: 1.15; text-wrap: balance; }
+.eyebrow {
+  margin: 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--card-muted);
+}
+.card p { margin: 0; line-height: 1.6; max-width: 34ch; }
+.card .quote { font-family: var(--display); font-weight: 700; color: var(--card-muted); }
+.big-num {
+  font-family: var(--display);
+  font-size: 3.6rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.btns { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.btn {
+  font: 700 1rem var(--body);
+  padding: 13px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--card-line);
+  background: var(--card-well);
+  color: var(--card-fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 6px 0 color-mix(in srgb, var(--accent) 60%, black); }
+.btn.primary:active { transform: translateY(3px); box-shadow: 0 3px 0 color-mix(in srgb, var(--accent) 60%, black); }
+.btn:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.btn small { font-weight: 500; opacity: 0.75; }
+.link-btn { background: none; border: 0; color: var(--card-muted); font: 600 0.9rem var(--body); text-decoration: underline; cursor: pointer; padding: 4px; }
+
+/* Rules */
+.ways { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.way { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; }
+.mini {
+  width: 100%;
+  max-width: 84px;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--frame);
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 1px;
+}
+.mini i { background: var(--sand); border-radius: 2px; }
+.mini i.alt { background: var(--sand-alt); }
+.mini i.on { background: var(--p4); border-radius: 35%; }
+.rules { text-align: left; margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 7px; line-height: 1.5; font-size: 0.88rem; }
+.rules b { color: var(--accent); }
+.basics { text-align: left; margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 8px; line-height: 1.45; font-size: 0.98rem; }
+.basics b { color: var(--accent); }
+.more { display: flex; flex-direction: column; align-self: stretch; width: 100%; border-top: 1px solid var(--card-line); text-align: left; }
+.more details { border-bottom: 1px solid var(--card-line); }
+.more summary { list-style: none; cursor: pointer; padding: 11px 2px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.more summary::-webkit-details-marker { display: none; }
+.more summary::after { content: "+"; font-size: 1.2rem; line-height: 1; color: var(--card-muted); }
+.more details[open] summary::after { content: "–"; }
+.more .rules { padding-bottom: 12px; }
+.promise { text-align: left; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 0.92rem; line-height: 1.45; }
+.promise li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; }
+.promise li::before { content: "✓"; font-weight: 900; color: var(--good); }
+.stones-row { display: flex; gap: 8px; }
+.stones-row i { width: 26px; height: 26px; background: radial-gradient(circle at 32% 26%, color-mix(in srgb, white 62%, var(--c)) 0, var(--c) 46%, color-mix(in srgb, black 20%, var(--c)) 100%); border-radius: var(--rad); box-shadow: 0 2px 3px rgba(60, 40, 10, 0.3); }
+
+/* Breathing: a ripple on still water */
+.breath { width: 160px; height: 160px; display: grid; place-items: center; position: relative; }
+.breath .ring {
+  position: absolute; inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--p3) 45%, transparent) 0 40%, color-mix(in srgb, var(--p3) 14%, transparent) 70%, transparent 71%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--p3) 40%, transparent);
+  transform: scale(0.5);
+  transition: transform 4s ease-in-out;
+}
+.breath .ring.in { transform: scale(1); }
+.breath .label { position: relative; font-family: var(--display); font-weight: 900; font-size: 1.15rem; }
+.breath .count { display: block; font-family: var(--body); font-size: 0.75rem; color: var(--card-muted); font-weight: 500; }
+
+.stats { font-size: 0.88rem; color: var(--card-muted); font-variant-numeric: tabular-nums; line-height: 1.6; }
+.stats b { color: var(--card-fg); }
+.share {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--card-line);
+  background: var(--card-well);
+  font: 500 0.84rem/1.55 var(--body);
+  text-align: left;
+  white-space: pre-wrap;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.field { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; font-weight: 700; }
+.field select, .field input { font: 600 0.95rem var(--body); accent-color: var(--accent); }
+.field input[type="checkbox"] { width: 22px; height: 22px; }
+.field select { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--card-line); background: var(--card-well); color: var(--card-fg); }
+.notif {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 4px 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--card-well);
+  border: 1px solid var(--card-line);
+  text-align: left;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.notif .ico { grid-row: span 2; width: 36px; height: 36px; border-radius: 9px; background: linear-gradient(135deg, var(--water-hi), var(--water-deep)); }
+.notif .top { display: flex; justify-content: space-between; color: var(--card-muted); font-size: 0.75rem; }
+.notif.off { opacity: 0.4; }
+.note { font-size: 0.78rem; color: var(--card-muted); }
+.garden-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; font-size: 0.85rem; font-weight: 700; }
+.garden-row .modes { background: var(--card-well); border-color: var(--card-line); grid-column: auto; }
+.garden-row .mode { color: var(--card-muted); }
+.garden-row .mode[aria-pressed="true"] { background: var(--card-fg); color: var(--card); }
+.medal {
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: var(--on-accent);
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, white 50%, var(--gold)) 0, var(--gold) 50%, color-mix(in srgb, black 22%, var(--gold)) 100%);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--gold) 45%, transparent);
+}
+.ad-box {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  border: 1px dashed var(--card-line);
+  background: repeating-linear-gradient(45deg, var(--card-well) 0 10px, var(--card) 10px 20px);
+  display: grid;
+  place-items: center;
+  font-family: var(--display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cell.pop, .burst, .ripple, .piece.spin { animation-duration: 0.01s; }
+  .bed.near, .cell.target::after, .pond i, .slot.turn::after { animation: none; }
+  .breath .ring { transition: none; }
+}
+
+/* Journey: special stones */
+.cell.koi::before {
+  content: "鯉";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font: 900 calc(var(--board) / 24) var(--display);
+  color: #7a3f00;
+}
+/* Ice: a blue frosted coat with a snowflake, so it never looks like the gold ring of a starting stone */
+.cell.ice::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--rad, 40%);
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' fill='none'%3E%3Cpath d='M12 2v20M3.3 7l17.4 10M3.3 17l17.4-10M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5'/%3E%3C/g%3E%3C/svg%3E") right 8% top 8% / 34% no-repeat,
+    linear-gradient(150deg, rgba(255, 255, 255, 0.55) 0 18%, transparent 18% 30%, rgba(255, 255, 255, 0.35) 30% 36%, transparent 36%),
+    linear-gradient(135deg, rgba(225, 244, 255, 0.62), rgba(170, 215, 255, 0.4) 55%, rgba(230, 246, 255, 0.6));
+  border: 2px solid #eaf8ff;
+  box-shadow: inset 0 0 8px rgba(60, 150, 255, 0.95), 0 0 6px rgba(140, 210, 255, 0.7);
+}
+
+/* Journey map */
+.map { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px 10px; width: 100%; padding-bottom: 10px; }
+.node {
+  justify-self: center;
+  position: relative;
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 0;
+  font: 900 1.35rem var(--display);
+  color: var(--on-accent);
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, white 45%, var(--accent)) 0, var(--accent) 55%, color-mix(in srgb, black 18%, var(--accent)) 100%);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--accent) 55%, black);
+  cursor: pointer;
+}
+.node.done {
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, white 45%, var(--p3)) 0, var(--p3) 55%, color-mix(in srgb, black 18%, var(--p3)) 100%);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--p3) 55%, black);
+  color: #fff;
+}
+.node.locked { background: var(--card-well); color: var(--card-muted); box-shadow: inset 0 0 0 2px var(--card-line); cursor: default; }
+.node.current { animation: node-pulse 1.6s ease-in-out infinite; }
+@keyframes node-pulse { 50% { transform: scale(1.08); } }
+.node .st {
+  position: absolute;
+  left: 50%; bottom: -19px;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: var(--gold);
+  text-shadow: 0 1px 0 var(--frame-dark);
+}
+.node .st i { font-style: normal; color: var(--card-line); text-shadow: none; }
+.big-stars { font-size: 2.6rem; letter-spacing: 6px; color: var(--gold); line-height: 1; text-shadow: 0 3px 0 var(--frame-dark); }
+.big-stars i { font-style: normal; color: var(--card-line); text-shadow: none; }
+.goal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--card-well);
+  border: 1px solid var(--card-line);
+  font-weight: 700;
+}
+.mode-3 .mode { padding: 6px 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .node.current { animation: none; }
+}
+
+/* Effects: koi below the app, particles above everything */
+.app { z-index: 1; }
+.koi-layer, .fx { position: fixed; inset: 0; pointer-events: none; }
+.koi-layer { z-index: 0; }
+.fx { z-index: 45; }
+.cell.drop { animation: drop 0.34s cubic-bezier(0.3, 1.6, 0.5, 1) both; }
+@keyframes drop {
+  0% { transform: translateY(-8px) scale(1.25); }
+  55% { transform: translateY(0) scale(1.08, 0.86); }
+  100% { transform: none; }
+}
+.cell.pop { animation: pop2 0.42s cubic-bezier(0.5, -0.4, 0.7, 1) forwards; animation-delay: var(--d, 0ms); }
+@keyframes pop2 {
+  0% { transform: none; filter: brightness(1); }
+  30% { transform: scale(1.25) rotate(var(--spin, 8deg)); filter: brightness(1.8); }
+  100% { transform: scale(0) rotate(calc(var(--spin, 8deg) * 4)); opacity: 0; }
+}
+.cell.fall { animation: fall 0.5s cubic-bezier(0.5, 0, 0.6, 1.4) both; }
+@keyframes fall { 0% { transform: translateY(-420%) scale(1.2); opacity: 0; } 50% { opacity: 1; } 100% { transform: none; } }
+.cell.ghost { animation: ghost 0.9s ease-in-out infinite; }
+@keyframes ghost { 50% { opacity: 0.55; } }
+.sweep { position: absolute; z-index: 3; pointer-events: none; border-radius: 10px; overflow: hidden; }
+.sweep::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+  transform: translateX(-100%);
+  animation: sweep 0.45s ease-out forwards;
+}
+.sweep.v::before { background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.95), transparent); transform: translateY(-100%); animation-name: sweep-v; }
+.sweep.bed { box-shadow: 0 0 0 3px var(--gold), 0 0 26px var(--gold); animation: bed-flash 0.55s ease-out forwards; }
+.sweep.bed::before { display: none; }
+@keyframes sweep { to { transform: translateX(100%); } }
+@keyframes sweep-v { to { transform: translateY(100%); } }
+@keyframes bed-flash { 0% { opacity: 1; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.15); } }
+.board-wrap.shake { animation: shake 0.4s ease-out; }
+@keyframes shake {
+  20% { transform: translate(-5px, 2px) rotate(-0.6deg); }
+  40% { transform: translate(5px, -2px) rotate(0.6deg); }
+  60% { transform: translate(-3px, 1px); }
+  80% { transform: translate(2px, 0); }
+}
+.board.flash { animation: board-flash 0.7s ease-out; }
+@keyframes board-flash {
+  30% { box-shadow: 0 0 0 3px var(--frame-dark), 0 0 46px 12px var(--gold), 0 18px 40px rgba(0, 0, 0, 0.35); }
+}
+.piece.enter { animation: enter 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both; }
+@keyframes enter { from { transform: scale(0.2) rotate(-25deg); opacity: 0; } }
+.float i { animation: lift 0.16s ease-out both; }
+@keyframes lift { from { transform: scale(0.65); } }
+.fly {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 46;
+  pointer-events: none;
+  font: 900 1.4rem var(--display);
+  color: var(--gold);
+  -webkit-text-stroke: 1.5px var(--frame-dark);
+  paint-order: stroke fill;
+}
+.score .now.bump { animation: bump 0.35s cubic-bezier(0.3, 1.8, 0.5, 1); }
+@keyframes bump { 40% { transform: scale(1.25); color: var(--gold); } }
+.burst.combo b { animation: combo-wobble 0.5s ease-out; }
+@keyframes combo-wobble { 30% { transform: scale(1.3) rotate(-4deg); } 60% { transform: scale(0.95) rotate(3deg); } }
+.big-stars span { display: inline-block; animation: star-in 0.55s cubic-bezier(0.3, 1.8, 0.5, 1) both; }
+@keyframes star-in { from { transform: scale(0) rotate(-120deg); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cell.drop, .cell.fall, .cell.ghost, .piece.enter, .float i, .board-wrap.shake, .board.flash,
+  .big-stars span, .burst.combo b, .score .now.bump { animation: none; }
+  .sweep { display: none; }
+}
+
+/* iPhone app: the real AdMob banner sits on top of this reserved space */
+.native .banner { border-color: transparent; color: transparent; height: 64px; }
+/* No text selection or long-press callouts in the app, except the share text */
+.native { -webkit-touch-callout: none; }
+
+/* Helper buttons: hint, undo, swap */
+.below { justify-content: space-between; }
+.helpers { display: inline-flex; gap: 6px; flex: none; }
+.helpers:empty { display: none; }
+.chip.helper { padding: 5px 10px; gap: 5px; }
+.chip.helper .cost { font-size: 0.7rem; color: var(--gold); font-weight: 700; }
+.cell.hintspot {
+  box-shadow: 0 0 0 3px var(--gold) inset, 0 0 14px color-mix(in srgb, var(--gold) 70%, transparent);
+  animation: hint-pulse 0.8s ease-in-out infinite;
+}
+@keyframes hint-pulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 40%, transparent) inset; } }
+.slot.hinted { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
+
+/* Settings */
+.field.toggle { text-align: left; padding: 6px 0; border-bottom: 1px solid var(--card-line); }
+.field.toggle span { display: flex; flex-direction: column; }
+.field.toggle small { font-weight: 500; font-size: 0.78rem; color: var(--card-muted); }
+.field.toggle input {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 50px; height: 30px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--card-line);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.field.toggle input::after {
+  content: "";
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s;
+}
+.field.toggle input:checked { background: var(--good); }
+.field.toggle input:checked::after { transform: translateX(20px); }
+.ads-box {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card-well);
+  border: 1px solid var(--card-line);
+}
+
+/* Journey map extras */
+.map-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; }
+.map-links .btn { padding: 10px 12px; font-size: 0.92rem; }
+.node .hard {
+  position: absolute;
+  top: -10px; left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--card-fg);
+  color: var(--card);
+  font: 700 0.55rem var(--body);
+  letter-spacing: 0.1em;
+}
+
+/* Koi collection */
+.koi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+.koi-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--water), var(--water-deep));
+  color: var(--on-water);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.koi-cell img { width: 92px; height: 46px; object-fit: contain; filter: drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.35)); }
+.koi-cell.locked img { filter: brightness(0) opacity(0.22); }
+.koi-cell.locked { background: var(--card-well); color: var(--card-muted); }
+.new-koi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px 6px 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--water), var(--water-deep));
+  color: var(--on-water);
+  font-weight: 700;
+}
+.new-koi img { width: 96px; height: 40px; object-fit: contain; filter: drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.35)); }
+
+/* Lantern Festival */
+.bar { width: 100%; height: 12px; border-radius: 999px; background: var(--card-well); overflow: hidden; border: 1px solid var(--card-line); }
+.bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--gold)); border-radius: inherit; transition: width 0.6s; }
+.milestones { list-style: none; margin: 0; padding: 0; width: 100%; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+.milestones li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 12px; background: var(--card-well); font-weight: 700; font-size: 0.9rem; }
+.milestones li.done { color: var(--good); }
+
+/* Big & clear: everything sized in rem grows by a fifth, plus bigger controls and clearer stones */
+html.big { font-size: 120%; }
+.big body { font-size: 16.8px; }
+.big .hint { font-size: 0.95rem; }
+.big .chip { font-size: 0.92rem; padding: 7px 13px; }
+.big .score .best, .big .brand span, .big .eyebrow { font-size: 0.8rem; }
+.big .mode { font-size: 0.92rem; padding: 8px 16px; }
+.big .card p, .big .rules, .big .basics { font-size: 1.02rem; }
+.big .btn { font-size: 1.08rem; padding: 15px 18px; }
+
+.big .icon-btn svg { width: 21px; height: 21px; }
+.big .chip.helper svg { width: 20px; height: 20px; }
+.big .brand .logo { width: 38px; height: 38px; }
+.big .cell.koi::before { font-size: calc(var(--board) / 19); }
+/* Clearer stones: a dark outline separates each stone from its neighbours and the sand */
+.big .cell.filled:not(.glow):not(.hintspot):not(.start), .big .piece i:not(.e) {
+  box-shadow: 0 2px 3px rgba(60, 40, 10, 0.35), inset 0 0 0 2px rgba(0, 0, 0, 0.28);
+}
+.big .board { --gap: 5px; }
+
+/* Calm effects: no shaking or flashing */
+.calm .board-wrap.shake, .calm .board.flash, .calm .burst.combo b { animation: none; }
+.calm .sweep { display: none; }
+
+/* App icon inside the app: next to the name and on the welcome card */
+.brand { flex-direction: row; align-items: center; gap: 8px; }
+.brand .logo { width: 34px; height: 34px; border-radius: 9px; flex: none; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25); }
+.brand-text { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.brand-text b { white-space: nowrap; }
+.app-icon { width: 112px; height: 112px; border-radius: 26px; box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3); }
+@media (max-width: 380px) {
+  .brand .logo { width: 28px; height: 28px; border-radius: 7px; }
+  .brand-text b { font-size: 0.95rem; }
+  .brand-text span { display: none; }
+}
+/* On most phones the star goals under the score leave the name too little room: keep it smaller so it never runs into the score */
+@media (max-width: 440px) {
+  .brand { gap: 6px; }
+  .brand .logo { width: 30px; height: 30px; border-radius: 8px; }
+  .brand-text b { font-size: 0.92rem; white-space: normal; line-height: 1; max-width: 4.6em; }
+  .brand-text span { display: none; }
+}
+
+/* Koi swim under the controls: give them a deeper, frosted water tint so pieces stay easy to read */
+.slot, .modes, .chip, .icon-btn, .nudge {
+  background: color-mix(in srgb, var(--water-deep) 78%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.mode[aria-pressed="true"] { background: var(--on-water); }
+
+/* Starting stones in "clear" levels: a gold ring and a centre dot set them apart from your own */
+.cell.start:not(.glow):not(.hintspot) {
+  box-shadow: 0 2px 3px rgba(60, 40, 10, 0.35), inset 0 0 0 3px #ffcf5a, inset 0 0 0 5px rgba(0, 0, 0, 0.25);
+}
+.cell.start::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 24%; height: 24%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Big & clear on a phone: keep the header and the helper row inside the screen */
+.big .brand-text span { display: none; }
+.big .brand-text b { font-size: 0.88rem; }
+.big .icon-btn { width: 38px; height: 38px; }
+.big .tools { gap: 4px; }
+.big .below { flex-wrap: wrap; justify-content: center; row-gap: 6px; }
+
+/* Tall cards (like the rules) scroll from the top and stop above the banner.
+   Auto margins centre short cards; when a card is taller than the screen they collapse,
+   so nothing is pushed under the clock. The spacer keeps the last button above the ad. */
+.overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 0;
+}
+.overlay > .card { margin-block: auto; flex-shrink: 0; }
+.overlay::after {
+  content: "";
+  flex: 0 0 calc(env(safe-area-inset-bottom, 0px) + 12px + var(--banner-room, 0px));
+}
+
+/* Theme switch with three options */
+.garden-row .modes .mode { padding: 6px 12px; }
+
+/* Rare koi */
+.reward-koi { width: 220px; max-width: 80%; filter: drop-shadow(3px 6px 4px rgba(0, 0, 0, 0.3)); }
+.koi-section {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--card-muted);
+  text-align: left;
+}
+.koi-cell.rare:not(.locked) { background: linear-gradient(180deg, #3b2a63, #1d1638); box-shadow: inset 0 0 0 2px var(--gold); }
+
+/* Koi pond: a full-screen pond with every koi you own */
+.pond-view {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background:
+    radial-gradient(120% 60% at 50% -5%, var(--water-hi), transparent 62%),
+    linear-gradient(180deg, var(--water), var(--water-deep));
+  background-color: var(--water-deep);
+  touch-action: none;
+}
+.pond-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pond-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 10px);
+  padding-bottom: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  pointer-events: none;
+}
+.pond-bar .btn { pointer-events: auto; padding: 10px 22px; }
+.pond-title { display: flex; flex-direction: column; color: var(--on-water); text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
+.pond-title b { font: 900 1.3rem var(--display); }
+.pond-title span { font-size: 0.8rem; color: var(--on-water-muted); }
+.pond-hint {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px + var(--banner-room, 0px));
+  margin: 0 auto;
+  width: fit-content;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--water-deep) 78%, transparent);
+  color: var(--on-water);
+  font-size: 0.82rem;
+  text-align: center;
+  pointer-events: none;
+}
+.koi-label {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -140%);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--card-fg);
+  font: 700 0.85rem var(--body);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  animation: label-in 2.2s ease forwards;
+}
+@keyframes label-in { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.tap-ring {
+  position: absolute;
+  z-index: 1;
+  width: 70px; height: 70px;
+  margin: -35px 0 0 -35px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  animation: ripple 1.1s ease-out forwards;
+}
+
+/* Close button in the corner of a card, and the map's main button */
+.card { position: relative; }
+.card-close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--card-line);
+  background: var(--card-well);
+  color: var(--card-fg);
+  font: 700 1.05rem var(--body);
+  cursor: pointer;
+}
+.map-play { width: 100%; }
+
+/* More room between map rows so the HARD tag clears the stars above */
+.map { row-gap: 30px; }
+
+/* Joker koi: a third, narrower slot next to the pieces */
+.tray { grid-template-columns: 1fr 1fr 0.62fr; }
+.joker-slot { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; overflow: visible; }
+.joker-slot img { width: 92%; transform: rotate(-35deg); filter: drop-shadow(0 0 8px var(--glow, #ffd75e)) drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.35)); pointer-events: none; }
+.joker-slot .joker-name { font: 700 0.62rem var(--body); letter-spacing: 0.06em; text-transform: uppercase; color: var(--on-water); text-align: center; line-height: 1.1; pointer-events: none; }
+.joker-slot .joker-count {
+  position: absolute;
+  top: -8px; right: -6px;
+  min-width: 24px; height: 24px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--on-accent);
+  font: 900 0.8rem/24px var(--display);
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.joker-slot.empty { opacity: 0.55; border-style: dashed; }
+.joker-slot .joker-buy { font: 800 0.7rem var(--body); color: var(--gold); pointer-events: none; }
+/* Joker shop and the pearl price on the fail card */
+.shop-list { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.shop-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border-radius: 14px; border: 1px solid var(--card-line);
+  background: var(--card-well); color: var(--card-fg); font: inherit; text-align: left; cursor: pointer; }
+.shop-item:not(:disabled):active { transform: scale(0.98); }
+.shop-item:disabled { opacity: 0.45; cursor: default; }
+.shop-item img { width: 58px; height: auto; transform: rotate(-20deg); flex: none; filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.25)); }
+.shop-what { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.shop-what b { font: 800 1rem var(--display); }
+.shop-what small { color: var(--card-muted); font-size: 0.8rem; }
+.shop-price { display: inline-flex; align-items: center; gap: 5px; font-weight: 800; white-space: nowrap; }
+.cost-tag { display: inline-flex; align-items: center; gap: 4px; margin-right: 8px; padding: 1px 8px; border-radius: 999px; background: color-mix(in srgb, var(--gold) 30%, transparent); font-weight: 800; }
+.joker-slot.empty .joker-name { color: var(--on-water-muted); }
+.joker-slot.j-arrow { --glow: #6db7ff; }
+.joker-slot.j-ripple { --glow: #49e0c0; }
+.joker-slot.j-rainbow img { animation: rainbow 2.4s linear infinite; }
+@keyframes rainbow {
+  0% { filter: drop-shadow(0 0 8px #ff6b6b) drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.35)); }
+  33% { filter: drop-shadow(0 0 8px #ffd75e) drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.35)); }
+  66% { filter: drop-shadow(0 0 8px #6db7ff) drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.35)); }
+  100% { filter: drop-shadow(0 0 8px #ff6b6b) drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.35)); }
+}
+.joker-slot.gain { animation: joker-gain 0.7s cubic-bezier(0.3, 1.6, 0.5, 1); }
+@keyframes joker-gain { 0% { transform: scale(0.6); } 60% { transform: scale(1.12); } }
+.joker-float { position: fixed; left: 0; top: 0; z-index: 20; pointer-events: none; }
+.joker-float img { position: absolute; left: 50%; top: 50%; width: 230%; transform: translate(-50%, -50%) rotate(-35deg); filter: drop-shadow(0 0 10px #ffd75e) drop-shadow(0 12px 10px rgba(0, 0, 0, 0.35)); }
+.cell.aim { box-shadow: 0 0 0 3px var(--gold) inset, 0 0 16px var(--gold); border-radius: 30%; }
+.cell.aim.aim-arrow { box-shadow: 0 0 0 3px #6db7ff inset, 0 0 16px #6db7ff; }
+@media (prefers-reduced-motion: reduce) { .joker-slot.j-rainbow img, .joker-slot.gain { animation: none; } }
+
+/* Motion tokens for the features below: ease-out for things that enter, ease-in-out for things that travel */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --spring: cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+/* Pearls: a small round pearl, a pearl count in the corner of a card, and pearls in flight */
+.pearl {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0 18%, #f3ecf7 40%, #c9bfd8 100%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  flex: none;
+}
+.pearl.big { width: 30px; height: 30px; }
+.bank {
+  position: absolute;
+  top: 14px; left: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: var(--card-well);
+  border: 1px solid var(--card-line);
+  font: 900 0.9rem var(--display);
+  font-variant-numeric: tabular-nums;
+}
+.bank.bump { animation: bank-bump 0.22s var(--ease-out); }
+@keyframes bank-bump { 40% { transform: scale(1.12); } }
+.fly-pearl { position: fixed; left: 0; top: 0; z-index: 46; margin: -6px 0 0 -6px; pointer-events: none; will-change: transform; }
+
+/* Win streak: five lotus buds; the steps that give a joker carry its koi */
+.current { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+.current p { font-size: 0.86rem; color: var(--card-muted); }
+.current p b { color: var(--card-fg); }
+.pips { display: flex; align-items: center; gap: 8px; }
+.pip {
+  position: relative;
+  width: 16px; height: 16px;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: var(--card-well);
+  box-shadow: inset 0 0 0 2px var(--card-line);
+  display: grid;
+  place-items: center;
+}
+.pip.step { width: 28px; height: 28px; }
+.pip img { width: 150%; max-width: none; transform: rotate(-35deg); opacity: 0.25; filter: grayscale(1); pointer-events: none; }
+.pip.on {
+  background: radial-gradient(circle at 50% 38%, #fff3b8 0 16%, var(--p5) 46%, color-mix(in srgb, black 12%, var(--p5)) 100%);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--p5) 55%, transparent);
+}
+.pip.on img { opacity: 1; filter: drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.3)); }
+/* The newest bud blooms open, with a soft ring spreading from it */
+.pip.bloom { animation: bloom 0.55s var(--spring) 0.35s both; }
+.pip.bloom::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--p5);
+  opacity: 0;
+  animation: bloom-ring 0.6s var(--ease-out) 0.45s;
+}
+@keyframes bloom { 0% { transform: scale(0.4) rotate(-30deg); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes bloom-ring { 0% { transform: scale(0.8); opacity: 0.9; } 100% { transform: scale(2); opacity: 0; } }
+.map-current { flex-direction: row; justify-content: center; gap: 10px; font-size: 0.8rem; font-weight: 700; color: var(--card-muted); }
+.map-current .pip { width: 12px; height: 12px; }
+.map-current .pip.step { width: 20px; height: 20px; }
+.current-lost { font-size: 0.88rem; color: var(--card-muted); }
+.current-lost b { color: var(--accent); }
+
+/* Map: three links, and a gold dot on Tasks when the basket waits */
+.map-links { grid-template-columns: repeat(3, 1fr); }
+.map-links .btn { position: relative; flex-direction: column; gap: 0; padding: 8px 6px; font-size: 0.88rem; }
+.map-links .btn.ready::after {
+  content: "";
+  position: absolute;
+  top: 6px; right: 8px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px var(--card);
+  animation: dot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes dot-pulse { 50% { transform: scale(1.35); } }
+
+/* Pond tasks */
+.tasks li { flex-wrap: wrap; align-items: center; }
+.tasks li small { font-variant-numeric: tabular-nums; color: var(--card-muted); }
+.task-bar { flex: 1 0 100%; height: 6px; border-radius: 999px; background: var(--card); overflow: hidden; }
+.task-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--good), color-mix(in srgb, var(--good) 60%, var(--gold))); }
+.tasks li.done small { color: var(--good); }
+
+/* The task card that slides over the top of the board */
+.task-pop {
+  position: fixed;
+  z-index: 40;
+  top: calc(env(safe-area-inset-top, 0px) + 10px); left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  padding: 8px 14px 8px 8px;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--card-fg);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-align: left;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: pop-in 0.26s var(--ease-out) both;
+}
+.task-pop.out { animation: pop-out 0.2s var(--ease-out) forwards; }
+.task-pop small { display: block; font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--card-muted); }
+.task-pop.all { box-shadow: 0 0 0 2px var(--gold), 0 10px 26px rgba(0, 0, 0, 0.3); }
+.task-pop svg { width: 30px; height: 30px; flex: none; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.task-pop circle { fill: var(--good); stroke: none; transform-origin: center; animation: check-dot 0.3s var(--spring) 0.1s both; }
+.task-pop path { stroke: #ffffff; stroke-width: 2.6; stroke-dasharray: 16; stroke-dashoffset: 16; animation: check-draw 0.25s var(--ease-out) 0.3s forwards; }
+@keyframes pop-in { from { opacity: 0; transform: translate(-50%, -10px) scale(0.96); } }
+@keyframes pop-out { to { opacity: 0; transform: translate(-50%, -6px) scale(0.98); } }
+@keyframes check-dot { from { transform: scale(0.4); } }
+@keyframes check-draw { to { stroke-dashoffset: 0; } }
+
+/* Bamboo basket: waits, wiggles, then the lid pops off and the gifts rise out on a burst of light */
+.basket-wrap { position: relative; width: 100%; height: 150px; display: grid; place-items: center; }
+.basket { position: relative; z-index: 1; width: 132px; overflow: visible; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.2)); }
+.basket .lid { transform-box: fill-box; transform-origin: 50% 100%; transition: transform 0.32s var(--ease-out), opacity 0.32s var(--ease-out); }
+.basket-wrap.ready .basket { animation: basket-wait 2.4s ease-in-out infinite; }
+@keyframes basket-wait { 0%, 70%, 100% { transform: none; } 78% { transform: rotate(-3deg); } 86% { transform: rotate(3deg); } 94% { transform: rotate(-1deg); } }
+.basket-wrap.shake .basket { animation: basket-shake 0.5s ease-in-out; }
+@keyframes basket-shake {
+  15% { transform: rotate(-7deg) scale(1.03); }
+  35% { transform: rotate(6deg) scale(1.05); }
+  55% { transform: rotate(-5deg) scale(1.06); }
+  75% { transform: rotate(3deg) scale(1.07); }
+  100% { transform: scale(1.08); }
+}
+.basket-wrap.opened .lid { transform: translate(-14px, -38px) rotate(-22deg); opacity: 0; }
+.basket-wrap.opened .basket { opacity: 0.35; transform: translateY(18px) scale(0.85); transition: transform 0.4s var(--ease-out), opacity 0.4s var(--ease-out); }
+.rays {
+  position: absolute;
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--gold) 45%, transparent) 0 10deg, transparent 10deg 30deg);
+  -webkit-mask: radial-gradient(circle, #000 20%, transparent 68%);
+  mask: radial-gradient(circle, #000 20%, transparent 68%);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out);
+}
+.basket-wrap.opened .rays { opacity: 1; transform: scale(1); animation: rays-turn 9s linear infinite; }
+@keyframes rays-turn { to { transform: rotate(360deg); } }
+.basket-gifts { position: absolute; inset: 0; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 14px; pointer-events: none; }
+.gift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 96px;
+  padding: 10px 10px 8px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22), inset 0 0 0 2px var(--gold);
+  animation: gift-in 0.5s var(--spring) both;
+}
+.gift:nth-child(1) { animation-delay: 0.62s; }
+.gift:nth-child(2) { animation-delay: 0.8s; }
+.gift b { font: 900 1.05rem var(--display); }
+.gift span { font-size: 0.68rem; color: var(--card-muted); font-weight: 700; }
+.gift img { width: 70px; height: 34px; object-fit: contain; transform: rotate(-20deg); filter: drop-shadow(0 0 6px var(--gold)); }
+@keyframes gift-in { from { opacity: 0; transform: translateY(26px) scale(0.6); } }
+
+/* Splash rings where a leaping koi leaves and enters the water, and calm rings for Still water */
+.splash-ring, .still-ring {
+  position: fixed;
+  z-index: 44;
+  width: 70px; height: 70px;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.splash-ring { border: 2.5px solid rgba(225, 246, 255, 0.9); animation: splash-ring 0.7s var(--ease-out) forwards; }
+.still-ring { border: 3px solid var(--gold); box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 60%, transparent); animation: still-ring 1.2s var(--ease-out) forwards; }
+@keyframes splash-ring { from { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.6, 0.7); opacity: 0; } }
+@keyframes still-ring { from { transform: translate(-50%, -50%) scale(0.1); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.25); opacity: 0; } }
+
+/* Combo words grow with the combo: Calm, Flow, Zen */
+.burst.tier2 b { font-size: 2.6rem; color: var(--p4); }
+.burst.tier3 b { font-size: 2.9rem; color: var(--gold); -webkit-text-stroke-color: var(--frame-dark); text-shadow: 0 0 18px color-mix(in srgb, var(--gold) 70%, transparent), 0 4px 12px rgba(0, 0, 0, 0.25); }
+.burst.tier3 span { box-shadow: 0 0 0 2px var(--gold), 0 4px 12px rgba(0, 0, 0, 0.2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bank.bump, .pip.bloom, .pip.bloom::after, .map-links .btn.ready::after, .task-pop, .task-pop.out,
+  .task-pop circle, .basket-wrap.ready .basket, .basket-wrap.shake .basket, .gift, .basket-wrap.opened .rays { animation: none; }
+  .task-pop path { animation: none; stroke-dashoffset: 0; }
+  .basket .lid, .rays, .basket-wrap.opened .basket { transition: none; }
+}
+
+/* ---------- Garden styles ----------
+   Boards and stones are pictures: board textures in img/boards (made with Viewmax, prepared by
+   assets/boards/make_boards.py) and one shaded stone per colour in img/stones (drawn by
+   assets/stones/render_stones.py, each in its colour's own shape). They are set as variables, so a
+   preview tile in the style picker can show a different style than the game. Night darkens the boards
+   and swaps in stones drawn with the night colours. */
+:root, [data-board="sand"] {
+  --board-frame: url(/koi-garden/play/img/boards/cedar-frame.webp) center / 320px;
+  --board-edge: #7e5126;
+  --bed-a: url(/koi-garden/play/img/boards/sand-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(60, 30, 0, 0.05), rgba(60, 30, 0, 0.05)), url(/koi-garden/play/img/boards/sand-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(120, 80, 30, 0.25), inset 0 2px 7px rgba(90, 60, 20, 0.22);
+}
+[data-garden="night"][data-board="sand"], [data-garden="night"] [data-board="sand"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .6), rgba(14, 20, 70, .6)), url(/koi-garden/play/img/boards/cedar-frame.webp) center / 320px;
+  --board-edge: #070a20;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .62), rgba(14, 20, 70, .62)), url(/koi-garden/play/img/boards/sand-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .62), rgba(14, 20, 70, .62)), linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(/koi-garden/play/img/boards/sand-bed.webp) center / cover;
+}
+[data-board="cherry"] {
+  --board-frame: url(/koi-garden/play/img/boards/cherry-frame.webp) center / 320px;
+  --board-edge: #3a120e;
+  --bed-a: url(/koi-garden/play/img/boards/cherry-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(60, 30, 0, 0.05), rgba(60, 30, 0, 0.05)), url(/koi-garden/play/img/boards/cherry-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(150, 70, 90, 0.25), inset 0 2px 7px rgba(120, 50, 70, 0.2);
+}
+[data-garden="night"][data-board="cherry"], [data-garden="night"] [data-board="cherry"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .45), rgba(14, 20, 70, .45)), url(/koi-garden/play/img/boards/cherry-frame.webp) center / 320px;
+  --board-edge: #12061a;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .55), rgba(14, 20, 70, .55)), url(/koi-garden/play/img/boards/cherry-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .55), rgba(14, 20, 70, .55)), linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(/koi-garden/play/img/boards/cherry-bed.webp) center / cover;
+}
+[data-board="jade"] {
+  --board-frame: url(/koi-garden/play/img/boards/gold-frame.webp) center / 220px;
+  --board-edge: #6b4a12;
+  --bed-a: url(/koi-garden/play/img/boards/jade-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(60, 30, 0, 0.05), rgba(60, 30, 0, 0.05)), url(/koi-garden/play/img/boards/jade-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1.5px rgba(180, 140, 50, 0.55), inset 0 2px 8px rgba(20, 60, 40, 0.25);
+}
+[data-garden="night"][data-board="jade"], [data-garden="night"] [data-board="jade"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .45), rgba(14, 20, 70, .45)), url(/koi-garden/play/img/boards/gold-frame.webp) center / 220px;
+  --board-edge: #2a1c05;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .5), rgba(14, 20, 70, .5)), url(/koi-garden/play/img/boards/jade-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .5), rgba(14, 20, 70, .5)), linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(/koi-garden/play/img/boards/jade-bed.webp) center / cover;
+}
+[data-board="lacquer"] {
+  --board-frame: url(/koi-garden/play/img/boards/vermilion-frame.webp) center / 300px;
+  --board-edge: #c9a24a;
+  --bed-a: url(/koi-garden/play/img/boards/lacquer-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(60, 30, 0, 0.05), rgba(60, 30, 0, 0.05)), url(/koi-garden/play/img/boards/lacquer-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(214, 174, 86, 0.55), inset 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+[data-garden="night"][data-board="lacquer"], [data-garden="night"] [data-board="lacquer"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .3), rgba(14, 20, 70, .3)), url(/koi-garden/play/img/boards/vermilion-frame.webp) center / 300px;
+  --board-edge: #c9a24a;
+  --bed-a: url(/koi-garden/play/img/boards/lacquer-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(/koi-garden/play/img/boards/lacquer-bed.webp) center / cover;
+}
+[data-board="tatami"] {
+  --board-frame: url(/koi-garden/play/img/boards/walnut-frame.webp) center / 280px;
+  --board-edge: #2b170c;
+  --bed-a: url(/koi-garden/play/img/boards/tatami-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(60, 30, 0, 0.05), rgba(60, 30, 0, 0.05)), url(/koi-garden/play/img/boards/tatami-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1.5px rgba(40, 60, 30, 0.45), inset 0 2px 7px rgba(70, 60, 20, 0.22);
+}
+[data-garden="night"][data-board="tatami"], [data-garden="night"] [data-board="tatami"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .4), rgba(14, 20, 70, .4)), url(/koi-garden/play/img/boards/walnut-frame.webp) center / 280px;
+  --board-edge: #0d0812;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .6), rgba(14, 20, 70, .6)), url(/koi-garden/play/img/boards/tatami-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .6), rgba(14, 20, 70, .6)), linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(/koi-garden/play/img/boards/tatami-bed.webp) center / cover;
+}
+[data-board="moss"] {
+  --board-frame: url(/koi-garden/play/img/boards/granite-frame.webp) center / 260px;
+  --board-edge: #4d524c;
+  --bed-a: url(/koi-garden/play/img/boards/moss-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(20, 40, 0, 0.06), rgba(20, 40, 0, 0.06)), url(/koi-garden/play/img/boards/moss-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(40, 60, 30, 0.3), inset 0 2px 8px rgba(20, 40, 10, 0.3);
+}
+[data-garden="night"][data-board="moss"], [data-garden="night"] [data-board="moss"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .5), rgba(14, 20, 70, .5)), url(/koi-garden/play/img/boards/granite-frame.webp) center / 260px;
+  --board-edge: #0b0e1c;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .6), rgba(14, 20, 70, .6)), url(/koi-garden/play/img/boards/moss-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .6), rgba(14, 20, 70, .6)), linear-gradient(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.08)), url(/koi-garden/play/img/boards/moss-bed.webp) center / cover;
+}
+:root, [data-stones="river"] {
+  --i1: url(/koi-garden/play/img/stones/river-1.webp);
+  --i2: url(/koi-garden/play/img/stones/river-2.webp);
+  --i3: url(/koi-garden/play/img/stones/river-3.webp);
+  --i4: url(/koi-garden/play/img/stones/river-4.webp);
+  --i5: url(/koi-garden/play/img/stones/river-5.webp);
+  --i6: url(/koi-garden/play/img/stones/river-6.webp);
+  --i7: url(/koi-garden/play/img/stones/river-7.webp);
+  --i8: url(/koi-garden/play/img/stones/river-8.webp);
+}
+[data-garden="night"][data-stones="river"], [data-garden="night"] [data-stones="river"] {
+  --i1: url(/koi-garden/play/img/stones/river-1-night.webp);
+  --i2: url(/koi-garden/play/img/stones/river-2-night.webp);
+  --i3: url(/koi-garden/play/img/stones/river-3-night.webp);
+  --i4: url(/koi-garden/play/img/stones/river-4-night.webp);
+  --i5: url(/koi-garden/play/img/stones/river-5-night.webp);
+  --i6: url(/koi-garden/play/img/stones/river-6-night.webp);
+  --i7: url(/koi-garden/play/img/stones/river-7-night.webp);
+  --i8: url(/koi-garden/play/img/stones/river-8-night.webp);
+}
+[data-stones="ceramic"] {
+  --i1: url(/koi-garden/play/img/stones/ceramic-1.webp);
+  --i2: url(/koi-garden/play/img/stones/ceramic-2.webp);
+  --i3: url(/koi-garden/play/img/stones/ceramic-3.webp);
+  --i4: url(/koi-garden/play/img/stones/ceramic-4.webp);
+  --i5: url(/koi-garden/play/img/stones/ceramic-5.webp);
+  --i6: url(/koi-garden/play/img/stones/ceramic-6.webp);
+  --i7: url(/koi-garden/play/img/stones/ceramic-7.webp);
+  --i8: url(/koi-garden/play/img/stones/ceramic-8.webp);
+}
+[data-garden="night"][data-stones="ceramic"], [data-garden="night"] [data-stones="ceramic"] {
+  --i1: url(/koi-garden/play/img/stones/ceramic-1-night.webp);
+  --i2: url(/koi-garden/play/img/stones/ceramic-2-night.webp);
+  --i3: url(/koi-garden/play/img/stones/ceramic-3-night.webp);
+  --i4: url(/koi-garden/play/img/stones/ceramic-4-night.webp);
+  --i5: url(/koi-garden/play/img/stones/ceramic-5-night.webp);
+  --i6: url(/koi-garden/play/img/stones/ceramic-6-night.webp);
+  --i7: url(/koi-garden/play/img/stones/ceramic-7-night.webp);
+  --i8: url(/koi-garden/play/img/stones/ceramic-8-night.webp);
+}
+[data-stones="gem"] {
+  --i1: url(/koi-garden/play/img/stones/gem-1.webp);
+  --i2: url(/koi-garden/play/img/stones/gem-2.webp);
+  --i3: url(/koi-garden/play/img/stones/gem-3.webp);
+  --i4: url(/koi-garden/play/img/stones/gem-4.webp);
+  --i5: url(/koi-garden/play/img/stones/gem-5.webp);
+  --i6: url(/koi-garden/play/img/stones/gem-6.webp);
+  --i7: url(/koi-garden/play/img/stones/gem-7.webp);
+  --i8: url(/koi-garden/play/img/stones/gem-8.webp);
+}
+[data-garden="night"][data-stones="gem"], [data-garden="night"] [data-stones="gem"] {
+  --i1: url(/koi-garden/play/img/stones/gem-1-night.webp);
+  --i2: url(/koi-garden/play/img/stones/gem-2-night.webp);
+  --i3: url(/koi-garden/play/img/stones/gem-3-night.webp);
+  --i4: url(/koi-garden/play/img/stones/gem-4-night.webp);
+  --i5: url(/koi-garden/play/img/stones/gem-5-night.webp);
+  --i6: url(/koi-garden/play/img/stones/gem-6-night.webp);
+  --i7: url(/koi-garden/play/img/stones/gem-7-night.webp);
+  --i8: url(/koi-garden/play/img/stones/gem-8-night.webp);
+}
+[data-stones="lantern"] {
+  --i1: url(/koi-garden/play/img/stones/lantern-1.webp);
+  --i2: url(/koi-garden/play/img/stones/lantern-2.webp);
+  --i3: url(/koi-garden/play/img/stones/lantern-3.webp);
+  --i4: url(/koi-garden/play/img/stones/lantern-4.webp);
+  --i5: url(/koi-garden/play/img/stones/lantern-5.webp);
+  --i6: url(/koi-garden/play/img/stones/lantern-6.webp);
+  --i7: url(/koi-garden/play/img/stones/lantern-7.webp);
+  --i8: url(/koi-garden/play/img/stones/lantern-8.webp);
+}
+[data-garden="night"][data-stones="lantern"], [data-garden="night"] [data-stones="lantern"] {
+  --i1: url(/koi-garden/play/img/stones/lantern-1-night.webp);
+  --i2: url(/koi-garden/play/img/stones/lantern-2-night.webp);
+  --i3: url(/koi-garden/play/img/stones/lantern-3-night.webp);
+  --i4: url(/koi-garden/play/img/stones/lantern-4-night.webp);
+  --i5: url(/koi-garden/play/img/stones/lantern-5-night.webp);
+  --i6: url(/koi-garden/play/img/stones/lantern-6-night.webp);
+  --i7: url(/koi-garden/play/img/stones/lantern-7-night.webp);
+  --i8: url(/koi-garden/play/img/stones/lantern-8-night.webp);
+}
+.board { background: var(--board-frame); box-shadow: 0 0 0 3px var(--board-edge), 0 18px 40px rgba(0, 0, 0, 0.35); }
+.bed { background: var(--bed-a); box-shadow: var(--bed-line); }
+/* Every other bed is turned a quarter, so the rake lines and petals alternate like a real garden */
+.bed.alt { background: var(--bed-b); transform: rotate(90deg); }
+@keyframes board-flash {
+  30% { box-shadow: 0 0 0 3px var(--board-edge), 0 0 46px 12px var(--gold), 0 18px 40px rgba(0, 0, 0, 0.35); }
+}
+/* A new style fades in over the board */
+.board-wrap.restyle .board { animation: restyle 0.3s var(--ease-out); }
+@keyframes restyle { from { opacity: 0.4; transform: scale(0.985); } }
+
+/* Stones: the picture for the stone's colour, over the old drawn stone while the picture loads */
+.cell.filled, .piece i:not(.e), .stone {
+  background:
+    var(--img) center / 100% 100% no-repeat,
+    radial-gradient(circle at 32% 26%, color-mix(in srgb, white 62%, var(--c)) 0, var(--c) 46%, color-mix(in srgb, black 20%, var(--c)) 100%);
+}
+.cell.filled:not(.glow):not(.hintspot):not(.start), .piece i:not(.e), .stone { box-shadow: 0 2px 3px rgba(40, 25, 5, 0.35); }
+:root[data-stones="lantern"] .cell.filled:not(.glow):not(.hintspot):not(.start), :root[data-stones="lantern"] .piece i:not(.e), .pv[data-stones="lantern"] .stone {
+  box-shadow: 0 0 9px 1px color-mix(in srgb, var(--c) 55%, transparent), 0 2px 3px rgba(40, 25, 5, 0.3);
+}
+.stone { position: absolute; width: 30%; height: 30%; border-radius: var(--rad); }
+/* Big & clear keeps its dark outline in every style */
+:root.big .cell.filled:not(.glow):not(.hintspot):not(.start), :root.big .piece i:not(.e) {
+  box-shadow: 0 2px 3px rgba(60, 40, 10, 0.35), inset 0 0 0 2px rgba(0, 0, 0, 0.28);
+}
+
+
+/* Style picker: two grids of preview tiles */
+.style-head { align-self: flex-start; margin: 2px 0 -6px; font-weight: 700; font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--card-muted); }
+.style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.style-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 8px 9px;
+  border-radius: 16px;
+  border: 2px solid var(--card-line);
+  background: var(--card-well);
+  color: var(--card-fg);
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease-out), border-color 0.15s ease;
+}
+.style-tile:active { transform: scale(0.97); }
+.style-tile.on { border-color: var(--good); box-shadow: 0 0 0 1px var(--good); }
+.style-tile.confirm { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.style-tile b { font-size: 0.9rem; }
+.style-tile small { display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 700; color: var(--card-muted); text-align: center; line-height: 1.25; min-height: 1.8em; }
+.style-tile.on small { color: var(--good); }
+.style-tile.confirm small { color: var(--accent); }
+.style-tile .pearl { width: 9px; height: 9px; }
+.pv-board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.3;
+  box-sizing: border-box;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--board-frame);
+  box-shadow: 0 0 0 2px var(--board-edge);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+}
+.pv-board i { border-radius: 6px; background: var(--bed-a); box-shadow: var(--bed-line); }
+.pv-board i.alt { background: var(--bed-b); }
+.pv-board .stone { width: 24%; height: 31%; }
+.style-tile.locked .pv-board { filter: saturate(0.55) brightness(0.92); }
+.style-tile.locked .pv-board::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--card) 35%, transparent)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2324302e' stroke-width='2.2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='10' rx='2' fill='%23fff8ec'/%3E%3Cpath d='M8 11V8a4 4 0 0 1 8 0v3'/%3E%3C/svg%3E") center / 28px no-repeat;
+}
+.style-tile.nope { animation: nope 0.3s ease-in-out; }
+@keyframes nope { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* ---------- Home: shoji doors with a moon window onto the pond ---------- */
+.brand { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.home {
+  --wood: #5a3a22;
+  --wood-hi: #8a5c37;
+  --paper: rgba(250, 238, 212, 0.2);
+  --glow: rgba(255, 220, 150, 0.6);
+  --moon: min(52vw, 46vh, 250px);
+  --moon-y: 47%;
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow: hidden;
+}
+:root[data-garden="night"] .home {
+  --wood: #1c1633;
+  --wood-hi: #3a2f63;
+  --paper: rgba(36, 38, 86, 0.84);
+  --glow: rgba(255, 196, 110, 0.32);
+}
+:root[data-garden="night"] .moon-ring { filter: brightness(0.55) saturate(0.7); }
+.door {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 50%;
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 86px, var(--wood) 86px 91px),
+    repeating-linear-gradient(90deg, transparent 0 60px, var(--wood) 60px 65px),
+    linear-gradient(var(--paper), var(--paper)),
+    url(../img/map/shoji.webp) center / cover;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 10px var(--wood), inset 0 0 0 13px var(--wood-hi);
+  transition: transform 0.7s var(--ease-in-out);
+  will-change: transform;
+}
+.door.l { left: 0; background-position: right top, right top, 0 0, center; }
+.door.r { right: 0; }
+/* Lamplight behind the paper, brightest at the seam */
+.door::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 45% at var(--seam) 40%, var(--glow), transparent 70%);
+  pointer-events: none;
+}
+.door.l { --seam: 100%; }
+.door.r { --seam: 0%; }
+/* A wooden panel along the bottom with a gold wave pattern */
+.door::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 21%;
+  border-top: 9px solid var(--wood-hi);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20' viewBox='0 0 40 20'%3E%3Cg fill='none' stroke='%23e2bd62' stroke-opacity='.32' stroke-width='1.2'%3E%3Cpath d='M0 20a20 20 0 0 1 40 0M6 20a14 14 0 0 1 28 0M12 20a8 8 0 0 1 16 0M17 20a3 3 0 0 1 6 0'/%3E%3Cpath d='M-20 10a20 20 0 0 1 40 0M-14 10a14 14 0 0 1 28 0M-8 10a8 8 0 0 1 16 0M-3 10a3 3 0 0 1 6 0'/%3E%3Cpath d='M20 10a20 20 0 0 1 40 0M26 10a14 14 0 0 1 28 0M32 10a8 8 0 0 1 16 0M37 10a3 3 0 0 1 6 0'/%3E%3C/g%3E%3C/svg%3E") 0 0 / 40px 20px, linear-gradient(180deg, var(--wood), color-mix(in srgb, black 30%, var(--wood)));
+}
+.door.l::after { border-right: 3px solid color-mix(in srgb, black 35%, var(--wood)); }
+/* Half a round wooden window frame on each door; together they make the moon window */
+.moon-ring {
+  --ring: calc(var(--moon) * 1.22);
+  position: absolute;
+  top: calc(var(--moon-y) - var(--ring) / 2);
+  width: var(--ring);
+  height: var(--ring);
+  border-radius: 50%;
+  background: url(../img/map/moon-ring.webp) center / 100% 100% no-repeat;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.door.l .moon-ring { right: calc(var(--ring) / -2); }
+.door.r .moon-ring { left: calc(var(--ring) / -2); }
+.moon-pond {
+  position: absolute;
+  left: 50%; top: var(--moon-y);
+  width: var(--moon); height: var(--moon);
+  margin: calc(var(--moon) / -2) 0 0 calc(var(--moon) / -2);
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(80% 60% at 40% 25%, var(--water-hi), transparent 70%),
+    linear-gradient(180deg, var(--water), var(--water-deep));
+  box-shadow: inset 0 6px 20px rgba(0, 0, 0, 0.45);
+  transition: transform 0.5s var(--ease-in-out), opacity 0.5s var(--ease-in-out);
+}
+.moon-pond canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.moon-pond i {
+  position: absolute;
+  left: 30%; top: 60%;
+  width: 60%; height: 60%;
+  margin: -30% 0 0 -30%;
+  border-radius: 50%;
+  border: 1.5px solid var(--glass-line);
+  animation: pond 6s ease-out infinite;
+  opacity: 0;
+}
+.moon-pond i + i { left: 70%; top: 35%; animation-delay: 3s; }
+
+.home-ui {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 20px) max(16px, env(safe-area-inset-left, 0px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-out) 0.45s, transform 0.3s var(--ease-out) 0.45s;
+}
+.home-ui button { pointer-events: auto; }
+.home-top { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 480px; }
+.home-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wood) 88%, transparent);
+  box-shadow: inset 0 0 0 2px var(--wood-hi);
+  color: #fff3dc;
+  font: 900 0.95rem var(--display);
+  font-variant-numeric: tabular-nums;
+}
+.home-chip .pip { width: 14px; height: 14px; }
+.home-tools { margin-left: auto; display: flex; gap: 6px; }
+.home .icon-btn { background: color-mix(in srgb, var(--wood) 88%, transparent); border-color: var(--wood-hi); color: #fff3dc; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.home-logo {
+  margin: clamp(10px, 4vh, 36px) 0 0;
+  font: 900 clamp(2.5rem, 12vw, 3.4rem)/0.95 var(--display);
+  text-align: center;
+  color: #fff6e3;
+  -webkit-text-stroke: 7px var(--wood);
+  paint-order: stroke fill;
+  text-shadow: 0 6px 0 color-mix(in srgb, black 35%, var(--wood)), 0 10px 22px rgba(0, 0, 0, 0.3);
+  letter-spacing: -0.01em;
+}
+.home-logo span:first-child { color: #ff8a5c; }
+.home-logo small {
+  display: block;
+  margin-top: 10px;
+  font: 700 0.72rem var(--body);
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--wood);
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+:root[data-garden="night"] .home-logo small { color: #e9dcff; }
+/* Badges beside the moon window, on plaques like the window's wood */
+.home-side {
+  position: absolute;
+  top: var(--moon-y);
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.home-side.l { left: max(10px, calc(50% - var(--moon) / 2 - 104px)); }
+.home-side.r { right: max(10px, calc(50% - var(--moon) / 2 - 104px)); }
+.hb {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 84px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease-out);
+}
+.hb:active { transform: scale(0.95); }
+.hb-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 30%, var(--water-hi), var(--water-deep));
+  box-shadow: 0 0 0 4px var(--wood), 0 0 0 6px var(--wood-hi), 0 6px 12px rgba(0, 0, 0, 0.3);
+  color: #fff6e3;
+}
+.hb-icon svg { width: 30px; height: 30px; }
+.hb-icon img { width: 64px; transform: rotate(-30deg); filter: drop-shadow(1px 3px 2px rgba(0, 0, 0, 0.4)); }
+.hb-icon.cal { background: linear-gradient(180deg, #ff7a5c 0 30%, #fff8ec 30%); box-shadow: 0 0 0 4px var(--wood), 0 0 0 6px var(--wood-hi), 0 6px 12px rgba(0, 0, 0, 0.3); }
+.hb-icon.cal b { margin-top: 12px; font: 900 1.3rem var(--display); color: #24302e; }
+.hb-label {
+  margin-top: -8px;
+  z-index: 1;
+  padding: 3px 9px;
+  border-radius: 7px;
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood));
+  color: #fff3dc;
+  font: 700 0.74rem var(--body);
+  white-space: nowrap;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+.hb.ready .hb-icon::after {
+  content: "";
+  position: absolute;
+  top: 0; right: 0;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 0 2px var(--wood);
+  animation: dot-pulse 1.6s ease-in-out infinite;
+}
+.home-bottom { margin-top: auto; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+.home-play {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(340px, 86%);
+  padding: 12px 18px 13px;
+  border-radius: 999px;
+  border: 3px solid #ffd27a;
+  background: linear-gradient(180deg, #ff9a5c, #f0662f);
+  color: #fff;
+  box-shadow: 0 7px 0 #9c3a14, 0 14px 26px rgba(0, 0, 0, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out);
+}
+.home-play:active { transform: translateY(4px) scale(0.98); box-shadow: 0 3px 0 #9c3a14, 0 8px 16px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.35); }
+.home-play b { font: 900 1.7rem/1.1 var(--display); text-shadow: 0 2px 0 rgba(120, 40, 10, 0.5); }
+.home-play small { font: 700 0.8rem var(--body); opacity: 0.92; }
+.home-boost {
+  position: absolute;
+  top: -12px; right: -6px;
+  padding: 4px 9px;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 30%, #ffc1df, var(--p5));
+  color: #5a1036;
+  font: 900 0.95rem var(--display);
+  box-shadow: 0 0 0 2px #fff, 0 4px 8px rgba(0, 0, 0, 0.3);
+  transform: rotate(8deg);
+}
+.home-links { display: flex; gap: 10px; }
+.home-link {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 2px solid var(--wood-hi);
+  background: color-mix(in srgb, var(--wood) 90%, transparent);
+  color: #fff3dc;
+  font: 700 0.9rem var(--body);
+  cursor: pointer;
+}
+.home-link:active { transform: scale(0.97); }
+
+/* Opening: the buttons fade, the koi dive and the doors slide apart into the pond */
+.home.opening { pointer-events: none; }
+.home.opening .home-ui { opacity: 0; transform: scale(0.97); transition-delay: 0s; transition-duration: 0.18s; }
+.home.opening .moon-pond { opacity: 0; transform: scale(1.35); }
+.home.opening .door { transition-delay: 0.12s; }
+.home.opening .door.l { transform: translateX(-102%); }
+.home.opening .door.r { transform: translateX(102%); }
+.home.instant .door, .home.instant .home-ui, .home.instant .moon-pond { transition: none; }
+.app.arrive { animation: arrive 0.85s var(--ease-out) 0.12s both; }
+@keyframes arrive { from { transform: scale(0.94); opacity: 0.35; } }
+
+/* Short phones: a smaller logo and window */
+@media (max-height: 700px) {
+  .home { --moon: min(46vw, 40vh, 200px); }
+  .home-logo { font-size: 2.3rem; }
+  .hb-icon { width: 52px; height: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-wrap.restyle .board, .style-tile.nope, .app.arrive, .moon-pond i, .hb.ready .hb-icon::after { animation: none; }
+  .door, .home-ui, .moon-pond, .style-tile, .hb, .home-play { transition: none; }
+}
+
+/* Settings: a switch with a volume slider under it, for effects and for music */
+.audio-row { width: 100%; padding-bottom: 6px; border-bottom: 1px solid var(--card-line); }
+.audio-row .field.toggle { border-bottom: 0; }
+.vol {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  --fill: 50%;
+}
+.vol::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: linear-gradient(90deg, var(--good) var(--fill), var(--card-line) var(--fill)); }
+.vol::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px; height: 26px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25), 0 0 0 1px var(--card-line);
+}
+.vol::-moz-range-track { height: 6px; border-radius: 999px; background: var(--card-line); }
+.vol::-moz-range-progress { height: 6px; border-radius: 999px; background: var(--good); }
+.vol::-moz-range-thumb { width: 24px; height: 24px; border: 0; border-radius: 50%; background: #ffffff; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25); }
+.vol:disabled { opacity: 0.35; cursor: default; }
+
+/* Journey specials: bamboo (a cut stalk, the same in every style) and lotus flowers on empty cells */
+:root { --p9: #5aa633; --r9: 50%; --i9: url(/koi-garden/play/img/bamboo.webp); }
+:root[data-garden="night"] { --p9: #74c44a; }
+.cell.lotus:not(.filled) { background: url(/koi-garden/play/img/lotus.webp) center / 90% no-repeat; animation: lotus-float 4s ease-in-out infinite; }
+/* A stone over a lotus keeps a small flower in its corner, so you know clearing it collects one */
+.cell.lotus.filled::after {
+  content: "";
+  position: absolute;
+  right: -8%; top: -8%;
+  width: 46%; height: 46%;
+  background: url(/koi-garden/play/img/lotus.webp) center / contain no-repeat;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+}
+@keyframes lotus-float { 50% { transform: translateY(-1.5px) rotate(4deg); } }
+.cell.sprout { animation: sprout 0.45s var(--spring) both; }
+@keyframes sprout { from { transform: scale(0.2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .cell.lotus:not(.filled), .cell.sprout { animation: none; } }
+
+/* ---------- Journey map: stepping stones up a stream through the garden ---------- */
+.map-view { position: fixed; inset: 0; z-index: 25; background: linear-gradient(180deg, var(--water-deep), var(--water)); }
+.map-scroll { background: url(../img/map/pond.webp) center top / 480px auto local; }
+:root[data-garden="night"] .map-scroll { background: linear-gradient(rgba(10, 14, 50, 0.6), rgba(10, 14, 50, 0.6)) local, url(../img/map/pond.webp) center top / 480px auto local; }
+.map-scroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
+.map-world { position: relative; margin: 0 auto; }
+.zone { position: absolute; left: -50vw; right: -50vw; background: linear-gradient(180deg, transparent, var(--tint) 12%, var(--tint) 88%, transparent); pointer-events: none; }
+.decor { position: absolute; transform: rotate(var(--r)); opacity: 0.92; pointer-events: none; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25)); }
+.decor svg, .decor img { width: 100%; height: 100%; max-width: none; object-fit: contain; }
+.decor.d-koi { animation: map-koi-drift 9s ease-in-out infinite; opacity: 0.8; }
+.decor.d-koi img { transform: rotate(-60deg); }
+@keyframes map-koi-drift { 50% { transform: rotate(var(--r)) translate(14px, -10px); } }
+.stream { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.stream path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.stream .water { stroke: color-mix(in srgb, var(--water-hi) 70%, #bfeaf0); stroke-width: 46; opacity: 0.55; }
+.stream .shine { stroke: rgba(255, 255, 255, 0.35); stroke-width: 3; stroke-dasharray: 2 26; animation: stream-flow 3s linear infinite; }
+.stream .trail { stroke: color-mix(in srgb, var(--gold) 70%, white); stroke-width: 5; stroke-dasharray: 1 13; opacity: 0.9; }
+@keyframes stream-flow { to { stroke-dashoffset: -56; } }
+
+/* A stepping stone: a painted stone, tinted by its state (multiply keeps the stone's texture) */
+.step {
+  position: absolute;
+  width: 66px; height: 66px;
+  margin: -33px 0 0 -33px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #4a4234;
+  font: 900 1.3rem var(--display);
+  cursor: pointer;
+  filter: drop-shadow(0 4px 0 rgba(40, 30, 10, 0.35)) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.3));
+  transition: transform 0.12s var(--ease-out);
+}
+.step::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url(../img/map/step.webp) center / contain no-repeat, var(--stone-tint, #fff);
+  background-blend-mode: multiply;
+  -webkit-mask: url(../img/map/step.webp) center / contain no-repeat;
+  mask: url(../img/map/step.webp) center / contain no-repeat;
+}
+.step:active { transform: translateY(3px) scale(0.97); }
+.step b { position: relative; }
+.step.done { --stone-tint: #8fdcae; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+.step.current {
+  --stone-tint: #ffa877;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 70%, transparent);
+  animation: step-glow 1.8s ease-in-out infinite;
+}
+@keyframes step-glow { 50% { box-shadow: 0 0 0 9px color-mix(in srgb, var(--gold) 35%, transparent); } }
+.step.locked { color: rgba(255, 255, 255, 0.7); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); cursor: default; }
+.step.locked::before { background-image: url(../img/map/step-grey.webp); -webkit-mask-image: url(../img/map/step-grey.webp); mask-image: url(../img/map/step-grey.webp); --stone-tint: #b8c0c6; }
+.step.hard:not(.locked) { outline: 3px solid #c8402e; outline-offset: 0; }
+.hard-tag { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); padding: 1px 6px; border-radius: 999px; background: #c8402e; color: #fff; font: 700 0.55rem var(--body); letter-spacing: 0.1em; text-shadow: none; }
+.step-stars { position: absolute; left: 50%; bottom: -20px; transform: translateX(-50%); font-size: 0.85rem; letter-spacing: 1px; white-space: nowrap; color: var(--gold); text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5); }
+.step-stars i { font-style: normal; color: rgba(255, 255, 255, 0.35); }
+/* A newly opened stone rises out of the water */
+.step.rising { transform: scale(0.6); opacity: 0.4; }
+.step.rose { transform: none; opacity: 1; transition: transform 0.45s var(--spring), opacity 0.3s var(--ease-out); }
+.step.nope { animation: nope 0.3s ease-in-out; }
+
+/* Your koi circles the stone you are on */
+.map-koi { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 2; }
+.map-koi img { position: absolute; left: -26px; top: -46px; width: 52px; max-width: none; transform-origin: 26px 46px; animation: map-orbit 6s linear infinite; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, 0.35)); }
+@keyframes map-orbit { from { transform: rotate(0deg) translateY(-8px) rotate(90deg); } to { transform: rotate(360deg) translateY(-8px) rotate(90deg); } }
+
+/* A wooden gate where each chapter begins */
+.gate { position: absolute; left: 0; right: 0; height: 0; display: flex; justify-content: center; align-items: flex-start; pointer-events: none; z-index: 1; }
+.gate::before {
+  content: "";
+  position: absolute;
+  top: -104px;
+  width: 150px; height: 150px;
+  background: url(../img/map/torii.webp) center / contain no-repeat;
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, 0.3));
+}
+.gate.shut::before { filter: grayscale(0.8) brightness(0.8) drop-shadow(0 6px 6px rgba(0, 0, 0, 0.3)); }
+.gate-sign {
+  position: relative;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 16px 8px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--card-fg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3), inset 0 0 0 2px #b5452e;
+  font: 900 1.05rem var(--display);
+  white-space: nowrap;
+}
+.gate-sign small { font: 700 0.62rem var(--body); letter-spacing: 0.16em; text-transform: uppercase; color: var(--card-muted); }
+.gate-sign em { font: 600 0.72rem var(--body); font-style: normal; color: var(--card-muted); }
+/* The chapter koi waiting at the gate: in colour once earned, a quiet silhouette before */
+.gate-koi { display: flex; align-items: center; gap: 6px; margin-top: 4px; font: 700 0.7rem var(--body); color: var(--card-muted); }
+.gate-koi img { width: 54px; max-width: none; height: auto; }
+.gate-koi.waiting img { filter: grayscale(1) brightness(0.55); opacity: 0.7; }
+
+/* The bars above and below the map */
+.map-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(180deg, var(--water-deep) 55%, transparent);
+}
+.map-title { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; color: var(--on-water); text-align: center; }
+.map-title > b { font: 900 1.15rem var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.map-title span { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: var(--on-water-muted); }
+.map-title span b { color: var(--gold); }
+.map-title .pearl { width: 10px; height: 10px; }
+.map-bottom {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  padding: 26px max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 18px + var(--banner-room, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: linear-gradient(0deg, var(--water-deep) 50%, transparent);
+  pointer-events: none;
+}
+.map-bottom .map-play { pointer-events: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stream .shine, .step.current, .map-koi img, .decor.d-koi { animation: none; }
+  .step.rose { transition: none; }
+}
+
+/* The goal pill gives way to the helper buttons on a narrow screen instead of pushing them off */
+#pill { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* The logo takes taps (seven in a row open the tester tools) */
+.home-logo { pointer-events: auto; -webkit-user-select: none; user-select: none; }
+#testerLevel { width: 6.5em; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--card-line); background: var(--card-well); color: var(--card-fg); }
+
+/* ---------- Joker koi: what each one does ---------- */
+.joker-slot .joker-does { font: 600 0.58rem var(--body); color: var(--gold); text-align: center; line-height: 1.1; pointer-events: none; }
+/* While dragging: beams along the row and column, with arrow heads at the ends */
+.beam { position: absolute; z-index: 3; pointer-events: none; border-radius: 10px; background: color-mix(in srgb, #6db7ff 28%, transparent); box-shadow: 0 0 0 2px #6db7ff, 0 0 18px #6db7ff; animation: beam-pulse 0.9s ease-in-out infinite; }
+.beam i { position: absolute; width: 0; height: 0; border: 9px solid transparent; }
+.beam.h i:first-child { left: -14px; top: 50%; margin-top: -9px; border-right-color: #6db7ff; }
+.beam.h i:last-child { right: -14px; top: 50%; margin-top: -9px; border-left-color: #6db7ff; }
+.beam.v i:first-child { top: -14px; left: 50%; margin-left: -9px; border-bottom-color: #6db7ff; }
+.beam.v i:last-child { bottom: -14px; left: 50%; margin-left: -9px; border-top-color: #6db7ff; }
+@keyframes beam-pulse { 50% { background: color-mix(in srgb, #6db7ff 12%, transparent); } }
+/* A ring around the 5×5 square */
+.ring5 { position: absolute; z-index: 3; pointer-events: none; border-radius: 22%; border: 3px dashed #49e0c0; background: color-mix(in srgb, #49e0c0 18%, transparent); box-shadow: 0 0 20px #49e0c0; animation: ring5-breathe 1.1s ease-in-out infinite; }
+@keyframes ring5-breathe { 50% { transform: scale(1.03); background: color-mix(in srgb, #49e0c0 8%, transparent); } }
+/* Every stone of the rainbow's colour lifts and shines */
+.cell.rainbow-hit { animation: rainbow-hit 0.7s ease-in-out infinite; box-shadow: 0 0 0 3px #ffffff inset, 0 0 16px var(--c); z-index: 2; }
+@keyframes rainbow-hit { 50% { transform: scale(1.12); } }
+/* The line above the board that says what the joker will do */
+.joker-tip {
+  position: absolute;
+  z-index: 4;
+  left: 50%; top: -12px;
+  transform: translate(-50%, -100%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 8px);
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--card-fg);
+  font: 600 0.84rem var(--body);
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: pop-in 0.18s var(--ease-out) both;
+}
+.joker-tip .dot { display: inline-block; width: 14px; height: 14px; border-radius: var(--rad, 50%); background: var(--c); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+/* The wave the Ripple Koi sends out */
+.ripple-ring { position: fixed; z-index: 44; border-radius: 26%; border: 4px solid #49e0c0; box-shadow: 0 0 24px #49e0c0, inset 0 0 18px #49e0c0; pointer-events: none; transform: translate(-50%, -50%); animation: ripple-out 0.6s var(--ease-out) forwards; }
+@keyframes ripple-out { from { transform: translate(-50%, -50%) scale(0.15); opacity: 1; } to { transform: translate(-50%, -50%) scale(1.05); opacity: 0; } }
+
+/* The joker card: a small board showing what it takes */
+.joker-head { display: flex; align-items: center; gap: 10px; }
+.joker-head img { width: 76px; transform: rotate(-30deg); filter: drop-shadow(0 0 8px var(--gold)); }
+.joker-demo {
+  width: min(240px, 80%);
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--board-frame);
+  box-shadow: 0 0 0 2px var(--board-edge);
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 2px;
+}
+.joker-demo i { position: relative; border-radius: 3px; background: color-mix(in srgb, var(--sand) 85%, transparent); }
+.joker-demo i.st { background: var(--c); border-radius: 40%; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18); }
+.joker-demo i.lane:not(.st):not(.spot) { background: color-mix(in srgb, #6db7ff 35%, var(--sand)); }
+.joker-demo[data-type="ripple"] i.lane:not(.st):not(.spot) { background: color-mix(in srgb, #49e0c0 35%, var(--sand)); }
+.joker-demo i.hit { animation: demo-hit 1.8s ease-in-out infinite; }
+@keyframes demo-hit { 0%, 35% { transform: none; opacity: 1; } 55%, 80% { transform: scale(0.2); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.joker-demo i.spot { background: var(--gold); border-radius: 50%; box-shadow: 0 0 10px var(--gold); }
+.joker-demo i.spot img { position: absolute; left: 50%; top: 50%; width: 260%; max-width: none; transform: translate(-50%, -50%) rotate(-30deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .beam, .ring5, .cell.rainbow-hit, .joker-tip, .ripple-ring, .joker-demo i.hit { animation: none; }
+}
+
+/* ---------- The combo ladder: the board glows warmer with every step ---------- */
+.board-wrap::after { content: ""; position: absolute; inset: 0; border-radius: 16px; pointer-events: none; z-index: 2;
+  opacity: 0; transition: opacity 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out); }
+.board-wrap[data-combo="2"]::after { opacity: 1; box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 45%, transparent), 0 0 18px color-mix(in srgb, var(--gold) 30%, transparent); }
+.board-wrap[data-combo="3"]::after { opacity: 1; box-shadow: 0 0 0 2px color-mix(in srgb, var(--gold) 65%, transparent), 0 0 28px color-mix(in srgb, var(--gold) 45%, transparent); }
+.board-wrap[data-combo="4"]::after { opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, #ff9a3c 75%, transparent), 0 0 38px color-mix(in srgb, #ff9a3c 55%, transparent); }
+.board-wrap[data-combo="5"]::after { opacity: 1; box-shadow: 0 0 0 3px #ff7a45, 0 0 50px color-mix(in srgb, #ff5a3c 65%, transparent); animation: combo-pulse 1.2s ease-in-out infinite; }
+@keyframes combo-pulse { 50% { box-shadow: 0 0 0 3px #ffb347, 0 0 64px color-mix(in srgb, #ff7a45 75%, transparent); } }
+.combo-chip {
+  position: absolute; left: 50%; top: -14px; transform: translate(-50%, -100%); z-index: 4; pointer-events: none;
+  display: flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 90%, #fff); color: #4a2a00; font: 800 0.8rem var(--display);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25); animation: chip-in 0.3s var(--spring);
+}
+.board-wrap[data-combo="4"] .combo-chip, .board-wrap[data-combo="5"] .combo-chip { background: #ff8a4c; color: #fff; }
+.combo-chip .misses { display: flex; gap: 3px; }
+.combo-chip .misses i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.85; }
+.combo-chip .misses i.used { opacity: 0.2; }
+@keyframes chip-in { from { transform: translate(-50%, -100%) scale(0.6); opacity: 0; } }
+
+/* ---------- The chest on the win card ---------- */
+.chest-row { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; padding: 8px 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--gold) 12%, transparent); font-size: 0.82rem; text-align: left; }
+.chest-text { flex: 1; color: var(--card-muted); }
+.chest-text b { color: var(--card-fg); }
+.chest-row .pips { display: flex; gap: 4px; }
+.chest-row .pips i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--gold) 70%, #8a5a00); }
+.chest-row .pips i.on { background: var(--gold); }
+.chest-row .pips i.new { animation: pip-pop 0.5s 0.6s var(--spring) backwards; }
+@keyframes pip-pop { from { transform: scale(0); } }
+.chest { position: relative; width: 30px; height: 26px; flex: none; }
+.chest .box { position: absolute; left: 0; right: 0; bottom: 0; height: 16px; border-radius: 3px 3px 5px 5px;
+  background: linear-gradient(#b5652b, #8a4419); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2), inset 0 0 0 2px #e0a33a; }
+.chest .lid { position: absolute; left: -1px; right: -1px; top: 2px; height: 10px; border-radius: 8px 8px 2px 2px;
+  background: linear-gradient(#c97a3a, #9a5220); box-shadow: inset 0 0 0 2px #e0a33a; transform-origin: 10% 100%; }
+.chest-row.open { background: color-mix(in srgb, var(--gold) 26%, transparent); }
+.chest-row.open .lid { animation: lid-open 0.6s 0.6s var(--spring) forwards; }
+.chest-row.open .chest::after { content: ""; position: absolute; left: 50%; top: 6px; width: 36px; height: 36px; margin-left: -18px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 230, 140, 0.9), transparent 70%); opacity: 0; animation: chest-glow 1.2s 0.7s ease-out forwards; }
+@keyframes lid-open { to { transform: rotate(-35deg) translateY(-3px); } }
+@keyframes chest-glow { 30% { opacity: 1; transform: scale(1.3); } to { opacity: 0.5; transform: scale(1); } }
+
+/* ---------- One tap to the next level ---------- */
+.next-btn { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.next-btn small { font-size: 0.72rem; margin-top: 2px; }
+
+/* ---------- So close: how far you got ---------- */
+.fail-bar { height: 10px; margin: 12px auto 4px; max-width: 240px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, var(--card-muted) 22%, transparent); }
+.fail-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--card-muted); transition: width 0.9s var(--ease-out) 0.2s; }
+.fail-bar.close i { background: linear-gradient(90deg, var(--gold), #ff8a4c); }
+.fail-short { margin: 4px 0 0; font-weight: 700; color: #e0703a; min-height: 1em; }
+.fail-short:empty { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .board-wrap[data-combo="5"]::after, .combo-chip, .chest-row .pips i.new, .chest-row.open .lid, .chest-row.open .chest::after { animation: none; }
+  .chest-row.open .lid { transform: rotate(-35deg) translateY(-3px); }
+}
+
+/* ---------- New in the Journey: shaped boards, frogs, maple leaves and blossom stones ---------- */
+:root { --p11: #5a9a3a; --r11: 50%; --i11: url(/koi-garden/play/img/frog.webp); --p12: #d9612e; --r12: 30%; --i12: url(/koi-garden/play/img/leaf.webp); }
+/* Water in a shaped board: the pond shows through the sand, with a soft shore */
+.cell.hole {
+  z-index: 0;
+  border-radius: 16%;
+  /* Larger than the cell, so the sand between neighbouring water cells is covered too */
+  transform: scale(1.24);
+  background:
+    radial-gradient(120% 90% at 35% 25%, color-mix(in srgb, var(--water-hi) 85%, white 15%) 0, var(--water-hi) 35%, var(--water) 100%);
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.28), inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+}
+.cell.hole::after { content: ""; position: absolute; inset: 22% 18% 40% 30%; border-radius: 50%; border-top: 1.5px solid rgba(255, 255, 255, 0.35);
+  animation: hole-ripple 4.5s ease-in-out infinite; }
+@keyframes hole-ripple { 50% { transform: translate(8%, 12%) scale(1.15); opacity: 0.4; } }
+/* A blossom on a stone: clearing it bursts the stones around it too */
+.cell.blossom::after {
+  content: ""; position: absolute; right: -10%; top: -10%; width: 52%; height: 52%;
+  background: url(/koi-garden/play/img/blossom.webp) center / contain no-repeat; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  animation: blossom-sway 3.2s ease-in-out infinite; pointer-events: none;
+}
+@keyframes blossom-sway { 50% { transform: rotate(18deg) scale(1.08); } }
+/* A frog sits on its own pad; it lands with a little bounce after a hop */
+.cell.frog { animation: frog-breathe 2.6s ease-in-out infinite; }
+@keyframes frog-breathe { 50% { transform: scale(1.04); } }
+.cell.frog.hop { animation: frog-land 0.5s var(--spring); }
+@keyframes frog-land { 0% { transform: translateY(-40%) scale(1.2); opacity: 0.4; } 60% { transform: translateY(4%) scale(0.95); opacity: 1; } }
+.frog-jump { position: fixed; z-index: 30; pointer-events: none; background: url(/koi-garden/play/img/frog.webp) center / contain no-repeat;
+  animation: frog-jump 1s cubic-bezier(0.3, 0.6, 0.5, 1) forwards; }
+@keyframes frog-jump { 40% { transform: translate(calc(var(--dx) * 0.5), -90px) scale(1.25) rotate(20deg); } 100% { transform: translate(var(--dx), 40px) scale(0.7) rotate(40deg); opacity: 0; } }
+/* A maple leaf drifts down in a swaying fall */
+.cell.leaf-fall { animation: leaf-fall 0.85s ease-out; }
+@keyframes leaf-fall { 0% { transform: translate(-30%, -160%) rotate(-50deg); opacity: 0; } 50% { transform: translate(20%, -60%) rotate(30deg); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .cell.hole::after, .cell.blossom::after, .cell.frog, .cell.frog.hop, .frog-jump, .cell.leaf-fall { animation: none; }
+}
+/* Frogs and leaves are pictures, not stones */
+.cell.filled.frog, .cell.filled.leaf { background: var(--img) center / 100% 100% no-repeat; box-shadow: none !important; }
+.cell.filled.leaf { filter: drop-shadow(0 2px 2px rgba(60, 20, 0, 0.35)); }
+
+/* ---------- Garden: restore an area for each chapter with stars ---------- */
+.garden-view { position: fixed; inset: 0; z-index: 55; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px calc(env(safe-area-inset-bottom) + 12px); overflow-y: auto;
+  background: linear-gradient(180deg, var(--water), var(--water-deep)); color: var(--on-water); }
+.garden-top { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 460px; flex: none; }
+.garden-title { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.garden-title b { font: 900 1.25rem var(--display); }
+.garden-title span { font-size: 0.85rem; color: var(--on-water-muted); }
+.garden-title span b { font: 800 0.95rem var(--body); color: var(--gold); }
+.garden-gap { width: 44px; }
+/* The picture takes whatever height is left after the title and the list, so the whole view fits without scrolling */
+.garden-stage { flex: 1 1 0; min-height: 180px; width: 100%; display: flex; align-items: center; justify-content: center; container-type: size; }
+.garden-scene { position: relative; width: min(100%, 460px, calc((100vh - 470px) * 0.75)); width: min(100cqw, 460px, 75cqh); aspect-ratio: 3 / 4; flex: none;
+  border-radius: 22px; overflow: hidden; background: #2f5a35 center / cover no-repeat;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--frame-dark, #5a3a1a) 80%, transparent), 0 14px 34px rgba(0, 0, 0, 0.4); }
+.garden-scene.locked { filter: grayscale(0.7) brightness(0.6); }
+/* The living garden: swaying trees, sun through leaves, and a canvas for koi and whatever drifts in the air */
+.garden-sway { position: absolute; inset: 0; background: center / cover no-repeat; pointer-events: none;
+  -webkit-mask-image: var(--m); mask-image: var(--m); animation: garden-sway 5.5s ease-in-out infinite; will-change: transform; }
+@keyframes garden-sway { 0%, 100% { transform: rotate(-0.7deg); } 50% { transform: rotate(0.7deg) translateX(1px); } }
+.garden-light { position: absolute; inset: -20%; pointer-events: none; mix-blend-mode: soft-light; opacity: 0.55;
+  background: radial-gradient(18% 14% at 30% 30%, rgba(255, 250, 220, 0.9), transparent), radial-gradient(14% 12% at 68% 58%, rgba(255, 250, 220, 0.8), transparent),
+    radial-gradient(20% 16% at 50% 82%, rgba(255, 250, 220, 0.7), transparent);
+  animation: garden-light 14s ease-in-out infinite alternate; will-change: transform; }
+@keyframes garden-light { to { transform: translate(6%, 4%) scale(1.06); } }
+.garden-fx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.garden-layer, .garden-full { position: absolute; inset: 0; background: center / cover no-repeat; pointer-events: none; }
+.garden-layer { -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.garden-layer.fresh { animation: garden-grow 1.4s var(--ease-out) both; }
+@keyframes garden-grow { from { opacity: 0; filter: brightness(1.8) saturate(0.4); transform: scale(1.04); } 60% { opacity: 1; filter: brightness(1.25); } }
+.garden-full { opacity: 0; animation: garden-full 1.6s 0.4s ease-out forwards; }
+@keyframes garden-full { to { opacity: 1; } }
+.garden-scene.complete::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 240, 180, 0.55), transparent 60%); animation: garden-glow 2s ease-out forwards; }
+@keyframes garden-glow { from { opacity: 0; } 30% { opacity: 1; } to { opacity: 0; } }
+.garden-nav { display: flex; align-items: center; gap: 10px; flex: none; }
+.garden-dots { display: flex; gap: 6px; }
+.gdot { width: 12px; height: 12px; padding: 0; border-radius: 50%; border: 2px solid var(--on-water-muted); background: transparent; cursor: pointer; }
+.gdot.on { border-color: var(--gold); transform: scale(1.25); }
+.gdot.done { background: var(--gold); border-color: var(--gold); }
+.gdot.shut { opacity: 0.35; }
+.garden-items { list-style: none; margin: 0; padding: 8px 12px; width: 100%; max-width: 460px; border-radius: 18px; flex: none;
+  background: var(--card); color: var(--card-fg); display: flex; flex-direction: column; gap: 2px; }
+.garden-items li { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 1px 4px; border-bottom: 1px solid color-mix(in srgb, var(--card-muted) 18%, transparent); }
+.garden-items li:last-of-type { border-bottom: 0; }
+.garden-items li.got .g-name { color: var(--card-muted); }
+.g-name { font-weight: 700; }
+.g-buy { padding: 6px 14px; font-size: 0.9rem; }
+.g-cost { margin-left: 6px; font-weight: 800; }
+.g-done { color: #2f9a5e; font-weight: 800; font-size: 0.85rem; }
+.g-done::before { content: "✓ "; }
+.g-need { display: flex; flex-direction: column; align-items: flex-end; font-weight: 800; color: var(--card-muted); }
+.g-need small { font-weight: 600; font-size: 0.72rem; }
+.garden-note { margin: 4px 0 0; font-size: 0.85rem; color: var(--card-muted); text-align: center; }
+.garden-note.done { color: #2f9a5e; font-weight: 700; }
+/* The dot on the home button when something can be restored */
+.hb-icon { position: relative; }
+.hb-dot { position: absolute; right: -2px; top: -2px; width: 12px; height: 12px; border-radius: 50%; background: #ff6a3d; box-shadow: 0 0 0 2px #fff; animation: dot-pulse 1.6s ease-in-out infinite; }
+@keyframes dot-pulse { 50% { transform: scale(1.25); } }
+/* On the win card: enough stars for something in the garden */
+.garden-nudge { display: flex; align-items: center; gap: 8px; width: 100%; margin: 6px 0 2px; padding: 9px 12px; border: 0; border-radius: 14px; cursor: pointer;
+  background: color-mix(in srgb, #2f9a5e 14%, transparent); color: inherit; font: inherit; font-size: 0.82rem; text-align: left; }
+.gn-star { font-weight: 800; color: #b07a00; white-space: nowrap; }
+.gn-text { flex: 1; min-width: 0; }
+.gn-go { margin-left: auto; font-weight: 800; color: #2f9a5e; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .garden-layer.fresh, .garden-full, .garden-scene.complete::after, .hb-dot, .garden-sway, .garden-light { animation: none; } .garden-full { opacity: 1; } }
+
+/* ---------- The world around the board (world.js) ----------
+   Each chapter's garden shows above the board and fades into the pond; the water takes the chapter's colour,
+   and the light changes through the chapter: day, golden afternoon, dusk. */
+@property --water { syntax: "<color>"; inherits: true; initial-value: #0f5a5e; }
+@property --water-deep { syntax: "<color>"; inherits: true; initial-value: #0a3c43; }
+@property --water-hi { syntax: "<color>"; inherits: true; initial-value: #1d8a83; }
+:root { transition: --water 1.4s ease, --water-deep 1.4s ease, --water-hi 1.4s ease; }
+:root[data-scene]:not([data-garden="night"]) { --water: var(--scene-water); --water-deep: var(--scene-deep); --water-hi: var(--scene-hi); }
+.scene { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.scene-pic {
+  position: absolute; left: 0; right: 0; top: 0; height: var(--scene-h, 30vh);
+  background: center 46% / cover no-repeat; opacity: 0; transition: opacity 1.4s ease;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 52%, rgba(0, 0, 0, 0.5) 76%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 52%, rgba(0, 0, 0, 0.5) 76%, transparent 100%);
+}
+.scene-pic.on { opacity: 0.92; }
+/* A darker veil at the very top keeps the score and buttons easy to read */
+.scene::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: var(--scene-h, 30vh); z-index: 1;
+  background: linear-gradient(180deg, rgba(5, 30, 35, 0.5), rgba(5, 30, 35, 0.12) 45%, transparent 80%); }
+:root[data-garden="night"] .scene-pic { filter: brightness(0.42) saturate(0.7) hue-rotate(12deg); }
+:root[data-garden="night"] .scene-pic.on { opacity: 0.85; }
+.sky { position: absolute; inset: 0; z-index: 1; opacity: 0; transition: opacity 1.6s ease; }
+.sky.gold { background: linear-gradient(180deg, rgba(255, 186, 92, 0.42), rgba(255, 160, 70, 0.16) 45%, rgba(255, 140, 60, 0.06)); mix-blend-mode: soft-light; }
+.sky.dusk { background: linear-gradient(180deg, rgba(255, 112, 70, 0.5), rgba(150, 70, 140, 0.32) 40%, rgba(30, 22, 80, 0.4)); mix-blend-mode: soft-light; }
+.sky.rain { background: linear-gradient(180deg, rgba(60, 80, 100, 0.45), rgba(60, 80, 100, 0.15) 50%, transparent); }
+.scene[data-phase="gold"] .sky.gold, .scene[data-phase="dusk"] .sky.dusk, .scene.raining .sky.rain { opacity: 1; }
+:root[data-garden="night"] .sky.gold, :root[data-garden="night"] .sky.dusk { opacity: 0 !important; }
+
+/* The level card shows the garden the level is played in */
+.level-scene { position: relative; align-self: stretch; height: 108px; margin: -6px -6px 2px; border-radius: 16px; overflow: hidden;
+  background: center 46% / cover no-repeat; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
+.level-scene::before { content: ""; position: absolute; inset: 0; opacity: 0; mix-blend-mode: soft-light; }
+.level-scene[data-phase="gold"]::before { opacity: 1; background: linear-gradient(180deg, rgba(255, 186, 92, 0.7), rgba(255, 150, 60, 0.3)); }
+.level-scene[data-phase="dusk"]::before { opacity: 1; background: linear-gradient(180deg, rgba(255, 112, 70, 0.8), rgba(60, 30, 110, 0.6)); }
+.level-scene::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.55)); }
+.level-scene span { position: absolute; left: 12px; right: 12px; bottom: 8px; z-index: 1; color: #fff; text-align: left;
+  font: 800 0.86rem var(--display); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.5); }
+
+/* Surprises: the dragonfly resting on a spot, and leaving it */
+.cell.dragonfly::after { content: ""; position: absolute; inset: 4%; z-index: 2; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg fill='rgba(200,235,255,0.75)' stroke='rgba(110,165,205,0.95)' stroke-width='0.7'%3E%3Cellipse cx='13' cy='15' rx='10' ry='3.4' transform='rotate(-18 13 15)'/%3E%3Cellipse cx='27' cy='15' rx='10' ry='3.4' transform='rotate(18 27 15)'/%3E%3Cellipse cx='13.5' cy='21' rx='9' ry='3' transform='rotate(14 13.5 21)'/%3E%3Cellipse cx='26.5' cy='21' rx='9' ry='3' transform='rotate(-14 26.5 21)'/%3E%3C/g%3E%3Cpath d='M20 10v24' stroke='%232f8fb0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='20' cy='9' r='2.8' fill='%231f6f8a'/%3E%3C/svg%3E") center / contain no-repeat;
+  filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.25)); animation: dragonfly 1.6s ease-in-out infinite; }
+.cell.dragonfly::before { content: ""; position: absolute; inset: 18%; border-radius: 50%; z-index: 1; pointer-events: none;
+  box-shadow: 0 0 0 2px rgba(120, 200, 240, 0.55), 0 0 12px rgba(120, 200, 240, 0.5); animation: dragonfly-spot 1.6s ease-in-out infinite; }
+@keyframes dragonfly { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-8%) rotate(6deg) scale(1.04); } }
+@keyframes dragonfly-spot { 50% { opacity: 0.45; transform: scale(1.12); } }
+.dragonfly-off { position: fixed; z-index: 46; pointer-events: none; }
+.dragonfly-off svg { width: 100%; height: 100%; }
+
+/* Rings in the water: a tap, and the combo pulsing out from the board */
+.tap-ring { position: fixed; z-index: 0; width: 60px; height: 60px; border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
+  border: 2px solid rgba(225, 246, 255, 0.7); animation: splash-ring 0.9s var(--ease-out) forwards; }
+.board-pulse { position: fixed; z-index: 2; border-radius: 18px; pointer-events: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 80%, transparent), 0 0 24px color-mix(in srgb, var(--gold) 50%, transparent);
+  animation: board-pulse 0.9s var(--ease-out) forwards; }
+@keyframes board-pulse { from { transform: scale(1); opacity: 0.9; } to { transform: scale(1.14); opacity: 0; } }
+
+/* The board answers: stones about to clear shiver, neighbours make room for a new piece */
+.cell.filled.glow { animation: ready 0.42s ease-in-out infinite alternate; }
+@keyframes ready { from { transform: translateY(0) rotate(-2.5deg); } to { transform: translateY(-6%) rotate(2.5deg) scale(1.05); } }
+.cell.nudge { animation: nudge 0.34s var(--ease-out); }
+@keyframes nudge { 35% { transform: translate(calc(var(--nx, 0) * 3px), calc(var(--ny, 0) * 3px)) scale(0.96); } }
+
+/* The score glows while a big gain rolls up */
+.score .now.rolling { color: var(--gold); text-shadow: 0 0 16px color-mix(in srgb, var(--gold) 70%, transparent); }
+
+/* Win stars slam down one by one */
+@keyframes star-in {
+  0% { transform: scale(2.8) rotate(-30deg); opacity: 0; }
+  55% { transform: scale(0.82) rotate(6deg); opacity: 1; }
+  75% { transform: scale(1.12) rotate(-2deg); }
+  100% { transform: none; }
+}
+.card.thump { animation: thump 0.38s ease-out; }
+@keyframes thump { 30% { transform: translateY(3px) scale(0.985); } 65% { transform: translateY(-2px); } }
+
+/* Weekly festivals: each has its own colour on the card, the home button and the bar */
+:root { --fest: #ff9a3c; --fest-2: #ffd36b; }
+:root[data-festival="moon"] { --fest: #8fa6ff; --fest-2: #e6ecff; }
+:root[data-festival="sakura"] { --fest: #ff7fae; --fest-2: #ffd3e3; }
+:root[data-festival="firefly"] { --fest: #b6d84a; --fest-2: #fff2a0; }
+#homeLanterns .hb-icon { color: var(--fest-2); box-shadow: 0 0 0 2px color-mix(in srgb, var(--fest) 70%, transparent), 0 0 14px color-mix(in srgb, var(--fest) 45%, transparent); }
+#eventCard { position: relative; overflow: hidden; }
+#eventCard .bar i { background: linear-gradient(90deg, var(--fest), var(--fest-2)); }
+#eventCard h2 { color: color-mix(in srgb, var(--fest) 70%, var(--card-fg)); }
+.fest-sky { position: absolute; left: 0; right: 0; top: 0; height: 90px; pointer-events: none; opacity: 0.9;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--fest) 30%, transparent), transparent); }
+.fest-sky i { position: absolute; top: 18px; width: 10px; height: 10px; border-radius: 50%; background: var(--fest-2);
+  box-shadow: 0 0 10px var(--fest), 0 0 2px var(--fest); animation: fest-float 3.2s ease-in-out infinite; }
+.fest-sky i:nth-child(1) { left: 10%; animation-delay: -0.4s; }
+.fest-sky i:nth-child(2) { left: 26%; top: 40px; animation-delay: -1.4s; width: 7px; height: 7px; }
+.fest-sky i:nth-child(3) { left: 72%; animation-delay: -2.1s; }
+.fest-sky i:nth-child(4) { left: 86%; top: 46px; animation-delay: -0.9s; width: 6px; height: 6px; }
+.fest-sky i:nth-child(5) { left: 55%; top: 10px; animation-delay: -2.7s; width: 5px; height: 5px; }
+#eventCard[data-festival="lantern"] .fest-sky i { border-radius: 40% 40% 45% 45%; width: 11px; height: 14px; background: #ff8a3a; box-shadow: 0 0 12px #ffb35c; }
+#eventCard[data-festival="sakura"] .fest-sky i { border-radius: 60% 0 60% 0; background: #ffb7cf; box-shadow: none; }
+@keyframes fest-float { 50% { transform: translateY(-7px); opacity: 0.6; } }
+#eventCard > *:not(.fest-sky) { position: relative; }
+.fest-koi { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border-radius: 14px; text-align: left;
+  background: color-mix(in srgb, var(--fest) 16%, var(--card-well)); font-size: 0.82rem; color: var(--card-muted); }
+.fest-koi img { width: 92px; height: 40px; object-fit: contain; flex: none; filter: drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.3)); }
+.fest-koi b { display: block; color: var(--card-fg); font-size: 0.95rem; }
+.fest-koi:not(.owned) img { animation: fest-koi 2.4s ease-in-out infinite; }
+@keyframes fest-koi { 50% { transform: translateX(4px) rotate(-3deg); } }
+.fest-koi-mini { width: 38px; height: 16px; object-fit: contain; vertical-align: middle; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-pic, .sky, :root { transition: none; }
+  .cell.dragonfly::after, .cell.dragonfly::before, .cell.filled.glow, .cell.nudge, .card.thump, .fest-sky i, .fest-koi img, .tap-ring, .board-pulse { animation: none; }
+}
+.calm .cell.filled.glow, .calm .cell.nudge, .calm .card.thump { animation: none; }

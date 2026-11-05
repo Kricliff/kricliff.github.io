@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Koi Garden: a calm koi-pond block puzzle with a level journey, an endless mode and a daily challenge.">
+<meta name="theme-color" content="#0f5a5e">
+<title>Koi Garden</title>
+<link rel="icon" href="img/icon-180.png" type="image/png">
+<link rel="apple-touch-icon" href="img/icon-180.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="pond" aria-hidden="true"><i></i><i></i><i></i></div>
+<canvas class="koi-layer" id="koiLayer" aria-hidden="true"></canvas>
+
+<div class="app" id="app">
+  <header id="header">
+    <button class="brand" id="brand" aria-label="Home"><img class="logo" src="img/icon-256.png" alt="" width="34" height="34"><div class="brand-text"><b>Koi Garden</b><span>Block puzzle</span></div></button>
+    <div class="score">
+      <div class="now" id="score">0</div>
+      <div class="best"><span id="bestLabel">Best</span> <em id="best">0</em></div>
+      <div class="star-goals" id="starGoals" hidden></div>
+    </div>
+    <div class="tools">
+      <button class="icon-btn" id="homeBtn" aria-label="Home" title="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></svg>
+      </button>
+      <button class="icon-btn" id="settings" aria-label="Settings" title="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+      <button class="icon-btn" id="restart" aria-label="Restart" title="Restart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+      </button>
+    </div>
+    <div class="modes mode-3" role="group" aria-label="Game mode">
+      <button class="mode" id="modeJourney" aria-pressed="true">Journey</button>
+      <button class="mode" id="modeEndless" aria-pressed="false">Endless</button>
+      <button class="mode" id="modeDaily" aria-pressed="false">Daily</button>
+    </div>
+    <button class="nudge" id="nudge" hidden></button>
+  </header>
+
+  <div class="board-wrap" id="boardWrap">
+    <div class="board" id="board"></div>
+    <div class="combo-chip" id="comboChip" hidden aria-live="polite"><b></b><span class="misses"><i></i><i></i><i></i></span></div>
+  </div>
+
+  <div class="tray" id="tray">
+    <div class="slot" data-i="0"></div>
+    <div class="slot" data-i="1"></div>
+    <div class="slot joker-slot empty" id="jokerSlot" data-i="j" aria-label="Joker koi"></div>
+  </div>
+  <div class="below" id="below">
+    <span class="chip" id="pill" hidden></span>
+    <span class="helpers">
+      <button class="chip helper" id="hintBtn" hidden aria-label="Hint"></button>
+      <button class="chip helper" id="undoBtn" hidden aria-label="Undo"></button>
+      <button class="chip helper" id="swapBtn" hidden aria-label="Swap pieces"></button>
+    </span>
+    <span class="hint" id="hint"></span>
+  </div>
+
+  <div class="banner" id="banner">Banner ad · 320×50 · placeholder</div>
+</div>
+
+<div class="home" id="home" hidden>
+  <div class="door l"><span class="moon-ring"></span></div>
+  <div class="door r"><span class="moon-ring"></span></div>
+  <div class="moon-pond" aria-hidden="true"><i></i><i></i><canvas id="moonCanvas"></canvas></div>
+  <div class="home-ui">
+    <div class="home-top">
+      <span class="home-chip"><i class="pearl"></i><b id="homePearls">0</b></span>
+      <span class="home-chip current-chip" id="homeCurrent" hidden></span>
+      <span class="home-tools">
+        <button class="icon-btn" id="homeStyle" aria-label="Board and stones" title="Board and stones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L12 14.8l-3-3z"/><path d="M8.5 13.2c-2.2 0-3.6 1.6-3.6 3.6 0 1.6-.9 2.6-2.4 3 1.2 1 2.6 1.4 4.1 1.4 3 0 5-2.1 5-4.6z"/></svg>
+        </button>
+        <button class="icon-btn" id="homeHelp" aria-label="How to play" title="How to play">?</button>
+        <button class="icon-btn" id="homeSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      </span>
+    </div>
+    <h1 class="home-logo" id="homeLogo"><span>Koi</span> <span>Garden</span><small>Block puzzle</small></h1>
+    <div class="home-side l">
+      <button class="hb" id="homeTasks"><span class="hb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 12.5l2.2 2.2 4.8-5"/></svg></span><span class="hb-label">Tasks</span></button>
+      <button class="hb" id="homeLanterns"><span class="hb-icon" id="homeFestIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="M9 4h6"/><path d="M8 6.5C5.5 8 5 10 5 12.5S5.5 17 8 18.5h8c2.5-1.5 3-3.5 3-6S18.5 8 16 6.5z"/><path d="M12 6.5v12M8.7 7c-1.2 3-1.2 8 0 11M15.3 7c1.2 3 1.2 8 0 11"/><path d="M10 18.5V21h4v-2.5"/></svg></span><span class="hb-label">Lanterns</span></button>
+    </div>
+    <div class="home-side r">
+      <button class="hb" id="homeDaily"><span class="hb-icon cal"><b>1</b></span><span class="hb-label">Daily</span></button>
+      <button class="hb" id="homeKoi"><span class="hb-icon"><img src="img/koi/01-kohaku.png" alt=""></span><span class="hb-label">Koi</span></button>
+      <button class="hb" id="homeGarden"><span class="hb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16"/><path d="M6 21v-5h12v5"/><path d="M4 16h16L12 9z"/><path d="M12 9V5"/><path d="M9.5 5h5"/></svg><i class="hb-dot" id="gardenDot" hidden></i></span><span class="hb-label">Garden</span></button>
+    </div>
+    <div class="home-bottom">
+      <button class="home-play" id="homePlay"><b>Level 1</b><small></small><span class="home-boost" id="homeBoost" hidden>×1</span></button>
+      <div class="home-links">
+        <button class="home-link" id="homeMap">Map</button>
+        <button class="home-link" id="homeEndless">Endless</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="map-view" id="mapView" hidden>
+  <div class="map-scroll" id="mapScroll"><div class="map-world" id="mapWorld"></div></div>
+  <div class="map-top">
+    <button class="icon-btn" id="mapHome" aria-label="Home" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></svg></button>
+    <div class="map-title"><b id="mapChapter">Koi Pond</b><span>★ <b id="mapStars">0</b> · <i class="pearl"></i> <b id="mapPearls">0</b></span></div>
+    <button class="icon-btn" id="mapClose" aria-label="Back to the game" title="Back">✕</button>
+  </div>
+  <div class="map-bottom">
+    <button class="home-play map-play" id="mapPlay"><b>Play level 1</b><small></small><span class="home-boost" id="mapBoost" hidden>×1</span></button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="card" id="promiseCard" hidden>
+    <img class="app-icon" src="img/icon-256.png" alt="Koi Garden" width="112" height="112">
+    <h2>Free to play, fair with ads</h2>
+    <ul class="promise">
+      <li>No ads in the middle of a round.</li>
+      <li>A short ad break between rounds now and then, never more often than every few minutes.</li>
+      <li>Videos are always your choice, and you always know what you get for watching.</li>
+      <li>The daily challenge never interrupts you.</li>
+    </ul>
+    <div class="btns"><button class="btn primary" id="promiseOk">Let’s play</button></div>
+  </div>
+
+  <div class="card" id="statsCard" hidden>
+    <p class="eyebrow">A small favour</p>
+    <h2>Help make the levels better?</h2>
+    <p>Koi Garden can send anonymous play stats: which levels you start and finish, your scores and which rewards you choose. It helps us fix levels that are too hard.</p>
+    <ul class="promise">
+      <li>No name, e-mail or advertising ID. Just a random number made on this phone.</li>
+      <li>Nothing is sold or used for ads.</li>
+      <li>You can turn it off any time in Settings.</li>
+    </ul>
+    <div class="btns">
+      <button class="btn primary" id="statsYes">Yes, share stats</button>
+      <button class="btn" id="statsNo">No thanks</button>
+    </div>
+  </div>
+
+  <div class="card" id="levelCard" hidden>
+    <div class="level-scene" id="levelScene" aria-hidden="true"><span id="levelSceneName"></span></div>
+    <p class="eyebrow" id="levelEyebrow">Level 1</p>
+    <h2 id="levelGoal">Reach 150 points</h2>
+    <span class="goal-badge" id="levelPieces">20 pieces</span>
+    <div class="current" id="levelCurrent" hidden></div>
+    <p id="levelNote"></p>
+    <p class="note"><span id="levelStars">Stars: 1 for the goal, more for a high score.</span> Every piece left adds 20 points at the end. Extra pieces from a video give 1 star at most.</p>
+    <div class="btns">
+      <button class="btn primary" id="levelPlay">Play</button>
+      <button class="btn" id="levelShop"><i class="pearl"></i> Bring a joker</button>
+      <button class="btn" id="levelMap">Map</button>
+    </div>
+  </div>
+
+  <div class="card" id="winCard" hidden>
+    <span class="bank" id="winBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+    <p class="eyebrow" id="winEyebrow">Level 1 complete</p>
+    <div class="big-stars" id="winStars">★★★</div>
+    <div class="big-num" id="winScore">0</div>
+    <p class="stats" id="winStats"></p>
+    <div class="new-koi" id="winKoi" hidden><img id="winKoiImg" alt="" width="96" height="40"><span id="winKoiName"></span></div>
+    <div class="current" id="winCurrent"></div>
+    <div class="chest-row" id="winChest"></div>
+    <button class="garden-nudge" id="winGarden" hidden></button>
+    <div class="btns">
+      <button class="btn primary next-btn" id="winNext">Next level</button>
+      <button class="btn" id="winDouble"><span class="tag">Ad</span>Double your pearls</button>
+      <button class="btn" id="winMap">Map</button>
+    </div>
+  </div>
+
+  <div class="card" id="failCard" hidden>
+    <p class="eyebrow" id="failEyebrow">Out of pieces</p>
+    <h2 id="failTitle">So close</h2>
+    <span class="goal-badge" id="failProgress"></span>
+    <div class="fail-bar" id="failBar"><i></i></div>
+    <p class="fail-short" id="failShort"></p>
+    <p class="current-lost" id="failCurrent" hidden></p>
+    <div class="btns">
+      <button class="btn primary" id="failRescue"></button>
+      <button class="btn" id="failBuy" hidden></button>
+      <button class="btn" id="failRetry">Try again</button>
+      <button class="btn" id="failSkip"><span class="tag">Ad</span>Skip this level</button>
+      <button class="btn" id="failMap">Map</button>
+    </div>
+    <button class="link-btn" id="failBreathe">Take three calm breaths first</button>
+  </div>
+
+  <div class="card" id="helpCard" hidden>
+    <p class="eyebrow">How to play</p>
+    <h2>Three ways to clear</h2>
+    <div class="ways">
+      <div class="way"><div class="mini" data-demo="row"></div>Row</div>
+      <div class="way"><div class="mini" data-demo="col"></div>Column</div>
+      <div class="way"><div class="mini" data-demo="bed"></div>3×3 square</div>
+    </div>
+    <ol class="basics">
+      <li><b>Drag</b> a piece onto the board. <b>Tap</b> it to turn it.</li>
+      <li>Fill a <b>row</b>, <b>column</b> or <b>3×3 square</b> and it clears.</li>
+      <li>Clear <b>more at once</b>, or clear again soon after, for bigger points.</li>
+      <li>Keep space free: the round ends when no piece fits.</li>
+    </ol>
+    <p class="note">Want to know more? Tap a topic.</p>
+    <div class="more">
+      <details>
+        <summary>Points and combos</summary>
+        <ul class="rules">
+          <li>Each stone you place gives 1 point.</li>
+          <li>Clearing 1 line gives 10, 2 at once give 40, 3 at once give 90.</li>
+          <li><b>Combo:</b> clear again within 3 moves and your points multiply.</li>
+          <li><b>Harmony:</b> fill a 3×3 square with one colour for +100. Squares close to done glow green, or gold if they are still one colour.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Journey levels</summary>
+        <ul class="rules">
+          <li>Each level has a goal and a set number of pieces.</li>
+          <li><b>Golden koi stones</b> are freed when their line or square clears.</li>
+          <li>Stones with a <b>gold ring</b> are the ones the goal asks you to clear.</li>
+          <li><b>Ice</b> (blue frost with a snowflake) needs two clears: one to break it, one to remove the stone. A joker koi takes it in one go.</li>
+          <li>Pieces left over give bonus points and stars. Taking 10 extra pieces from a video gives 1 star at most.</li>
+          <li>Every fifth level is <b>hard</b> and gives double pearls. Each of the first 15 levels you finish adds a koi to your pond.</li>
+          <li><b>Bamboo</b> (from chapter 2) grows into an empty spot next to it after a few moves without a clear. Every clear resets the count.</li>
+          <li><b>Lotus flowers</b> (from chapter 3) float on empty spots. Clear a line over one to collect it.</li>
+          <li>Each chapter has 15 levels. Finishing one gives 100 pearls and opens the next, and the journey goes on for as long as you play.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Endless and Daily</summary>
+        <ul class="rules">
+          <li><b>Endless:</b> the higher your score, the bigger the pieces. From 800 points a rock falls into the pond every 8 moves.</li>
+          <li><b>Daily:</b> everyone gets the same board and the same 30 pieces. Your first try counts for your streak. Hint, undo and swap are off.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Hint, undo and swap</summary>
+        <ul class="rules">
+          <li><b>Hint</b> shows a good spot and turns the piece for you.</li>
+          <li><b>Undo</b> takes back your last move, twice per round.</li>
+          <li><b>Swap</b> gives you two new pieces.</li>
+          <li>Hint and swap cost pearls, or a short video.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Joker koi</summary>
+        <ul class="rules">
+          <li>Clear <b>2 lines</b> in one move: <b>Arrow Koi</b>, clears its row and column.</li>
+          <li>Reach <b>combo ×3</b>: <b>Ripple Koi</b>, clears a 5×5 area.</li>
+          <li>Clear <b>3 lines</b> or a Harmony square: <b>Rainbow Koi</b>, clears every stone in the colour it lands next to.</li>
+          <li>Drag a joker onto any empty cell. While you drag, the board shows what it will clear. Tap a joker to see a small example. You can hold three. Unused jokers give 50 points each when you win a level.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Win streak</summary>
+        <ul class="rules">
+          <li>Win Journey levels in a row to build a <b>win streak</b>.</li>
+          <li>1 win in a row: the next level starts with an <b>Arrow Koi</b>. 3 in a row: an Arrow and a <b>Ripple Koi</b>. 5 in a row: a <b>Rainbow Koi</b> too.</li>
+          <li>Losing a level ends the current. Keep going with a video and win, and it is saved.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Pond tasks</summary>
+        <ul class="rules">
+          <li>Three small tasks each day, in any mode. New ones arrive at midnight.</li>
+          <li>Finish all three to open a <b>bamboo basket</b> with pearls and a joker for your next Journey level.</li>
+          <li>Clear the <b>whole board</b> at once for <b>Still water</b>: +150 points.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Board &amp; stones</summary>
+        <ul class="rules">
+          <li>Pick a board and a kind of stone with the brush on the home screen, or in Settings.</li>
+          <li><b>Cherry Blossom</b> opens at 30 stars and <b>Glazed Ceramic</b> at 15. <b>Jade Temple</b> and <b>Gemstones</b> cost 300 pearls each.</li>
+          <li><b>Moon Lacquer</b> and <b>Lanterns</b> open with a 14-day Daily streak or a win streak of 5.</li>
+          <li>Every colour keeps its own stone shape in every style.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Weekly festivals</summary>
+        <ul class="rules">
+          <li>A new festival starts every Monday: <b>Lantern Festival</b>, <b>Moon Viewing</b>, <b>Sakura Week</b> and <b>Firefly Night</b> take turns.</li>
+          <li>Each counts a different kind of move, in every mode. Its goals give pearls, and the last one brings the festival’s own koi.</li>
+          <li>After a big move, a lantern, moonbeam, petal or firefly floats up from the board. Tap it for more.</li>
+          <li>Missed a festival koi? The same festival comes back four weeks later.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>Surprises in the pond</summary>
+        <ul class="rules">
+          <li>Now and then a <b>lucky golden koi</b> glides over the board. Tap it for pearls.</li>
+          <li>A <b>dragonfly</b> may land on an empty spot. Cover it with a stone within five moves for pearls.</li>
+          <li>Tap the water around the board and the koi dart away.</li>
+          <li>None of them change your score, so every level stays fair.</li>
+        </ul>
+      </details>
+    </div>
+    <div class="btns"><button class="btn primary" id="helpDone">Got it</button></div>
+  </div>
+
+  <div class="card" id="settingsCard" hidden>
+    <p class="eyebrow">Settings</p>
+    <h2>Make it yours</h2>
+    <div class="audio-row">
+      <label class="field toggle" for="sfxOn"><span>Sound effects</span><input type="checkbox" id="sfxOn"></label>
+      <input type="range" class="vol" id="sfxVol" min="0" max="100" step="5" aria-label="Sound effects volume">
+    </div>
+    <div class="audio-row">
+      <label class="field toggle" for="musicOn"><span>Music<small>Calm koto and water, made as you play</small></span><input type="checkbox" id="musicOn"></label>
+      <input type="range" class="vol" id="musicVol" min="0" max="100" step="5" aria-label="Music volume">
+    </div>
+    <label class="field toggle" for="bigToggle"><span>Big &amp; clear<small>Larger pieces and text</small></span><input type="checkbox" id="bigToggle"></label>
+    <label class="field toggle" for="calmToggle"><span>Calm effects<small>No shaking, fewer particles</small></span><input type="checkbox" id="calmToggle"></label>
+    <label class="field toggle" for="statsOn" id="statsRow" hidden><span>Share anonymous play stats<small>Which levels are hard and how far players get. Never who you are.</small></span><input type="checkbox" id="statsOn"></label>
+    <div class="garden-row">
+      <span>Garden</span>
+      <div class="modes" role="group" aria-label="Garden theme">
+        <button class="mode" id="gardenAuto" aria-pressed="true">Auto</button>
+        <button class="mode" id="gardenDay" aria-pressed="false">Day</button>
+        <button class="mode" id="gardenNight" aria-pressed="false">Night</button>
+      </div>
+    </div>
+    <p class="note" id="gardenNote"></p>
+    <div class="ads-box" id="adsBox">
+      <b id="adsTitle">Remove ads</b>
+      <p class="note" id="adsText">One purchase removes the banner and the ad breaks between rounds, for good. Videos for rewards stay, and you choose when to watch.</p>
+      <button class="btn primary" id="buyNoAds">Remove ads</button>
+      <button class="link-btn" id="restoreBtn">Restore purchase</button>
+    </div>
+    <div class="btns">
+      <button class="btn" id="settingsStyle">Board &amp; stones</button>
+      <button class="btn" id="settingsHelp">How to play</button>
+      <button class="btn" id="settingsPond">Visit your koi pond</button>
+      <button class="btn" id="settingsRemind">Daily reminder</button>
+      <button class="btn" id="settingsDone">Done</button>
+    </div>
+    <p class="note" id="cloudNote" hidden></p>
+    <button class="link-btn" id="resetBtn">Start over from level 1</button>
+  </div>
+
+  <div class="card" id="resetCard" hidden>
+    <p class="eyebrow">Start over</p>
+    <h2>Start again from level 1?</h2>
+    <p>Your levels, stars, pearls, koi collection, Daily streak and best score are cleared. Your settings and ad-free purchase stay. This cannot be undone.</p>
+    <div class="btns">
+      <button class="btn primary" id="resetKeep">Keep my progress</button>
+      <button class="btn" id="resetYes">Yes, start over</button>
+    </div>
+  </div>
+
+  <div class="card" id="koiCard" hidden>
+    <p class="eyebrow">Koi collection</p>
+    <h2 id="koiTitle">0 of 15 koi</h2>
+    <p class="note">Finish a new Journey level to welcome its koi. Rare koi come from your Daily streak, and festival koi from each week’s festival.</p>
+    <div class="koi-grid" id="koiGrid"></div>
+    <div class="btns">
+      <button class="btn primary" id="koiPond">Visit your koi pond</button>
+      <button class="btn" id="koiDone">Back to the map</button>
+    </div>
+  </div>
+
+  <div class="card" id="eventCard" hidden>
+    <div class="fest-sky" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <p class="eyebrow" id="eventEyebrow">This week</p>
+    <h2 id="eventTitle">Lantern Festival</h2>
+    <p class="stats" id="eventStats"></p>
+    <div class="bar" aria-hidden="true"><i id="eventBar"></i></div>
+    <ul class="milestones" id="eventGoals"></ul>
+    <div class="fest-koi" id="eventKoi"></div>
+    <p class="note" id="eventHow">Clear lines in any mode to light lanterns. A Harmony square lights three.</p>
+    <p class="eyebrow" id="eventNext"></p>
+    <div class="btns"><button class="btn primary" id="eventDone">Back</button></div>
+  </div>
+
+  <div class="card" id="infoCard" hidden>
+    <p class="eyebrow" id="infoEyebrow">Koi Garden</p>
+    <h2 id="infoTitle"></h2>
+    <p id="infoText"></p>
+    <div class="btns"><button class="btn primary" id="infoDone">OK</button></div>
+  </div>
+
+  <div class="card" id="breakCard" hidden>
+    <p class="eyebrow">Mind break · 3 breaths</p>
+    <div class="breath"><div class="ring" id="ring"></div><div class="label"><span id="breathText">Get ready</span><span class="count" id="breathCount"></span></div></div>
+    <p id="tip"></p>
+    <div class="btns"><button class="btn primary" id="breakDone">Back to the pond</button></div>
+  </div>
+
+  <div class="card" id="overCard" hidden>
+    <p class="eyebrow" id="overEyebrow">No moves left</p>
+    <div class="big-num" id="overScore">0</div>
+    <p class="stats" id="overStats"></p>
+    <p class="quote" id="overQuote"></p>
+    <div class="btns">
+      <button class="btn primary" id="continueBtn"><span class="tag">Ad</span>Keep playing <small>· clears the centre</small></button>
+      <button class="btn" id="againBtn">New game</button>
+    </div>
+    <button class="link-btn" id="overBreathe">Take three calm breaths first</button>
+    <button class="link-btn" id="overTasks">Pond tasks</button>
+  </div>
+
+  <div class="card" id="dailyCard" hidden>
+    <p class="eyebrow" id="dailyEyebrow">Daily</p>
+    <div class="big-num" id="dailyScore">0</div>
+    <p class="stats" id="dailyStats"></p>
+    <pre class="share" id="shareText"></pre>
+    <div class="btns">
+      <button class="btn primary" id="copyBtn">Copy result</button>
+      <button class="btn" id="dailyAgain"><span class="tag">Ad</span>Practise today’s board</button>
+      <button class="btn" id="dailyJourney">Back to the journey</button>
+    </div>
+    <button class="link-btn" id="dailyRemind">Remind me tomorrow</button>
+    <button class="link-btn" id="dailyTasks">Pond tasks</button>
+    <p class="eyebrow" id="nextDaily"></p>
+  </div>
+
+  <div class="card" id="remindCard" hidden>
+    <p class="eyebrow">Daily reminder</p>
+    <h2>Never miss a calm round</h2>
+    <label class="field" for="remindOn">Remind me every day <input type="checkbox" id="remindOn"></label>
+    <label class="field" for="remindTime">At
+      <select id="remindTime">
+        <option value="08:00">08:00</option>
+        <option value="12:00">12:00</option>
+        <option value="19:00">19:00</option>
+        <option value="21:00">21:00</option>
+      </select>
+    </label>
+    <div class="notif" id="notif">
+      <div class="ico"></div>
+      <div class="top"><b>Koi Garden</b><span id="notifTime">19:00</span></div>
+      <div id="notifText"></div>
+    </div>
+    <p class="note" id="remindNote">Preview. The real app sends this as a push notification, and only on days you have not played the daily yet.</p>
+    <div class="btns"><button class="btn primary" id="remindDone">Save</button></div>
+  </div>
+
+  <div class="card" id="rewardCard" hidden>
+    <p class="eyebrow" id="rewardEyebrow">7-day streak</p>
+    <div class="medal" id="rewardNum">7</div>
+    <img class="reward-koi" id="rewardKoi" alt="" hidden>
+    <h2 id="rewardTitle">A rare koi joins your pond</h2>
+    <p id="rewardText"></p>
+    <div class="btns">
+      <button class="btn primary" id="rewardUse">Visit your koi pond</button>
+      <button class="btn" id="rewardLater">See today’s result</button>
+    </div>
+  </div>
+
+  <div class="card" id="tasksCard" hidden>
+    <span class="bank" id="tasksBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+    <p class="eyebrow" id="tasksEyebrow">Pond tasks</p>
+    <h2>Today’s tasks</h2>
+    <ul class="milestones tasks" id="tasksList"></ul>
+    <div class="basket-wrap" id="basketWrap">
+      <div class="rays" aria-hidden="true"></div>
+      <svg class="basket" viewBox="0 0 120 100" aria-hidden="true">
+        <ellipse cx="60" cy="94" rx="44" ry="5" fill="rgba(0,0,0,0.18)"/>
+        <path d="M14 42 H106 L95 90 Q60 96 25 90 Z" fill="#d6a35a"/>
+        <path d="M18 54 H102 M21 66 H99 M23 78 H97" stroke="#a8722f" stroke-width="3" stroke-linecap="round"/>
+        <path d="M32 44 L36 90 M48 44 L50 92 M60 44 V93 M72 44 L70 92 M88 44 L84 90" stroke="#b9823d" stroke-width="2.5"/>
+        <g class="lid">
+          <path d="M8 34 Q60 12 112 34 L110 44 Q60 36 10 44 Z" fill="#c58d43"/>
+          <path d="M14 38 Q60 20 106 38" stroke="#e7bd78" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <circle cx="60" cy="21" r="5.5" fill="#a8722f"/>
+        </g>
+      </svg>
+      <div class="basket-gifts" id="basketGifts"></div>
+    </div>
+    <p class="note" id="basketNote"></p>
+    <div class="btns">
+      <button class="btn primary" id="basketOpen">Open the basket</button>
+      <button class="btn" id="tasksDone">Back</button>
+    </div>
+  </div>
+
+  <div class="card" id="styleCard" hidden>
+    <span class="bank" id="styleBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+    <p class="eyebrow">Garden style</p>
+    <h2>Board &amp; stones</h2>
+    <p class="style-head">Board</p>
+    <div class="style-grid" id="styleBoards"></div>
+    <p class="style-head">Stones</p>
+    <div class="style-grid" id="styleStones"></div>
+    <p class="note">Every colour keeps its own stone shape in every style.</p>
+    <div class="btns"><button class="btn primary" id="styleDone">Done</button></div>
+  </div>
+
+  <div class="card" id="testerCard" hidden>
+    <p class="eyebrow">Tester tools</p>
+    <h2>Jump ahead</h2>
+    <p class="note">Only for testing. Changes the progress on this device.</p>
+    <div class="btns">
+      <button class="btn primary" id="testerUnlock">Open chapters 1–10 (levels 1–150)</button>
+    </div>
+    <label class="field" for="testerLevel">Play level <input type="number" id="testerLevel" min="1" max="9999" value="16" inputmode="numeric"></label>
+    <div class="btns">
+      <button class="btn" id="testerPlay">Play this level</button>
+      <button class="btn" id="testerPearls">+1000 pearls</button>
+      <button class="btn" id="testerStars">3 stars on every level so far</button>
+      <button class="btn" id="testerDone">Close</button>
+    </div>
+  </div>
+
+  <div class="card" id="jokerCard" hidden>
+    <p class="eyebrow" id="jokerEyebrow">Joker koi</p>
+    <div class="joker-head"><img id="jokerKoi" alt=""><h2 id="jokerTitle">Arrow Koi</h2></div>
+    <div class="joker-demo" id="jokerDemo" aria-hidden="true"></div>
+    <p id="jokerText"></p>
+    <p class="note" id="jokerMore"></p>
+    <div class="btns"><button class="btn primary" id="jokerDone">Got it</button><button class="btn" id="jokerBuyMore" hidden><i class="pearl"></i> Buy another</button></div>
+  </div>
+
+  <div class="card" id="shopCard" hidden>
+    <span class="bank" id="shopBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
+    <p class="eyebrow">Joker koi</p>
+    <h2>Bring a joker</h2>
+    <div class="shop-list" id="shopList"></div>
+    <p class="note" id="shopNote"></p>
+    <div class="btns"><button class="btn" id="shopDone">Not now</button></div>
+  </div>
+
+  <div class="card" id="adCard" hidden>
+    <p class="eyebrow" id="adKind">Rewarded video</p>
+    <div class="ad-box" id="adCount">5</div>
+    <p id="adText"></p>
+    <div class="btns"><button class="btn primary" id="adBtn" disabled>Wait…</button></div>
+  </div>
+</div>
+
+<div class="garden-view" id="gardenView" hidden>
+  <div class="garden-top">
+    <button class="icon-btn" id="gardenDone" aria-label="Back" title="Back">✕</button>
+    <div class="garden-title"><b id="gardenTitle">Koi Pond garden</b><span>★ <b id="gardenStars">0</b> to spend</span></div>
+    <span class="garden-gap"></span>
+  </div>
+  <div class="garden-stage"><div class="garden-scene" id="gardenScene" role="img" aria-label="Your garden"></div></div>
+  <div class="garden-nav">
+    <button class="icon-btn" id="gardenPrev" aria-label="Previous garden">‹</button>
+    <div class="garden-dots" id="gardenDots"></div>
+    <button class="icon-btn" id="gardenNext" aria-label="Next garden">›</button>
+  </div>
+  <ul class="garden-items" id="gardenItems"></ul>
+</div>
+
+<div class="pond-view" id="pondView" hidden>
+  <canvas id="pondCanvas" aria-label="Your koi pond"></canvas>
+  <div class="pond-bar">
+    <div class="pond-title"><b>Your koi pond</b><span id="pondCount"></span></div>
+    <button class="btn primary" id="pondDone">Back</button>
+  </div>
+  <p class="pond-hint" id="pondHint">Tap the water and your koi swim over. Tap a koi to see its name.</p>
+</div>
+
+<canvas class="fx" id="fx" aria-hidden="true"></canvas>
+
+<script src="js/native.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/game/core.js"></script>
+<script src="js/game/stats.js"></script>
+<script src="js/game/rules.js"></script>
+<script src="js/game/map.js"></script>
+<script src="js/game/board.js"></script>
+<script src="js/game/jokers.js"></script>
+<script src="js/game/effects.js"></script>
+<script src="js/game/pond.js"></script>
+<script src="js/game/world.js"></script>
+<script src="js/game/ui.js"></script>
+<script src="js/game/home.js"></script>
+<script src="js/game/garden.js"></script>
+<script src="js/game/tester.js"></script>
+<script src="js/game/results.js"></script>
+<script src="js/game/audio.js"></script>
+<script src="js/game/boot.js"></script>
+</body>
+</html>
