@@ -225,7 +225,7 @@ function openEvent() {
 }
 let eventBack = openMap;
 
-/* ---------- Garden styles: six boards and four kinds of stone ----------
+/* ---------- Garden styles: ten boards and eight kinds of stone ----------
    Each colour keeps its own stone shape in every style, so colour-blind players can still match.
    "stars" styles open with total Journey stars, "streak" ones with a 14-day Daily streak or
    a win streak of 5, and the rest are bought with pearls. Owned styles live in the journey, so iCloud keeps them. */
@@ -235,13 +235,21 @@ const BOARDS = [
   { id: "jade", name: "Jade Temple", price: 300 },
   { id: "lacquer", name: "Moon Lacquer", need: "streak" },
   { id: "tatami", name: "Tea House", price: 600 },
-  { id: "moss", name: "Moss Temple", need: "stars", at: 150 }
+  { id: "moss", name: "Moss Temple", need: "stars", at: 150 },
+  { id: "bamboo", name: "Bamboo Mat", price: 400 },
+  { id: "snow", name: "Snow Garden", price: 450 },
+  { id: "pond", name: "Koi Pond", price: 700 },
+  { id: "stars", name: "Starry Night", price: 1000 }
 ];
 const STONES = [
   { id: "river", name: "River Stones" },
   { id: "ceramic", name: "Glazed Ceramic", need: "stars", at: 15 },
   { id: "gem", name: "Gemstones", price: 300 },
-  { id: "lantern", name: "Lanterns", need: "streak" }
+  { id: "lantern", name: "Lanterns", need: "streak" },
+  { id: "wood", name: "Hinoki Wood", price: 350 },
+  { id: "marble", name: "Marble", price: 500 },
+  { id: "seaglass", name: "Sea Glass", price: 600 },
+  { id: "porcelain", name: "Blue Porcelain", price: 800 }
 ];
 const STYLE_KINDS = { board: BOARDS, stones: STONES };
 const totalStars = () => Object.values(journey.stars).reduce((a, b) => a + (+b || 0), 0);
