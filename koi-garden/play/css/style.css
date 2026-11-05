@@ -2737,3 +2737,9 @@ html.big { font-size: 120%; }
 /* The pond's hint fades after a few seconds */
 .pond-hint { transition: opacity 0.8s ease; }
 .pond-hint.gone { opacity: 0; }
+
+/* The pond's decorations are pieces of its painting: show them as little pictures of that spot */
+.pond-tile .pic { background: none; overflow: hidden; }
+.pond-tile .pic img { width: 100%; height: 100%; object-fit: cover; filter: none; border-radius: 10px; }
+.pond-tile.short:not(.confirm) .pic img { filter: saturate(0.55) brightness(0.92); }
+.pond-item img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; filter: none; }

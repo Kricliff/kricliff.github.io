@@ -11,7 +11,7 @@
 const SHOP_TABS = {
   board: { intro: "The board your stones are played on. Each has a day and a night look." },
   stones: { intro: "Every colour keeps its own stone shape in every style, so colour-blind players can still match." },
-  pond: { intro: "Decorations for your koi pond. Tap one you own to show or hide it." },
+  pond: { intro: "Bring your koi pond to life, one piece of the garden at a time. Tap one you own to show or hide it." },
   music: { intro: "The music is made as you play. Tap a mood to listen before you buy it." }
 };
 let shopTab = "board", shopReturn = null, shopBuying = null, shopTimer = 0;
@@ -21,7 +21,7 @@ function shopCounts() {
   return {
     board: [n(BOARDS.map(ownsStyle)), BOARDS.length],
     stones: [n(STONES.map(ownsStyle)), STONES.length],
-    pond: [pondState().owned.length, POND_DECOR.length],
+    pond: [POND_DECOR.filter(decorOwned).length, POND_DECOR.length],
     music: [n(Object.keys(MOODS).map(moodOwned)), Object.keys(MOODS).length]
   };
 }

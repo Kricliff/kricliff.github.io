@@ -1,298 +1,161 @@
-// Koi Garden: The koi pond, with every koi the player owns.
+// Koi Garden: The koi pond, with every koi the player owns, in a painted garden you decorate with pearls.
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
-/* ---------- Koi pond: every koi you own, big, with lily pads and feeding ---------- */
+/* ---------- Koi pond ----------
+   One painted pond seen from above, made the way the garden is (assets/pond/): the full picture with all eight
+   decorations and the same picture without them. The game shows the bare pond and, for every decoration you own,
+   the full picture through that decoration's mask, so whatever you buy is part of the painting, in its light and
+   style. Your koi swim live in the painted water: a mask of the open water keeps them in it, and the decorations
+   are drawn over them, so they glide under the bridge, the lotus pads and the overhanging trees.
+   Tap the water to feed them, tap a koi to see its name. Owned decorations live in journey.pond, so iCloud keeps
+   them; hidden ones stay owned. */
 const pondCv = $("pondCanvas"), pc = pondCv.getContext("2d");
-let pondOpen = false, pondBack = null, pondFish = [], pondFood = null, pondLast = 0, pads = [];
+let pondOpen = false, pondBack = null, pondFish = [], pondFood = null, pondLast = 0;
+const POND_PIC = { w: 1080, h: 1920, n: 1 };
+const pondFile = name => `img/pond/pond-${POND_PIC.n}-${name}`;
+// Each decoration, its price, and where it stands in the picture (shares of width and height, for the sparkle when it arrives)
+const POND_DECOR = [
+  { id: "lotus", name: "Lotus flowers", price: 120, at: [0.81, 0.24] },
+  { id: "toro", name: "Floating lanterns", price: 200, at: [0.62, 0.92] },
+  { id: "lantern", name: "Stone lantern", price: 220, at: [0.9, 0.07] },
+  { id: "fountain", name: "Bamboo spout", price: 260, at: [0.13, 0.87] },
+  { id: "bamboo", name: "Bamboo grove", price: 300, at: [0.14, 0.07] },
+  { id: "maple", name: "Red maple", price: 450, at: [0.15, 0.52] },
+  { id: "cherry", name: "Cherry tree", price: 500, at: [0.88, 0.58] },
+  { id: "bridge", name: "Red bridge", price: 650, at: [0.5, 0.42] }
+].map(d => ({ ...d, img: pondFile(`${d.id}.webp`) }));
+const pondState = () => journey.pond || (journey.pond = { owned: [], hidden: [] });
+const decorOwned = d => pondState().owned.includes(d.id);
+const decorShown = d => decorOwned(d) && !pondState().hidden.includes(d.id);
+
+const pondImages = {};
+function pondImage(src) {
+  if (!pondImages[src]) {
+    const im = new Image();
+    im.onload = () => { if (pondOpen) buildPondLayers(); };
+    im.src = src;
+    pondImages[src] = im;
+  }
+  return pondImages[src];
+}
+const imgReady = im => im.complete && im.naturalWidth > 0;
+// The whole width of the picture always shows, so nothing on the banks is cut off. On a phone taller than the
+// picture, it sits in the middle and a soft, darker copy of it fills above and below (under the title and the hint).
+function pondFit() {
+  const W = innerWidth, H = innerHeight, s = POND_PIC.h * (W / POND_PIC.w) <= H ? W / POND_PIC.w : Math.max(W / POND_PIC.w, H / POND_PIC.h);
+  return { s, x: (W - POND_PIC.w * s) / 2, y: (H - POND_PIC.h * s) / 2, w: POND_PIC.w * s, h: POND_PIC.h * s };
+}
+const pondPoint = (u, v) => { const f = pondFit(); return { x: f.x + u * f.w, y: f.y + v * f.h }; };
+
+/* The painted layers, made again when the screen, the theme or the decorations change: the bare pond, the
+   decorations (the full picture through the masks of the ones shown), and the open water for clipping the light */
+const pondLayers = { base: document.createElement("canvas"), over: document.createElement("canvas"), water: document.createElement("canvas"),
+  light: document.createElement("canvas"), key: "" };
+let pondWet = null, pondFade = null;
+function layerSize(cv) {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.round(innerWidth * dpr);
+  cv.height = Math.round(innerHeight * dpr);
+  const c = cv.getContext("2d");
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return c;
+}
+// Night: the painting dims to a blue moonlit pond, like the rest of the game
+function nightWash(c) {
+  if (!isNight()) return;
+  c.globalCompositeOperation = "multiply";
+  c.fillStyle = "rgb(78, 92, 160)";
+  c.fillRect(0, 0, innerWidth, innerHeight);
+  c.globalCompositeOperation = "source-over";
+}
+function buildPondLayers() {
+  const f = pondFit(), bare = pondImage(pondFile("bare.webp")), done = pondImage(pondFile("done.webp"));
+  const b = layerSize(pondLayers.base);
+  if (imgReady(bare)) {
+    const W = innerWidth, H = innerHeight;
+    if (f.y > 0) {
+      // Behind: the picture blown up to cover the screen, blurred by drawing it tiny and stretching it, and darkened
+      const s2 = Math.max(W / POND_PIC.w, H / POND_PIC.h), tiny = document.createElement("canvas");
+      tiny.width = 36; tiny.height = 64;
+      tiny.getContext("2d").drawImage(bare, 0, 0, 36, 64);
+      b.imageSmoothingQuality = "high";
+      b.drawImage(tiny, (W - POND_PIC.w * s2) / 2, (H - POND_PIC.h * s2) / 2, POND_PIC.w * s2, POND_PIC.h * s2);
+      b.fillStyle = "rgba(6, 30, 32, 0.35)";
+      b.fillRect(0, 0, W, H);
+      // In front: the picture itself, its top and bottom edges feathered into the soft copy
+      const pic = document.createElement("canvas"), px = layerSize(pic), feather = Math.min(48, f.y * 0.9);
+      px.drawImage(bare, f.x, f.y, f.w, f.h);
+      const g = px.createLinearGradient(0, f.y, 0, f.y + f.h);
+      const e = feather / f.h;
+      g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(e, "#000"); g.addColorStop(1 - e, "#000"); g.addColorStop(1, "rgba(0,0,0,0)");
+      px.globalCompositeOperation = "destination-in";
+      px.fillStyle = g;
+      px.fillRect(0, f.y, W, f.h);
+      b.setTransform(1, 0, 0, 1, 0, 0);
+      b.drawImage(pic, 0, 0);
+      const dpr = pondLayers.base.width / W;
+      b.setTransform(dpr, 0, 0, dpr, 0, 0);
+    } else b.drawImage(bare, f.x, f.y, f.w, f.h);
+    nightWash(b);
+  }
+  const o = layerSize(pondLayers.over);
+  const shown = POND_DECOR.filter(decorShown);
+  if (imgReady(done) && shown.length) {
+    o.drawImage(done, f.x, f.y, f.w, f.h);
+    nightWash(o);
+    // The masks together say where the full picture shows
+    const m = document.createElement("canvas"), mx = layerSize(m);
+    shown.forEach(d => {
+      const im = pondImage(pondFile(`mask-${d.id}.png`));
+      if (!imgReady(im)) return;
+      mx.globalAlpha = pondFade && pondFade.id === d.id ? pondFade.k : 1;
+      mx.drawImage(im, f.x, f.y, f.w, f.h);
+    });
+    o.setTransform(1, 0, 0, 1, 0, 0);
+    o.globalCompositeOperation = "destination-in";
+    o.drawImage(m, 0, 0);
+    o.globalCompositeOperation = "source-over";
+  }
+  const w = layerSize(pondLayers.water), wet = pondImage(pondFile("water.png"));
+  if (imgReady(wet)) {
+    w.drawImage(wet, f.x, f.y, f.w, f.h);
+    // The water mask as a grid the koi can be steered by
+    if (!pondWet) {
+      const g = document.createElement("canvas");
+      g.width = wet.naturalWidth; g.height = wet.naturalHeight;
+      const gx = g.getContext("2d");
+      gx.drawImage(wet, 0, 0);
+      const data = gx.getImageData(0, 0, g.width, g.height).data, cells = new Uint8Array(g.width * g.height);
+      for (let i = 0; i < cells.length; i++) cells[i] = data[i * 4 + 3] > 128 ? 1 : 0;
+      pondWet = { w: g.width, h: g.height, cells };
+    }
+  }
+  layerSize(pondLayers.light);
+}
+// Is a point on the screen in the open water?
+function inWater(x, y) {
+  if (!pondWet) return true;
+  const f = pondFit(), u = (x - f.x) / f.w, v = (y - f.y) / f.h;
+  if (u < 0 || v < 0 || u >= 1 || v >= 1) return false;
+  return pondWet.cells[Math.floor(v * pondWet.h) * pondWet.w + Math.floor(u * pondWet.w)] === 1;
+}
+// A random spot in the open water, for a koi to make its way to
+function waterSpot() {
+  for (let k = 0; k < 60; k++) {
+    const x = Math.random() * innerWidth, y = Math.random() * innerHeight;
+    if (inWater(x, y)) return { x, y };
+  }
+  return { x: innerWidth / 2, y: innerHeight / 2 };
+}
 function sizePond() {
   const dpr = Math.min(2, devicePixelRatio || 1);
   pondCv.width = innerWidth * dpr;
   pondCv.height = innerHeight * dpr;
   pc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildPondLayers();
 }
-function makePads() {
-  pads = [];
-  const W = innerWidth, H = innerHeight;
-  // Lily pads float near the edges so the middle stays open for the koi
-  const decorated = POND_DECOR.some(d => decorShown(d));
-  // A decorated pond has its own lilies to buy; the drawn ones stay out of the open water
-  const spots = decorated ? [] : [[0.08, 0.3], [0.92, 0.22], [0.85, 0.7], [0.12, 0.82], [0.55, 0.92], [0.4, 0.14]];
-  spots.forEach(([fx, fy], i) => pads.push({ x: fx * W, y: fy * H, r: 32 + Math.random() * 24, rot: Math.random() * Math.PI * 2,
-    flower: i === 1 || i === 3, seed: Math.floor(Math.random() * 1e9), sprite: null, night: null }));
-}
-// The outline of a lily pad: a slightly uneven circle with a narrow slit to the centre
-function padPath(c, r, rnd) {
-  const slit = 0.16, steps = 48, wob = [rnd(), rnd(), rnd()].map(v => v * Math.PI * 2);
-  c.beginPath();
-  c.moveTo(0, 0);
-  for (let k = 0; k <= steps; k++) {
-    const a = slit + k * (Math.PI * 2 - slit * 2) / steps;
-    const rr = r * (1 + 0.025 * Math.sin(a * 3 + wob[0]) + 0.015 * Math.sin(a * 7 + wob[1]) + 0.01 * Math.sin(a * 13 + wob[2]));
-    c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
-  }
-  c.closePath();
-}
-// A water lily seen from above: three rings of pointed petals around a golden centre
-function drawLily(c, R, night, rnd) {
-  const petal = (len, wid, base, tip) => {
-    const g = c.createLinearGradient(0, 0, len, 0);
-    g.addColorStop(0, base); g.addColorStop(1, tip);
-    c.fillStyle = g;
-    c.beginPath();
-    c.moveTo(0, 0);
-    c.bezierCurveTo(len * 0.3, -wid, len * 0.8, -wid * 0.7, len, 0);
-    c.bezierCurveTo(len * 0.8, wid * 0.7, len * 0.3, wid, 0, 0);
-    c.fill();
-    c.strokeStyle = "rgba(150, 40, 90, 0.1)";
-    c.lineWidth = Math.max(0.5, R * 0.012);
-    c.beginPath(); c.moveTo(len * 0.12, 0); c.lineTo(len * 0.85, 0); c.stroke();
-  };
-  const rings = night
-    ? [[12, 1, 0.26, "#e2d0e2", "#b86c98"], [10, 0.8, 0.24, "#ecdcec", "#c983ad"], [8, 0.58, 0.21, "#f3e8f3", "#d6a2c1"], [6, 0.38, 0.17, "#f8f0f6", "#e2bcd2"]]
-    : [[12, 1, 0.26, "#fde9f1", "#ea6f9f"], [10, 0.8, 0.24, "#fff0f5", "#f287b2"], [8, 0.58, 0.21, "#fff6f9", "#f7a9c8"], [6, 0.38, 0.17, "#fffbfd", "#fbcadc"]];
-  c.save();
-  c.shadowColor = "rgba(0, 0, 0, 0.35)";
-  c.shadowBlur = R * 0.25;
-  c.shadowOffsetX = R * 0.08;
-  c.shadowOffsetY = R * 0.12;
-  rings.forEach(([n, len, wid, base, tip], ring) => {
-    // Each ring sits a little higher and casts a soft shadow on the one below
-    if (ring) { c.shadowColor = "rgba(120, 20, 60, 0.25)"; c.shadowBlur = R * 0.08; c.shadowOffsetX = R * 0.02; c.shadowOffsetY = R * 0.03; }
-    const turn = ring * 0.37 + rnd() * 0.3;
-    for (let k = 0; k < n; k++) {
-      c.save();
-      c.rotate(turn + k * Math.PI * 2 / n + (rnd() - 0.5) * 0.12);
-      petal(R * len * (0.92 + rnd() * 0.12), R * wid, base, tip);
-      c.restore();
-    }
-  });
-  c.shadowColor = "transparent";
-  c.restore();
-  // Golden centre with a ring of stamens
-  const g = c.createRadialGradient(-R * 0.03, -R * 0.03, 0, 0, 0, R * 0.2);
-  g.addColorStop(0, night ? "#f1d27a" : "#ffe27a"); g.addColorStop(1, night ? "#c9952e" : "#e9a520");
-  c.fillStyle = g;
-  c.beginPath(); c.arc(0, 0, R * 0.17, 0, Math.PI * 2); c.fill();
-  c.fillStyle = night ? "#e8c35a" : "#ffd23f";
-  for (let k = 0; k < 18; k++) {
-    const a = k * Math.PI * 2 / 18, d = R * (0.2 + rnd() * 0.04);
-    c.beginPath(); c.arc(Math.cos(a) * d, Math.sin(a) * d, R * 0.028, 0, Math.PI * 2); c.fill();
-  }
-}
-// Each pad is painted once to its own canvas (it only changes with day and night), then placed every frame
-function padSprite(p) {
-  const night = isNight();
-  if (p.sprite && p.night === night) return p.sprite;
-  const dpr = Math.min(2, devicePixelRatio || 1), r = p.r, half = r * 1.45;
-  const cv = document.createElement("canvas");
-  cv.width = cv.height = Math.ceil(half * 2 * dpr);
-  const c = cv.getContext("2d");
-  c.setTransform(dpr, 0, 0, dpr, half * dpr, half * dpr);
-  let rnd = seeded(p.seed);
-  // Soft shadow on the water
-  c.save();
-  c.shadowColor = "rgba(0, 0, 0, 0.4)";
-  c.shadowBlur = r * 0.3;
-  c.shadowOffsetX = r * 0.08;
-  c.shadowOffsetY = r * 0.14;
-  padPath(c, r, rnd);
-  c.fillStyle = "#000";
-  c.fill();
-  c.restore();
-  // Leaf colour: lighter in the middle, deeper towards the edge
-  rnd = seeded(p.seed);
-  padPath(c, r, rnd);
-  c.save();
-  c.clip();
-  const base = c.createRadialGradient(-r * 0.15, -r * 0.15, r * 0.05, 0, 0, r * 1.05);
-  if (night) { base.addColorStop(0, "#47724c"); base.addColorStop(0.6, "#2c5236"); base.addColorStop(1, "#1c3a27"); }
-  else { base.addColorStop(0, "#74a04f"); base.addColorStop(0.55, "#447f37"); base.addColorStop(1, "#2b5c2d"); }
-  c.fillStyle = base;
-  c.fillRect(-r * 1.2, -r * 1.2, r * 2.4, r * 2.4);
-  // Mottling: a few soft, sun-faded and darker patches
-  for (let k = 0; k < 9; k++) {
-    const a = rnd() * Math.PI * 2, d = rnd() * r * 0.85, sr = r * (0.12 + rnd() * 0.22);
-    const x = Math.cos(a) * d, y = Math.sin(a) * d;
-    const g = c.createRadialGradient(x, y, 0, x, y, sr);
-    const tone = rnd() < 0.5 ? (night ? "120, 150, 90" : "190, 205, 110") : (night ? "20, 40, 25" : "60, 70, 25");
-    g.addColorStop(0, `rgba(${tone}, ${0.12 + rnd() * 0.12})`); g.addColorStop(1, `rgba(${tone}, 0)`);
-    c.fillStyle = g;
-    c.fillRect(x - sr, y - sr, sr * 2, sr * 2);
-  }
-  // Fine grain, so the leaf does not look flat
-  for (let k = 0; k < 220; k++) {
-    const a = rnd() * Math.PI * 2, d = Math.sqrt(rnd()) * r;
-    c.fillStyle = rnd() < 0.5 ? "rgba(255, 255, 220, 0.06)" : "rgba(0, 30, 0, 0.07)";
-    c.fillRect(Math.cos(a) * d, Math.sin(a) * d, r * 0.03, r * 0.03);
-  }
-  // Veins: faint, gently curved lines from the centre, each splitting once towards the rim
-  c.lineCap = "round";
-  const veins = 15;
-  for (let k = 0; k < veins; k++) {
-    const a = 0.3 + k * (Math.PI * 2 - 0.6) / (veins - 1), bend = (rnd() - 0.5) * 0.25;
-    const ex = Math.cos(a + bend) * r * 0.93, ey = Math.sin(a + bend) * r * 0.93;
-    const mx = Math.cos(a) * r * 0.5, my = Math.sin(a) * r * 0.5;
-    c.strokeStyle = night ? "rgba(170, 210, 160, 0.1)" : "rgba(220, 240, 180, 0.17)";
-    c.lineWidth = Math.max(0.6, r * 0.026);
-    c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(mx, my, ex, ey); c.stroke();
-    const f = 0.62, fx = Math.cos(a + bend * 0.6) * r * f, fy = Math.sin(a + bend * 0.6) * r * f;
-    const fa = a + (rnd() < 0.5 ? -1 : 1) * 0.17;
-    c.lineWidth = Math.max(0.4, r * 0.012);
-    c.strokeStyle = night ? "rgba(170, 210, 160, 0.06)" : "rgba(220, 240, 180, 0.09)";
-    c.beginPath(); c.moveTo(fx, fy); c.lineTo(Math.cos(fa) * r * 0.92, Math.sin(fa) * r * 0.92); c.stroke();
-  }
-  // Light from above: a broad sheen, and a darker inner shade on the far side
-  const sheen = c.createRadialGradient(-r * 0.35, -r * 0.4, 0, -r * 0.35, -r * 0.4, r * 0.9);
-  sheen.addColorStop(0, `rgba(255, 255, 240, ${night ? 0.08 : 0.2})`); sheen.addColorStop(1, "rgba(255, 255, 240, 0)");
-  c.fillStyle = sheen;
-  c.fillRect(-r * 1.2, -r * 1.2, r * 2.4, r * 2.4);
-  c.restore();
-  // The rim curls up a little: a light inner edge and a thin dark outline
-  rnd = seeded(p.seed);
-  padPath(c, r, rnd);
-  c.save();
-  c.clip();
-  c.strokeStyle = night ? "rgba(120, 150, 100, 0.22)" : "rgba(170, 190, 100, 0.32)";
-  c.lineWidth = r * 0.06;
-  c.stroke();
-  c.restore();
-  padPath(c, r, seeded(p.seed));
-  c.strokeStyle = night ? "rgba(10, 25, 15, 0.45)" : "rgba(60, 50, 20, 0.35)";
-  c.lineWidth = Math.max(0.6, r * 0.015);
-  c.stroke();
-  rnd = seeded(p.seed + 1);
-  // A water drop now and then
-  if (rnd() < 0.6) {
-    const a = rnd() * Math.PI * 2, d = r * (0.3 + rnd() * 0.4), dr = r * (0.05 + rnd() * 0.04);
-    const x = Math.cos(a) * d, y = Math.sin(a) * d;
-    c.fillStyle = "rgba(0, 30, 10, 0.25)";
-    c.beginPath(); c.arc(x + dr * 0.25, y + dr * 0.35, dr, 0, Math.PI * 2); c.fill();
-    const g = c.createRadialGradient(x - dr * 0.3, y - dr * 0.35, 0, x, y, dr);
-    g.addColorStop(0, "rgba(255, 255, 255, 0.9)"); g.addColorStop(0.35, "rgba(220, 245, 230, 0.35)"); g.addColorStop(1, "rgba(160, 210, 170, 0.15)");
-    c.fillStyle = g;
-    c.beginPath(); c.arc(x, y, dr, 0, Math.PI * 2); c.fill();
-  }
-  if (p.flower) {
-    c.save();
-    c.translate(r * 0.22, -r * 0.18);
-    drawLily(c, r * 0.62, night, rnd);
-    c.restore();
-  }
-  p.sprite = { cv, half };
-  p.night = night;
-  return p.sprite;
-}
-let padTime = 0;
-function drawPad(c, p) {
-  const sp = padSprite(p);
-  // Pads ride the water: a slow sway and a faint drift
-  const t = padTime + p.seed % 100;
-  c.save();
-  c.translate(p.x + Math.sin(t * 0.21) * 1.5, p.y + Math.cos(t * 0.17) * 1.5);
-  c.rotate(p.rot + Math.sin(t * 0.26) * 0.04);
-  c.drawImage(sp.cv, -sp.half, -sp.half, sp.half * 2, sp.half * 2);
-  c.restore();
-}
-/* ---------- Decorations for the pond, bought with pearls ----------
-   Each has its own place, kept clear of the others and of the open water in the middle where the koi swim. Floating
-   things (lilies, lotus, lanterns) ride the water under the koi; the rest stand over them, so a koi can pass under the
-   bridge. Owned decorations live in journey.pond (so iCloud keeps them); hidden ones stay owned. */
-// Places are [x, y, size] as shares of the screen (size of its width). Everything sits on the banks round the pond:
-// a row along the top under the title, a column down each side and a row along the bottom. The open water in the
-// middle stays free, and when there is anything standing on the banks the koi keep to that open water.
-const POND_DECOR = [
-  { id: "lilies", name: "Water lilies", img: "img/map/pad.webp", price: 80, spots: [[0.24, 0.24, 0.12], [0.77, 0.48, 0.11], [0.25, 0.77, 0.11]], float: true },
-  { id: "reeds", name: "Reeds", img: "img/map/reeds.webp", price: 100, spots: [[0.06, 0.5, 0.17], [0.95, 0.56, 0.15]] },
-  { id: "rocks", name: "Mossy rocks", img: "img/map/rock.webp", price: 120, spots: [[0.91, 0.86, 0.19]] },
-  { id: "lotus", name: "White lotus", img: "img/ui/lotus-white.webp", price: 150, spots: [[0.76, 0.77, 0.14]], float: true },
-  { id: "toro", name: "Floating lanterns", img: "img/ui/toro.webp", price: 200, spots: [[0.24, 0.62, 0.14]], float: true, glow: true },
-  { id: "lantern", name: "Stone lantern", img: "img/map/lantern.webp", price: 220, spots: [[0.09, 0.16, 0.2]] },
-  { id: "basin", name: "Stone basin", img: "img/ui/basin.webp", price: 250, spots: [[0.91, 0.16, 0.19]] },
-  { id: "bamboo", name: "Bamboo grove", img: "img/ui/bamboo-clump.webp", price: 260, spots: [[0.08, 0.85, 0.22]] },
-  { id: "fountain", name: "Bamboo fountain", img: "img/ui/fountain.webp", price: 320, spots: [[0.92, 0.34, 0.2]] },
-  { id: "pine", name: "Island pine", img: "img/map/pine.webp", price: 380, spots: [[0.08, 0.33, 0.22]] },
-  { id: "bridge", name: "Red bridge", img: "img/map/bridge.webp", price: 450, spots: [[0.33, 0.87, 0.27]] },
-  { id: "cherry", name: "Cherry tree", img: "img/map/blossom.webp", price: 500, spots: [[0.9, 0.68, 0.24]] },
-  { id: "maple", name: "Red maple", img: "img/map/maple.webp", price: 500, spots: [[0.1, 0.68, 0.24]] },
-  { id: "torii", name: "Torii gate", img: "img/map/torii.webp", price: 650, spots: [[0.5, 0.15, 0.26]] },
-  { id: "pagoda", name: "Pagoda", img: "img/map/pagoda.webp", price: 800, spots: [[0.64, 0.86, 0.22]] }
-];
-// The open water the koi swim in: all of it, or the middle when something stands on the banks
-function pondWater() {
-  const W = innerWidth, H = innerHeight;
-  if (!POND_DECOR.some(d => !d.float && decorShown(d))) return { x: 0, y: 0, w: W, h: H };
-  const x = W * 0.17, y = H * 0.24;
-  return { x, y, w: W - 2 * x, h: H * 0.76 - y };
-}
-const pondDecorImages = {};
-const pondState = () => journey.pond || (journey.pond = { owned: [], hidden: [] });
-const decorOwned = d => pondState().owned.includes(d.id);
-const decorShown = d => decorOwned(d) && !pondState().hidden.includes(d.id);
-function decorImage(d) {
-  if (!pondDecorImages[d.img]) { pondDecorImages[d.img] = new Image(); pondDecorImages[d.img].src = d.img; }
-  return pondDecorImages[d.img];
-}
-// Every placed piece, nearest the bottom drawn last, so things lower on the screen stand in front
-function decorPieces(floating) {
-  const W = innerWidth, H = innerHeight, unit = Math.min(W, H * 0.6);
-  const list = [];
-  POND_DECOR.forEach(d => {
-    if (!decorShown(d) || !!d.float !== floating) return;
-    d.spots.forEach(([fx, fy, fs], k) => list.push({ d, k, x: fx * W, y: fy * H, s: fs * unit }));
-  });
-  return list.sort((a, b) => a.y - b.y);
-}
-function drawDecor(c, floating, t) {
-  decorPieces(floating).forEach(p => {
-    const im = decorImage(p.d);
-    if (!im.complete || !im.naturalWidth) return;
-    c.save();
-    let x = p.x, y = p.y;
-    if (floating) { x += Math.sin(t * 0.4 + p.k * 2) * 3; y += Math.cos(t * 0.33 + p.k) * 2; }
-    c.translate(x, y);
-    if (floating) c.rotate(Math.sin(t * 0.25 + p.k) * 0.05);
-    if (p.d.glow) {
-      const g = c.createRadialGradient(0, 0, 0, 0, 0, p.s * 0.75);
-      g.addColorStop(0, `rgba(255, 190, 110, ${isNight() ? 0.45 : 0.25})`);
-      g.addColorStop(1, "rgba(255, 170, 90, 0)");
-      c.fillStyle = g;
-      c.beginPath(); c.arc(0, 0, p.s * 0.75, 0, 6.283); c.fill();
-    }
-    // A soft shadow on the water under things that stand in it
-    if (!floating) {
-      c.fillStyle = "rgba(0, 20, 25, 0.22)";
-      c.beginPath(); c.ellipse(p.s * 0.06, p.s * 0.36, p.s * 0.4, p.s * 0.12, 0, 0, 6.283); c.fill();
-    }
-    if (isNight() && !p.d.glow) c.filter = "brightness(0.6) saturate(0.8)";
-    c.drawImage(im, -p.s / 2, -p.s / 2, p.s, p.s);
-    c.filter = "none";
-    c.restore();
-  });
-}
-// Standing things are mirrored in the water under them, softly and a little rippled, so they stand in the pond
-// instead of floating over it. Drawn on the surface: over the koi, under the lily pads and floating things.
-function drawReflections(c, t) {
-  decorPieces(false).forEach(p => {
-    const im = decorImage(p.d);
-    if (!im.complete || !im.naturalWidth) return;
-    const base = p.y + p.s * 0.44;
-    c.save();
-    c.globalAlpha = isNight() ? 0.16 : 0.22;
-    // Thin horizontal slices, each nudged sideways a little, the way ripples break up a reflection
-    const slices = 10, sh = p.s / slices;
-    for (let k = 0; k < slices; k++) {
-      const sy = (k / slices) * im.naturalHeight, sH = im.naturalHeight / slices;
-      const dy = base + (slices - 1 - k) * sh * 0.5;
-      const wob = Math.sin(t * 1.3 + k * 0.9 + p.k) * p.s * 0.012 * (1 + (slices - k) / slices);
-      c.save();
-      c.translate(p.x + wob, dy + sh * 0.5);
-      c.scale(1, -0.5);
-      c.drawImage(im, 0, sy, im.naturalWidth, sH, -p.s / 2, -sh / 2, p.s, sh);
-      c.restore();
-    }
-    c.restore();
-  });
-}
+
+/* ---------- Decorating, here in the pond and from the shop ---------- */
 function paintPondShop() {
   $("pondBank").querySelector("b").textContent = journey.pearls;
   $("pondGrid").innerHTML = POND_DECOR.map(d => {
@@ -302,7 +165,7 @@ function paintPondShop() {
     return `<button class="pond-item${owned ? " owned" : ""}${shown ? " on" : ""}${pondBuying === d.id ? " confirm" : ""}${!owned && journey.pearls < d.price ? " short" : ""}" data-id="${d.id}">`
       + `<img src="${d.img}" alt=""><b>${d.name}</b><small>${status}</small></button>`;
   }).join("");
-  const n = pondState().owned.length;
+  const n = POND_DECOR.filter(decorOwned).length;
   $("pondShopNote").textContent = n ? `${n} of ${POND_DECOR.length} decorations. Tap one you own to show or hide it.` : "Buy decorations with pearls. They stay in your pond for good.";
 }
 let pondBuying = null, pondBuyTimer = 0;
@@ -334,16 +197,20 @@ $("pondGrid").addEventListener("click", e => {
     pondBuyTimer = setTimeout(() => { pondBuying = null; paintPondShop(); }, 3500);
     return;
   }
-  // Bought: it appears in the pond with a splash and a ring of gold where it stands
+  // Bought: it grows into the painting with a ring of gold where it stands
   pondBuying = null;
   buyDecor(d);
   paintPondShop();
-  const p = decorPieces(!!d.float).find(q => q.d === d);
-  if (p) { sparkBurst(p.x, p.y, 26); splash(p.x, p.y + p.s * 0.3, 0); }
+  const p = pondPoint(d.at[0], d.at[1]);
+  sparkBurst(p.x, p.y, 26);
   bowl(6, 0.05);
   buzz([12, 30, 12]);
-  if (reduceMotion) drawPond();
 });
+// A new or shown decoration fades into the painting over a second
+function fadeIn(d) {
+  if (!pondOpen || reduceMotion) { buildPondLayers(); if (pondOpen) drawPond(); return; }
+  pondFade = { id: d.id, k: 0 };
+}
 // Shared with the shop
 function buyDecor(d) {
   if (decorOwned(d) || journey.pearls < d.price) return false;
@@ -351,35 +218,48 @@ function buyDecor(d) {
   pondState().owned.push(d.id);
   saveJourney();
   track("buy", { data: { kind: "pond", id: d.id, pearls: d.price } });
-  if (pondOpen) makePads();
+  fadeIn(d);
   return true;
 }
 function toggleDecor(d) {
-  const st = pondState();
-  st.hidden = decorShown(d) ? st.hidden.concat(d.id) : st.hidden.filter(x => x !== d.id);
+  const st = pondState(), was = decorShown(d);
+  st.hidden = was ? st.hidden.concat(d.id) : st.hidden.filter(x => x !== d.id);
   saveJourney();
   tick();
-  if (pondOpen) makePads();
-  if (pondOpen && reduceMotion) drawPond();
+  if (was) { buildPondLayers(); if (pondOpen && reduceMotion) drawPond(); } else fadeIn(d);
+}
+
+/* ---------- Drawing and swimming ---------- */
+// Light moving on the water, and the moon's path at night, only on the water itself
+function drawWaterLight(t, moon) {
+  const L = pondLayers.light, c = L.getContext("2d"), W = innerWidth, H = innerHeight;
+  const dpr = L.width / W;
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, W, H);
+  if (moon) drawMoonlight(c, W, H, t, 1); else drawShimmer(c, W, H, t, 0.55);
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.globalCompositeOperation = "destination-in";
+  c.drawImage(pondLayers.water, 0, 0);
+  c.globalCompositeOperation = "source-over";
+  pc.save();
+  pc.globalCompositeOperation = "lighter";
+  pc.drawImage(L, 0, 0, W, H);
+  pc.restore();
 }
 function drawPond() {
-  const W = innerWidth, H = innerHeight;
+  const W = innerWidth, H = innerHeight, t = waterClock();
   pc.clearRect(0, 0, W, H);
-  const t = waterClock();
-  drawShimmer(pc, W, H, t, 1);
+  pc.drawImage(pondLayers.base, 0, 0, W, H);
+  drawWaterLight(t, false);
   if (pondFood) {
     pc.fillStyle = "#b07a3e";
     pondFood.bits.forEach(b => { pc.beginPath(); pc.arc(b.x, b.y, 3.2, 0, Math.PI * 2); pc.fill(); });
   }
   // At night the koi are a little sunk in the dark water: the water's colour is mixed into them, not see-through
   drawFish(pc, pondFish, 0.97, isNight() ? 0.2 : 0.3, isNight() ? ["#16205a", 0.2] : null);
-  // Moonlight lies on the surface: over the koi, under the floating pads
-  drawMoonlight(pc, W, H, t, 1);
-  drawReflections(pc, t);
-  pads.forEach(p => drawPad(pc, p));
-  // Your decorations: floating ones on the water, then the ones standing in it
-  drawDecor(pc, true, t);
-  drawDecor(pc, false, t);
+  if (isNight()) drawWaterLight(t, true);
+  // The decorations lie over the koi: the bridge, the lotus pads, the trees leaning out over the water
+  pc.drawImage(pondLayers.over, 0, 0, W, H);
 }
 function pondLoop(now) {
   if (!pondOpen) return;
@@ -392,16 +272,29 @@ function pondLoop(now) {
     pondFood.left -= dt;
     if (!pondFood.bits.length || pondFood.left <= 0) pondFood = null;
   }
-  // The koi swim in the open water; one still on the banks (decorations just went in) glides back into it
-  const wa = pondWater();
-  const food = pondFood && { bits: pondFood.bits.map(b => ({ x: b.x - wa.x, y: b.y - wa.y })) };
+  // The theme can change while the pond is open
+  const key = `${isNight()}`;
+  if (pondLayers.key !== key) { pondLayers.key = key; buildPondLayers(); }
+  if (pondFade) {
+    pondFade.k = Math.min(1, pondFade.k + dt / 1.1);
+    buildPondLayers();
+    if (pondFade.k >= 1) pondFade = null;
+  }
   pondFish.forEach(f => {
-    f.x -= wa.x; f.y -= wa.y;
-    stepFish(f, dt, wa.w, wa.h, food);
-    f.x = Math.min(wa.w + 30, Math.max(-30, f.x)); f.y = Math.min(wa.h + 30, Math.max(-30, f.y));
-    f.x += wa.x; f.y += wa.y;
+    stepFish(f, dt, innerWidth, innerHeight, pondFood);
+    // Keep to the painted water: when the way ahead is bank, turn towards a spot in the open water
+    if (!f.goal || f.goalIn <= 0 || Math.hypot(f.goal.x - f.x, f.goal.y - f.y) < 40) { f.goal = waterSpot(); f.goalIn = 6 + Math.random() * 6; }
+    f.goalIn -= dt;
+    const ahead = f.len * 0.75;
+    if (!inWater(f.x + Math.cos(f.a) * ahead, f.y + Math.sin(f.a) * ahead)) {
+      const want = Math.atan2(f.goal.y - f.y, f.goal.x - f.x);
+      f.turnTarget = Math.max(-1.9, Math.min(1.9, wrapAngle(want - f.a) * 2.4));
+      f.vTarget = Math.min(f.vTarget, 22);
+      f.timer = 0.6;
+    }
+    // A koi that is somehow on the bank (the screen turned) slips back into the water
+    if (!inWater(f.x, f.y)) { f.x += (f.goal.x - f.x) * Math.min(1, dt * 0.9); f.y += (f.goal.y - f.y) * Math.min(1, dt * 0.9); }
   });
-  padTime += dt;
   drawPond();
   requestAnimationFrame(pondLoop);
 }
@@ -409,23 +302,24 @@ function openPond(back) {
   pondBack = back || null;
   pondOpen = true;
   $("pondView").hidden = false;
+  ["bare.webp", "done.webp", "water.png"].forEach(n => pondImage(pondFile(n)));
+  POND_DECOR.forEach(d => pondImage(pondFile(`mask-${d.id}.png`)));
+  pondFade = null;
   sizePond();
+  pondLayers.key = `${isNight()}`;
   const owned = journey.koi.length ? journey.koi : [0, 3];
-  const wa = pondWater();
-  pondFish = owned.map(k => { const f = makeFish(k, wa.w, wa.h, 92, 140); f.x += wa.x; f.y += wa.y; return f; });
+  pondFish = owned.map(k => { const f = makeFish(k, innerWidth, innerHeight, 84, 124); const s = waterSpot(); f.x = s.x; f.y = s.y; return f; });
   $("pondCount").textContent = journey.koi.length
     ? `${journey.koi.length} of ${ALL_KOI.length} koi`
     : "Two visitors, until your first koi arrives";
-  makePads();
   pondFood = null;
   $("pondShop").hidden = true;
   $("pondHint").hidden = false;
-  // The hint says how the pond works, then fades so nothing covers the banks
+  // The hint says how the pond works, then fades so nothing covers the painting
   const hint = $("pondHint");
   hint.classList.remove("gone");
   clearTimeout(hint.fadeTimer);
   hint.fadeTimer = setTimeout(() => hint.classList.add("gone"), 6000);
-  POND_DECOR.forEach(d => { if (decorShown(d)) decorImage(d).onload = () => { if (reduceMotion) drawPond(); }; });
   if (reduceMotion) { drawPond(); return; }
   pondLast = performance.now();
   requestAnimationFrame(pondLoop);
@@ -458,19 +352,19 @@ pondCv.addEventListener("pointerdown", e => {
     tick();
     return;
   }
-  // Tapping the water drops a few pellets, and the koi come to eat
+  // Tapping the water drops a few pellets, and the koi come to eat. On the bank nothing falls in.
+  if (!inWater(x, y)) return;
   const ring = document.createElement("div");
   ring.className = "tap-ring";
   ring.style.left = x + "px";
   ring.style.top = y + "px";
   $("pondView").appendChild(ring);
   setTimeout(() => ring.remove(), 1200);
-  // Food lands in the open water, so the koi can reach it
-  const wa = pondWater(), fx = Math.min(wa.x + wa.w - 20, Math.max(wa.x + 20, x)), fy = Math.min(wa.y + wa.h - 20, Math.max(wa.y + 20, y));
-  pondFood = { left: 8, bits: [...Array(6)].map(() => ({ x: fx + (Math.random() - 0.5) * 34, y: fy + (Math.random() - 0.5) * 34 })) };
+  pondFood = { left: 8, bits: [...Array(6)].map(() => ({ x: x + (Math.random() - 0.5) * 34, y: y + (Math.random() - 0.5) * 34 })).filter(b => inWater(b.x, b.y)) };
+  if (!pondFood.bits.length) pondFood = null;
   voice(520, 0, 0.12, 0.03, 380);
 });
-window.addEventListener("resize", () => { if (pondOpen) { sizePond(); makePads(); if (reduceMotion) drawPond(); } });
+window.addEventListener("resize", () => { if (pondOpen) { sizePond(); if (reduceMotion) drawPond(); } });
 
 document.addEventListener("visibilitychange", () => {
   // Leaving the app: send the latest progress, best score included, to iCloud
