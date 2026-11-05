@@ -566,16 +566,22 @@
 <div class="pond-view" id="pondView" hidden>
   <canvas id="pondCanvas" aria-label="Your koi pond"></canvas>
   <div class="pond-bar">
-    <div class="pond-title"><b>Your koi pond</b><span id="pondCount"></span></div>
+    <div class="pond-title"><b id="pondTitle">Koi Pond</b><span id="pondCount"></span></div>
     <span class="pond-btns">
       <button class="btn" id="pondDecorate"><img src="img/map/lantern.webp" alt=""> Decorate</button>
       <button class="btn primary" id="pondDone">Back</button>
     </span>
   </div>
-  <p class="pond-hint" id="pondHint">Tap the water and your koi swim over. Tap a koi to see its name.</p>
+  <div class="pond-switch" aria-label="Choose a pond">
+    <button class="icon-btn" id="pondPrev" aria-label="Previous pond">‹</button>
+    <span class="pond-dots" id="pondDots"></span>
+    <button class="icon-btn" id="pondNext" aria-label="Next pond">›</button>
+  </div>
+  <div class="pond-locked" id="pondLocked" hidden></div>
+  <p class="pond-hint" id="pondHint">Tap the water to feed your koi, tap a koi to see its name. Pinch or double-tap to zoom.</p>
   <div class="pond-shop" id="pondShop" hidden>
     <div class="pond-shop-head">
-      <b>Decorate your pond</b>
+      <b id="pondShopTitle">Decorate your pond</b>
       <span class="bank" id="pondBank" aria-label="Pearls"><i class="pearl"></i><b>0</b></span>
       <button class="icon-btn" id="pondShopClose" aria-label="Close">✕</button>
     </div>

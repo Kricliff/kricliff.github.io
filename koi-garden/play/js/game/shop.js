@@ -11,7 +11,7 @@
 const SHOP_TABS = {
   board: { intro: "The board your stones are played on. Each has a day and a night look." },
   stones: { intro: "Every colour keeps its own stone shape in every style, so colour-blind players can still match." },
-  pond: { intro: "Bring your koi pond to life, one piece of the garden at a time. Tap one you own to show or hide it." },
+  pond: { intro: "Four koi ponds to bring to life, one piece of the garden at a time. Decorate one fully and the next opens. Tap one you own to show or hide it." },
   music: { intro: "The music is made as you play. Tap a mood to listen before you buy it." }
 };
 let shopTab = "board", shopReturn = null, shopBuying = null, shopTimer = 0;
@@ -35,9 +35,9 @@ function shopTile(tab, id) {
     return styleTile(tab, item).replace("style-tile", "style-tile store-item");
   }
   if (tab === "pond") {
-    const d = POND_DECOR.find(x => x.id === id), owned = decorOwned(d), shown = decorShown(d);
-    const status = owned ? (shown ? "In your pond" : "Hidden · tap to show") : confirm ? "Tap again to buy" : price(d.price);
-    return `<button class="store-item pond-tile${owned ? " owned" : ""}${shown ? " on" : ""}${confirm ? " confirm" : ""}${!owned && journey.pearls < d.price ? " short" : ""}" data-id="${id}">`
+    const d = POND_DECOR.find(x => x.id === id), owned = decorOwned(d), shown = decorShown(d), open = pondUnlocked(PONDS[d.n - 1]);
+    const status = owned ? (shown ? "In your pond" : "Hidden · tap to show") : !open ? `${price(d.price)} · locked` : confirm ? "Tap again to buy" : price(d.price);
+    return `<button class="store-item pond-tile${owned ? " owned" : ""}${shown ? " on" : ""}${confirm ? " confirm" : ""}${!owned && (journey.pearls < d.price || !open) ? " short" : ""}${open ? "" : " shut"}" data-id="${id}">`
       + `<span class="pic"><img src="${d.img}" alt=""></span><b>${d.name}</b><small>${status}</small></button>`;
   }
   const M = MOODS[id], own = moodOwned(id), on = (audio.mood || "garden") === id && !previewMood, hear = previewMood === id;
@@ -59,8 +59,14 @@ function paintShop() {
     : shopTab === "pond" ? POND_DECOR.map(d => d.id) : Object.keys(MOODS);
   const extra = shopTab === "pond" ? '<button class="btn shop-visit" id="shopVisitPond">Visit your koi pond</button>'
     : shopTab === "music" && !audio.musicOn ? '<p class="note shop-warn">Music is off in Settings, so you will not hear the moods.</p>' : "";
-  $("shopBody").innerHTML = `<p class="shop-intro">${SHOP_TABS[shopTab].intro}</p>`
-    + `<div class="shop-grid grid-${shopTab}">${ids.map(id => shopTile(shopTab, id)).join("")}</div>${extra}`;
+  // The pond tab has a part for each pond; a pond opens when the one before it is fully decorated
+  const grid = shopTab !== "pond" ? `<div class="shop-grid grid-${shopTab}">${ids.map(id => shopTile(shopTab, id)).join("")}</div>`
+    : PONDS.map(p => {
+      const got = p.items.filter(decorOwned).length, open = pondUnlocked(p);
+      return `<div class="shop-pond${open ? "" : " shut"}"><p class="shop-pond-head"><b>${p.name}</b><span>${open ? `${got}/${p.items.length}` : `Opens when ${PONDS[p.n - 2].name} is complete`}</span></p>`
+        + `<div class="shop-grid grid-pond">${p.items.map(d => shopTile("pond", d.id)).join("")}</div></div>`;
+    }).join("");
+  $("shopBody").innerHTML = `<p class="shop-intro">${SHOP_TABS[shopTab].intro}</p>${grid}${extra}`;
   buying = null;
 }
 function openShop(tab, back) {
@@ -134,6 +140,7 @@ $("shopBody").addEventListener("click", e => {
   if (shopTab === "pond") {
     const d = POND_DECOR.find(x => x.id === id);
     if (decorOwned(d)) { shopBuying = null; toggleDecor(d); paintShop(); return; }
+    if (!pondUnlocked(PONDS[d.n - 1])) { shopShort(id, 0); return; }
     if (journey.pearls < d.price) { shopShort(id, d.price - journey.pearls); return; }
     if (!again) { shopAsk(key); return; }
     shopBuying = null;
