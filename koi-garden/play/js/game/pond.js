@@ -242,7 +242,7 @@ function sizePond() {
 function paintPondBar() {
   const p = pondShownNow(), open = pondUnlocked(p), got = p.items.filter(decorOwned).length;
   $("pondTitle").textContent = p.name;
-  $("pondCount").textContent = open ? `${got} of ${p.items.length} decorations · ${journey.koi.length || 2} koi`
+  $("pondCount").textContent = open ? `${got}/${p.items.length} decorations · ${journey.koi.length || 2} koi`
     : `Opens when ${PONDS[p.n - 2].name} is fully decorated`;
   $("pondPrev").disabled = p.n === 1;
   $("pondNext").disabled = p.n === PONDS.length;
@@ -487,7 +487,11 @@ function openPond(back) {
   $("pondShop").hidden = true;
   $("pondHint").hidden = false;
   // The hint says how the pond works, then fades so nothing covers the painting
+  // ...and after a few visits it is not shown at all
   const hint = $("pondHint");
+  let seen = 0;
+  try { seen = +localStorage.getItem("mb-pondhint") || 0; localStorage.setItem("mb-pondhint", String(seen + 1)); } catch (e) {}
+  hint.classList.toggle("off", seen >= 3);
   hint.classList.remove("gone");
   clearTimeout(hint.fadeTimer);
   hint.fadeTimer = setTimeout(() => hint.classList.add("gone"), 6000);

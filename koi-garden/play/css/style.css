@@ -2763,3 +2763,19 @@ html.big { font-size: 120%; }
 .shop-pond-head b { font: 900 1rem var(--display); }
 .shop-pond-head span { font-size: 0.74rem; font-weight: 700; color: var(--card-muted); text-align: right; }
 .shop-pond.shut .pond-tile { opacity: 0.6; }
+
+/* ---------- Less on screen: star rules behind a tap, koi pond first, readable pond title ---------- */
+.stars-help summary { cursor: pointer; list-style: none; color: var(--card-muted); text-decoration: underline dotted; text-underline-offset: 3px; }
+.stars-help summary::-webkit-details-marker { display: none; }
+.stars-help[open] summary { margin-bottom: 4px; }
+.koi-top { margin: 4px 0 2px; }
+.pond-hint.off { display: none; }
+.pond-title {
+  padding: 6px 14px 7px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--water-deep) 72%, transparent);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  text-shadow: none;
+}
+.pond-title span { color: var(--on-water); opacity: 0.82; }
+.pond-title span { white-space: nowrap; }

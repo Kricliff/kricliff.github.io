@@ -213,7 +213,12 @@ function openLevelIntro() {
   $("levelGoal").textContent = goalText(L);
   $("levelPieces").textContent = `${L.pieces} pieces`;
   $("levelStars").textContent = L.s2 ? `Stars: 1 for the goal, 2 at ${L.s2} points, 3 at ${L.s3}.` : "Stars: 1 for the goal, more for a high score.";
-  $("levelNote").textContent = S.tut === 1 ? "Start by filling the glowing square in the middle." : (NEW_IN[S.level] || TIPS[(S.level - 1) % TIPS.length]);
+  // What is new on this level always shows; a calm tip only now and then, so the card stays short
+  const note = S.tut === 1 ? "Start by filling the glowing square in the middle."
+    : NEW_IN[S.level] || (S.level % 4 === 1 ? TIPS[(S.level - 1) % TIPS.length] : "");
+  $("levelNote").textContent = note;
+  $("levelNote").hidden = !note;
+  $("levelCard").querySelector(".stars-help").open = false;
   const cur = $("levelCurrent");
   cur.hidden = !!S.tut;
   if (!S.tut) {

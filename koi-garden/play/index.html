@@ -71,11 +71,7 @@
   <div class="home-ui">
     <div class="home-top">
       <span class="home-chip"><i class="pearl"></i><b id="homePearls">0</b></span>
-      <span class="home-chip current-chip" id="homeCurrent" hidden></span>
       <span class="home-tools">
-        <button class="icon-btn" id="homeStyle" aria-label="Board and stones" title="Board and stones">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L12 14.8l-3-3z"/><path d="M8.5 13.2c-2.2 0-3.6 1.6-3.6 3.6 0 1.6-.9 2.6-2.4 3 1.2 1 2.6 1.4 4.1 1.4 3 0 5-2.1 5-4.6z"/></svg>
-        </button>
         <button class="icon-btn" id="homeHelp" aria-label="How to play" title="How to play">?</button>
         <button class="icon-btn" id="homeSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       </span>
@@ -149,7 +145,7 @@
     <span class="goal-badge" id="levelPieces">20 pieces</span>
     <div class="current" id="levelCurrent" hidden></div>
     <p id="levelNote"></p>
-    <p class="note"><span id="levelStars">Stars: 1 for the goal, more for a high score.</span> Every piece left adds 20 points at the end. Extra pieces from a video give 1 star at most.</p>
+    <details class="note stars-help"><summary>How stars work</summary><span id="levelStars">Stars: 1 for the goal, more for a high score.</span> Every piece left adds 20 points at the end. Extra pieces from a video give 1 star at most.</details>
     <div class="btns">
       <button class="btn primary" id="levelPlay">Play</button>
       <button class="btn" id="levelShop"><i class="pearl"></i> Bring a joker</button>
@@ -361,10 +357,10 @@
   <div class="card" id="koiCard" hidden>
     <p class="eyebrow">Koi collection</p>
     <h2 id="koiTitle">0 of 15 koi</h2>
-    <p class="note">Finish a new Journey level to welcome its koi. Rare koi come from your Daily streak, and festival koi from each week’s festival.</p>
+    <div class="btns koi-top"><button class="btn primary" id="koiPond">Visit your koi pond</button></div>
+    <p class="note">New levels, Daily streaks and festivals bring new koi.</p>
     <div class="koi-grid" id="koiGrid"></div>
     <div class="btns">
-      <button class="btn primary" id="koiPond">Visit your koi pond</button>
       <button class="btn" id="koiDone">Back to the map</button>
     </div>
   </div>

@@ -154,8 +154,6 @@ const journeyResume = () => G.journey && !G.journey.over && G.journey.placed > 0
 function paintHome() {
   $("homePearls").textContent = journey.pearls;
   const s = journey.streak || 0;
-  $("homeCurrent").hidden = !s;
-  $("homeCurrent").innerHTML = `<i class="pip on"></i>×${s}`;
   const n = currentLevel();
   const play = $("homePlay");
   play.querySelector("b").textContent = journeyResume() ? `Back to level ${G.journey.level}` : `Level ${n}`;
@@ -163,11 +161,11 @@ function paintHome() {
   $("homeBoost").hidden = !s;
   $("homeBoost").textContent = `×${s}`;
   checkTasks();
-  $("homeTasks").querySelector(".hb-label").textContent = basketReady() ? "Basket!" : `Tasks ${tasksDone()}/${tasks.list.length}`;
+  $("homeTasks").querySelector(".hb-label").textContent = basketReady() ? "Basket!" : (tasksDone() ? `Tasks ${tasksDone()}/${tasks.list.length}` : "Tasks");
   $("homeTasks").classList.toggle("ready", !!basketReady());
   checkLanternWeek();
   const fest = festivalNow();
-  $("homeLanterns").querySelector(".hb-label").textContent = `${fest.short} ${lanterns.count}`;
+  $("homeLanterns").querySelector(".hb-label").textContent = lanterns.count ? `${fest.short} ${lanterns.count}` : fest.short;
   $("homeLanterns").setAttribute("aria-label", `${fest.name}: ${lanterns.count} ${festUnit(fest, lanterns.count)} ${fest.verb} this week`);
   $("homeFestIcon").innerHTML = festIcon(fest.id);
   const t = today(), played = playedOfficial();
@@ -175,7 +173,7 @@ function paintHome() {
   $("homeDaily").querySelector(".hb-label").textContent = played ? `Done · ${liveStreak()}🔥` : "Daily";
   $("homeDaily").classList.toggle("ready", !played);
   $("homeKoi").querySelector(".hb-label").textContent = `Koi ${journey.koi.length}/${ALL_KOI.length}`;
-  $("homeGarden").querySelector(".hb-label").textContent = `Garden ${gardenBoughtCount()}/${GARDEN.length * 5}`;
+  $("homeGarden").querySelector(".hb-label").textContent = gardenBoughtCount() ? `Garden ${gardenBoughtCount()}/${GARDEN.length * 5}` : "Garden";
   // A dot when there are enough stars to restore something
   $("gardenDot").hidden = !gardenAffordable();
 }
@@ -261,7 +259,6 @@ $("homeShop").addEventListener("click", () => { if (overlay.hidden) openShop("bo
 $("homePearls").parentElement.addEventListener("click", () => { if (overlay.hidden) openShop(); });
 $("homeLanterns").addEventListener("click", () => { eventBack = closeOverlay; openEvent(); });
 $("homeKoi").addEventListener("click", () => { koiBack = closeOverlay; openKoi(); });
-$("homeStyle").addEventListener("click", () => { if (overlay.hidden) openStyles(closeOverlay); });
 $("homeSettings").addEventListener("click", () => openFromHeader("settingsCard"));
 $("homeHelp").addEventListener("click", () => openFromHeader("helpCard"));
 $("brand").addEventListener("click", () => { if (overlay.hidden) showHome(true); });
