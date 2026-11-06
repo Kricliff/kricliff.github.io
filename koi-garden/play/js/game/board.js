@@ -106,7 +106,7 @@ function render() {
       + (S.tut === 1 && i === TUT_GAP && !v ? " target" : "")
       + (justPlaced.has(i) && !clearing[i] ? " drop" : "") + (i === fellAt ? " fall" : "") + (hintCells.has(i) ? " hintspot" : "")
       + (markStart && S.preset[i] && S.board[i] ? " start" : "")
-      + (nudged.has(i) && v && !clearing[i] ? " nudge" : "") + (S.fly && S.fly.i === i && !v ? " dragonfly" : "");
+      + (nudged.has(i) && v && !clearing[i] ? " bump" : "") + (S.fly && S.fly.i === i && !v ? " dragonfly" : "");
     if (nudged.has(i)) { el.style.setProperty("--nx", nudged.get(i)[0]); el.style.setProperty("--ny", nudged.get(i)[1]); }
     if (clearing[i]) { el.style.setProperty("--d", (clearDelay[i] || 0) + "ms"); el.style.setProperty("--spin", ((i * 37) % 30 - 15) + "deg"); }
     el.style.setProperty("--c", v ? `var(--p${v})` : "transparent");

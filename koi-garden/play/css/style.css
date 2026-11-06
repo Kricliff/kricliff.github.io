@@ -2490,8 +2490,8 @@ html.big { font-size: 120%; }
 /* The board answers: stones about to clear shiver, neighbours make room for a new piece */
 .cell.filled.glow { animation: ready 0.42s ease-in-out infinite alternate; }
 @keyframes ready { from { transform: translateY(0) rotate(-2.5deg); } to { transform: translateY(-6%) rotate(2.5deg) scale(1.05); } }
-.cell.nudge { animation: nudge 0.34s var(--ease-out); }
-@keyframes nudge { 35% { transform: translate(calc(var(--nx, 0) * 3px), calc(var(--ny, 0) * 3px)) scale(0.96); } }
+.cell.bump { animation: bump 0.34s var(--ease-out); }
+@keyframes bump { 35% { transform: translate(calc(var(--nx, 0) * 3px), calc(var(--ny, 0) * 3px)) scale(0.96); } }
 
 /* The score glows while a big gain rolls up */
 .score .now.rolling { color: var(--gold); text-shadow: 0 0 16px color-mix(in srgb, var(--gold) 70%, transparent); }
@@ -2539,9 +2539,9 @@ html.big { font-size: 120%; }
 
 @media (prefers-reduced-motion: reduce) {
   .scene-pic, .sky, :root { transition: none; }
-  .cell.dragonfly::after, .cell.dragonfly::before, .cell.filled.glow, .cell.nudge, .card.thump, .fest-sky i, .fest-koi img, .tap-ring, .board-pulse { animation: none; }
+  .cell.dragonfly::after, .cell.dragonfly::before, .cell.filled.glow, .cell.bump, .card.thump, .fest-sky i, .fest-koi img, .tap-ring, .board-pulse { animation: none; }
 }
-.calm .cell.filled.glow, .calm .cell.nudge, .calm .card.thump { animation: none; }
+.calm .cell.filled.glow, .calm .cell.bump, .calm .card.thump { animation: none; }
 
 /* ---------- The map, made livelier ---------- */
 .map-fx { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
