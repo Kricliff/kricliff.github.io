@@ -2780,3 +2780,62 @@ html.big { font-size: 120%; }
 }
 .pond-title span { color: var(--on-water); opacity: 0.82; }
 .pond-title span { white-space: nowrap; }
+
+/* ---------- Festival boards: on sale in their festival's week (Viewmax, 6 November 2026) ---------- */
+[data-board="lanternnight"] {
+  --board-frame: url(/koi-garden/play/img/boards/redlacquer-frame.webp) center / 220px;
+  --board-edge: #5a1408;
+  --bed-a: url(/koi-garden/play/img/boards/lanternnight-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06)), url(/koi-garden/play/img/boards/lanternnight-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(255, 190, 110, 0.35), inset 0 2px 8px rgba(40, 0, 0, 0.4);
+}
+[data-garden="night"][data-board="lanternnight"], [data-garden="night"] [data-board="lanternnight"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .35), rgba(14, 20, 70, .35)), url(/koi-garden/play/img/boards/redlacquer-frame.webp) center / 220px;
+  --board-edge: #2c0904;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .3), rgba(14, 20, 70, .3)), url(/koi-garden/play/img/boards/lanternnight-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .36), rgba(14, 20, 70, .36)), url(/koi-garden/play/img/boards/lanternnight-bed.webp) center / cover;
+}
+[data-board="moonsilk"] {
+  --board-frame: url(/koi-garden/play/img/boards/moonsilver-frame.webp) center / 240px;
+  --board-edge: #8e97ab;
+  --bed-a: url(/koi-garden/play/img/boards/moonsilk-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06)), url(/koi-garden/play/img/boards/moonsilk-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(220, 230, 255, 0.5), inset 0 2px 8px rgba(30, 40, 80, 0.25);
+}
+[data-garden="night"][data-board="moonsilk"], [data-garden="night"] [data-board="moonsilk"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .35), rgba(14, 20, 70, .35)), url(/koi-garden/play/img/boards/moonsilver-frame.webp) center / 240px;
+  --board-edge: #5d6578;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .3), rgba(14, 20, 70, .3)), url(/koi-garden/play/img/boards/moonsilk-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .36), rgba(14, 20, 70, .36)), url(/koi-garden/play/img/boards/moonsilk-bed.webp) center / cover;
+}
+[data-board="petal"] {
+  --board-frame: url(/koi-garden/play/img/boards/sakurawood-frame.webp) center / 220px;
+  --board-edge: #b77c84;
+  --bed-a: url(/koi-garden/play/img/boards/petal-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06)), url(/koi-garden/play/img/boards/petal-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(255, 210, 225, 0.4), inset 0 2px 8px rgba(0, 30, 40, 0.4);
+}
+[data-garden="night"][data-board="petal"], [data-garden="night"] [data-board="petal"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .35), rgba(14, 20, 70, .35)), url(/koi-garden/play/img/boards/sakurawood-frame.webp) center / 220px;
+  --board-edge: #6f4249;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .3), rgba(14, 20, 70, .3)), url(/koi-garden/play/img/boards/petal-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .36), rgba(14, 20, 70, .36)), url(/koi-garden/play/img/boards/petal-bed.webp) center / cover;
+}
+[data-board="firefly"] {
+  --board-frame: url(/koi-garden/play/img/boards/reed-frame.webp) center / 220px;
+  --board-edge: #1d2a14;
+  --bed-a: url(/koi-garden/play/img/boards/firefly-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.06)), url(/koi-garden/play/img/boards/firefly-bed.webp) center / cover;
+  --bed-line: inset 0 0 0 1px rgba(220, 255, 140, 0.25), inset 0 2px 8px rgba(0, 20, 0, 0.45);
+}
+[data-garden="night"][data-board="firefly"], [data-garden="night"] [data-board="firefly"] {
+  --board-frame: linear-gradient(rgba(14, 20, 70, .35), rgba(14, 20, 70, .35)), url(/koi-garden/play/img/boards/reed-frame.webp) center / 220px;
+  --board-edge: #0e1609;
+  --bed-a: linear-gradient(rgba(14, 20, 70, .3), rgba(14, 20, 70, .3)), url(/koi-garden/play/img/boards/firefly-bed.webp) center / cover;
+  --bed-b: linear-gradient(rgba(14, 20, 70, .36), rgba(14, 20, 70, .36)), url(/koi-garden/play/img/boards/firefly-bed.webp) center / cover;
+}
+.fest-board { border: 0; font: inherit; cursor: pointer; }
+.fest-board .pv-board { width: 64px; flex: none; }
+.fest-board b { display: block; }
+.fest-board .pearl { vertical-align: -1px; }
+.style-tile.fest:not(.locked)::after, .style-tile.fest.locked small { color: var(--card-muted); }

@@ -634,7 +634,8 @@ function fillChest() {
   S.chestOpened = null;
   if (journey.chest < CHEST_EVERY) return;
   journey.chest = 0;
-  const c = Math.min(10, chapterOf(S.level));
+  // The chest grows with the chapters up to chapter 6 (100 pearls), so late chapters do not flood the shop
+  const c = Math.min(6, chapterOf(S.level));
   const pearls = 40 + 10 * c;
   journey.pearls += pearls;
   // A joker waits for the next level, unless the basket already left one there

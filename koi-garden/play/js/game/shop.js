@@ -130,7 +130,7 @@ $("shopBody").addEventListener("click", e => {
   if (shopTab === "board" || shopTab === "stones") {
     const item = STYLE_KINDS[shopTab].find(x => x.id === id);
     if (ownsStyle(item)) { shopBuying = null; useStyle(shopTab, id); paintShop(); return; }
-    if (!item.price) { shopShort(id, 0); return; }
+    if (!item.price || !onSaleNow(item)) { shopShort(id, 0); return; }
     if (journey.pearls < item.price) { shopShort(id, item.price - journey.pearls); return; }
     if (!again) { shopAsk(key); return; }
     shopBuying = null;

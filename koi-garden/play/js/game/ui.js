@@ -169,6 +169,13 @@ function weekStart(d = new Date()) {
 const festivalIndexAt = d => ((Math.round((weekStart(d) - FESTIVAL_EPOCH) / (7 * 864e5)) % FESTIVALS.length) + FESTIVALS.length) % FESTIVALS.length;
 const festivalNow = () => FESTIVALS[festivalIndexAt(new Date())];
 const festivalNext = () => { const d = weekStart(); d.setDate(d.getDate() + 7); return FESTIVALS[festivalIndexAt(d)]; };
+// Weeks until a festival is on again (0 = this week)
+function festivalIn(id) {
+  for (let w = 0; w < FESTIVALS.length; w++) { const d = weekStart(); d.setDate(d.getDate() + 7 * w); if (FESTIVALS[festivalIndexAt(d)].id === id) return w; }
+  return FESTIVALS.length;
+}
+const onSaleNow = item => !item.festival || festivalNow().id === item.festival;
+const festivalBoard = f => BOARDS.find(b => b.festival === f.id);
 const festivalKoi = f => FESTIVAL_KOI_START + FESTIVAL_KOI.findIndex(k => k.festival === f.id);
 const festUnit = (f, n) => f.unit[n === 1 ? 0 : 1];
 function checkLanternWeek() {
@@ -221,9 +228,16 @@ function openEvent() {
   const hrs = Math.max(1, Math.round((end - new Date()) / 36e5));
   $("eventEyebrow").textContent = `This week · ${Math.floor(hrs / 24)}d ${hrs % 24}h left`;
   $("eventNext").textContent = `Next week: ${festivalNext().name}`;
+  // This week's board in the shop
+  const fb = festivalBoard(f), fbOwned = fb && ownsStyle(fb);
+  $("eventBoard").hidden = !fb;
+  if (fb) $("eventBoard").innerHTML = `<span class="pv-board" data-board="${fb.id}" aria-hidden="true"><i></i><i class="alt"></i><i class="alt"></i><i></i></span>`
+    + `<span><b>${fb.name}</b>${fbOwned ? "is yours" : `festival board · <i class="pearl"></i> ${fb.price} in the shop, this week only`}</span>`;
+  $("eventBoard").classList.toggle("owned", !!fbOwned);
   openCard("eventCard");
 }
 let eventBack = openMap;
+$("eventBoard").addEventListener("click", () => { closeOverlay(); openShop("board", openEvent); });
 
 /* ---------- Garden styles: ten boards and eight kinds of stone ----------
    Each colour keeps its own stone shape in every style, so colour-blind players can still match.
@@ -239,7 +253,12 @@ const BOARDS = [
   { id: "bamboo", name: "Bamboo Mat", price: 400 },
   { id: "snow", name: "Snow Garden", price: 450 },
   { id: "pond", name: "Koi Pond", price: 700 },
-  { id: "stars", name: "Starry Night", price: 1000 }
+  { id: "stars", name: "Starry Night", price: 1000 },
+  // Festival boards: on sale only in their festival's week, and back every fourth week. Bought ones are kept for good.
+  { id: "lanternnight", name: "Lantern Night", price: 400, festival: "lantern" },
+  { id: "moonsilk", name: "Moon Silk", price: 400, festival: "moon" },
+  { id: "petal", name: "Petal Stream", price: 400, festival: "sakura" },
+  { id: "firefly", name: "Firefly Meadow", price: 400, festival: "firefly" }
 ];
 const STONES = [
   { id: "river", name: "River Stones" },
@@ -287,12 +306,14 @@ function styleTile(kind, item) {
   const on = look[kind] === item.id, owns = ownsStyle(item);
   let status = on ? "In use" : owns ? "Tap to use" : "";
   if (!owns) {
-    if (item.price) status = buying === item.id ? "Tap again to buy" : `<i class="pearl"></i> ${item.price} pearls`;
+    const wait = item.festival && !onSaleNow(item) ? festivalIn(item.festival) : 0;
+    if (wait) status = `${FESTIVALS.find(f => f.id === item.festival).name} · back in ${wait === 1 ? "1 week" : wait + " weeks"}`;
+    else if (item.price) status = buying === item.id ? "Tap again to buy" : `<i class="pearl"></i> ${item.price} pearls${item.festival ? " · this week" : ""}`;
     else if (item.need === "stars") status = `★ ${Math.min(totalStars(), item.at)}/${item.at} stars`;
     else status = "14-day Daily streak or a win streak of 5";
   }
   const stones = PREVIEW_STONES.map(([c, x, y]) => `<span class="stone" style="${colorVars(c)};left:${x};top:${y}"></span>`).join("");
-  return `<button class="style-tile pv${on ? " on" : ""}${owns ? "" : " locked"}${buying === item.id ? " confirm" : ""}" data-kind="${kind}" data-id="${item.id}"`
+  return `<button class="style-tile pv${on ? " on" : ""}${owns ? "" : " locked"}${item.festival ? " fest" : ""}${buying === item.id ? " confirm" : ""}" data-kind="${kind}" data-id="${item.id}"`
     + ` data-board="${kind === "board" ? item.id : look.board}" data-stones="${kind === "stones" ? item.id : look.stones}" aria-pressed="${on}">`
     + `<span class="pv-board"><i></i><i class="alt"></i><i class="alt"></i><i></i>${stones}</span>`
     + `<b>${item.name}</b><small>${status}</small></button>`;
@@ -301,7 +322,7 @@ let buying = null;
 // The brush on the home screen and Board & stones in Settings open the shop on its Boards tab
 function openStyles(back) { openShop("board", back); }
 function buyStyle(kind, item) {
-  if (ownsStyle(item) || !item.price || journey.pearls < item.price) return false;
+  if (ownsStyle(item) || !item.price || !onSaleNow(item) || journey.pearls < item.price) return false;
   journey.pearls -= item.price;
   if (!journey.owned) journey.owned = [];
   journey.owned.push(item.id);
