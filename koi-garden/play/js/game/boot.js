@@ -38,9 +38,12 @@ function start(data) {
   layout();
   render();
   if (grantChapterKoi()) { saveJourney(); initKoi(); }
-  showHome(false);
   syncStatsUI();
   track("session");
+  // The very first time, the game opens straight on level 1 with its glowing square: no home screen, no cards
+  const fresh = !promised && !tutDone && journey.unlocked <= 1 && !Object.keys(journey.stars).length && S.mode === "journey" && !S.placed;
+  if (fresh) { homeEl.hidden = true; closeOverlay(); render(); return; }
+  showHome(false);
   if (!promised) openCard("promiseCard");
   else maybeAskStats();
 }

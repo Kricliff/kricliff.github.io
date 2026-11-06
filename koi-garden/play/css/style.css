@@ -24,7 +24,7 @@ img { max-width: 100%; }
   --glass-line: rgba(255, 255, 255, 0.20);
   --card: #fff8ec;
   --card-fg: #24302e;
-  --card-muted: #6d7b77;
+  --card-muted: #566461;
   --card-line: #eadfca;
   --card-well: #f6ecd7;
   --sand: #f8e9c9;
@@ -2839,3 +2839,28 @@ html.big { font-size: 120%; }
 .fest-board b { display: block; }
 .fest-board .pearl { vertical-align: -1px; }
 .style-tile.fest:not(.locked)::after, .style-tile.fest.locked small { color: var(--card-muted); }
+
+/* ---------- Easier to read and to tap (accessibility pass, 6 November 2026) ----------
+   Text colours on the cards meet WCAG AA (4.5:1) on both the card and its wells; the bright green and orange stay
+   for fills and borders. Small buttons keep their look but get a 44 px tap area. */
+:root { --good-ink: #0b6f54; --accent-ink: #a63f16; }
+:root[data-garden="night"] { --good-ink: var(--good); --accent-ink: var(--accent); }
+.style-tile.on small, .pond-item.on small, .mood.on small, .pond-tile.on small, .music-tile.on small { color: var(--good-ink); }
+.rules b, .basics b, .current-lost b, .style-tile.confirm small, .pond-item.confirm small, .mood.hear small,
+.pond-tile.confirm small, .music-tile.confirm small { color: var(--accent-ink); }
+.style-tile small { font-size: 0.76rem; }
+.eyebrow { font-size: 0.74rem; }
+.joker-slot .joker-name { font-size: 0.72rem; letter-spacing: 0.04em; }
+.joker-slot .joker-does { font-size: 0.72rem; }
+.score .best { font-size: 0.76rem; }
+.hb-label { font-size: 0.8rem; }
+.icon-btn, button.chip, .home-link, .stars-help summary { position: relative; }
+.icon-btn::after, button.chip::after, .home-link::after, .stars-help summary::after {
+  content: ""; position: absolute; left: 50%; top: 50%;
+  width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%);
+}
+.stars-help summary { display: inline-block; padding: 6px 4px; }
+.helpers button.chip { min-height: 32px; }
+.joker-slot .joker-name, .joker-slot .joker-does { font-size: 0.78rem; }
+.helpers button.chip { font-size: 0.8rem; }
+.hard-tag { font-size: 0.72rem; letter-spacing: 0.06em; top: -15px; }

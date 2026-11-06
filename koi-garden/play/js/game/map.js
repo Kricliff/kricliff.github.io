@@ -351,8 +351,8 @@ function starsLand(n) {
     if (k === 2 && !prefs.calm) restartClass($("winCard"), "thump");
   }, 200 + k * 220 + 300));
 }
-$("winNext").addEventListener("click", () => playLevel(S.level + 1, true, true));
-$("winMap").addEventListener("click", openMap);
+$("winNext").addEventListener("click", () => withPromise(() => playLevel(S.level + 1, true, true)));
+$("winMap").addEventListener("click", () => withPromise(openMap));
 $("winDouble").addEventListener("click", () => showAd("double", () => {
   journey.pearls += S.pearls;
   S.doubled = true;

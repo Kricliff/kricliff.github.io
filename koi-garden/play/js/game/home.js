@@ -132,7 +132,17 @@ $("promiseOk").addEventListener("click", () => {
   promised = true;
   try { localStorage.setItem("mb-promise", "1"); } catch (e) {}
   closeOverlay();
+  const next = afterPromise;
+  afterPromise = null;
+  if (next) next();
 });
+// A new player meets the promise about ads after the first win, not before the first move
+let afterPromise = null;
+function withPromise(next) {
+  if (promised) { next(); return; }
+  afterPromise = next;
+  openCard("promiseCard");
+}
 
 /* ---------- Home: shoji doors around a moon window onto the pond ----------
    The game opens here. Play slides the doors apart into the pond; the logo in the
