@@ -124,6 +124,8 @@ function startDaily(practice) {
 const playedOfficial = () => daily.best[today().key] !== undefined;
 const currentLevel = () => journey.unlocked;
 function switchMode(mode) {
+  // Sign in to Game Center before a game that has a leaderboard, so the score can go up when it ends
+  if (mode !== "journey" && typeof gcReady === "function") gcReady();
   if (drag || (S && S.mode === mode)) return;
   if (mode === "daily") {
     if (!G.daily || G.daily.day !== today().key) startDaily(playedOfficial());

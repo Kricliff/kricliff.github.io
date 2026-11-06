@@ -186,6 +186,25 @@
     if (P.KoiCloud) listen(P.KoiCloud, "change", () => cb());
   }
 
+  // Game Center leaderboards. Everything resolves quietly when Game Center is missing or the player says no.
+  const hasGames = !!P.KoiGames;
+  async function gcSignIn() {
+    if (!hasGames) return false;
+    try { return !!(await P.KoiGames.signIn()).signedIn; } catch (e) { return false; }
+  }
+  async function gcSubmit(board, score) {
+    if (!hasGames) return false;
+    try { return !!(await P.KoiGames.submit({ board, score: Math.max(0, Math.round(score)) })).sent; } catch (e) { return false; }
+  }
+  async function gcPlace(board) {
+    if (!hasGames) return null;
+    try { return await P.KoiGames.place({ board }); } catch (e) { return null; }
+  }
+  async function gcShow(board) {
+    if (!hasGames) return;
+    try { await P.KoiGames.show({ board, friends: true }); } catch (e) {}
+  }
+
   async function init(opts = {}) {
     document.body.classList.add("native");
     try { await P.StatusBar.setStyle({ style: "DARK" }); } catch (e) {}
@@ -194,5 +213,6 @@
   }
 
   window.MBNative = { isNative, init, haptic, showRewarded, showInterstitial, scheduleReminders,
-    removeBanner, noAdsPrice, ownsNoAds, buyNoAds, restoreNoAds, cloudLoad, cloudSave, cloudOnChange };
+    removeBanner, noAdsPrice, ownsNoAds, buyNoAds, restoreNoAds, cloudLoad, cloudSave, cloudOnChange,
+    hasGames, gcSignIn, gcSubmit, gcPlace, gcShow };
 })();

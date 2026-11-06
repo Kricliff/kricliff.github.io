@@ -2875,3 +2875,6 @@ html.big { font-size: 120%; }
 .level-modes { background: var(--card-well); border-color: var(--card-line); }
 .level-modes .mode { color: var(--card-fg); }
 .level-modes .mode[aria-pressed="true"] { background: var(--card); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15); }
+/* Game Center: the player's place under the score */
+.gc-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-size: 0.86rem; color: var(--card-muted); }
+.gc-row span { font-weight: 700; color: var(--card-fg); }

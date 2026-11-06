@@ -37,6 +37,7 @@ $("breakDone").addEventListener("click", () => {
 function showOver() {
   if (!S.statsSent) { S.statsSent = true; track("endless_end", { data: { score: S.score, level: S.level || "normal" } }); }
   paintEndlessPick();
+  gcPost(GC_BOARDS[S.level] || GC_BOARDS.normal, S.score, "overRank");
   $("overScore").textContent = S.score;
   $("overEyebrow").textContent = S.newBest ? "New personal best" : "No moves left";
   $("overStats").innerHTML = `${S.level && S.level !== "normal" ? ENDLESS_LEVELS[S.level].name + " · best" : "Best"} <b>${endlessBest()}</b> · <b>${S.clears}</b> clears · <b>${S.harmony}</b> Harmony`;
@@ -138,6 +139,8 @@ function showDailyCard() {
   $("dailyTasks").innerHTML = tasksLabel();
   openCard("dailyCard");
   bowl(4, 0.05);
+  // Only the official score of the day goes to the leaderboard
+  if (!S.practice) gcPost(GC_BOARDS.daily, daily.best[S.day], "dailyRank"); else $("dailyRank").hidden = true;
 }
 $("copyBtn").addEventListener("click", () => {
   const btn = $("copyBtn"), txt = shareText();
@@ -210,3 +213,45 @@ function showAd(kind, onDone) {
     onDone();
   };
 }
+
+/* ---------- Game Center leaderboards (in the app only) ----------
+   One board for each Endless level and one for the Daily, set up in App Store Connect with these IDs.
+   The cards show the player's place among friends and roughly among everyone, not a long list:
+   a calm game should not make most players feel far behind. Apple's own screen has the full lists. */
+const GC_BOARDS = { easy: "koigarden.endless.easy", normal: "koigarden.endless.normal", hard: "koigarden.endless.hard", daily: "koigarden.daily" };
+const gcOn = () => nativeApp && window.MBNative && window.MBNative.hasGames;
+let gcSigned = null;
+function gcReady() {
+  if (!gcOn()) return Promise.resolve(false);
+  if (!gcSigned) gcSigned = window.MBNative.gcSignIn().then(ok => { if (!ok) gcSigned = null; return ok; });
+  return gcSigned;
+}
+const ordinal = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+function placeText(p) {
+  if (!p || !p.rank) return "";
+  const parts = [];
+  if (p.friendTotal > 1 && p.friendRank) parts.push(`${ordinal(p.friendRank)} of ${p.friendTotal} friends`);
+  // With few players a share means little, so show the place itself
+  if (p.total >= 20) parts.push(`top ${Math.max(1, Math.ceil((p.rank / p.total) * 100))} % of players`);
+  else if (p.total > 1) parts.push(`${ordinal(p.rank)} of ${p.total} players`);
+  return parts.join(" · ");
+}
+// Send the score, then show the place on the card once Game Center answers
+function gcPost(board, score, rowId) {
+  const row = $(rowId);
+  row.hidden = true;
+  if (!gcOn()) return;
+  row.dataset.board = board;
+  gcReady().then(ok => {
+    if (!ok) return;
+    window.MBNative.gcSubmit(board, score)
+      .then(() => window.MBNative.gcPlace(board))
+      .then(p => {
+        if (row.dataset.board !== board) return;
+        row.querySelector("span").textContent = placeText(p) || "Your score is on the leaderboard";
+        row.hidden = false;
+      });
+  });
+}
+$("overBoard").addEventListener("click", () => window.MBNative && window.MBNative.gcShow($("overRank").dataset.board));
+$("dailyBoard").addEventListener("click", () => window.MBNative && window.MBNative.gcShow($("dailyRank").dataset.board));
