@@ -94,7 +94,7 @@ function voice(f, t0, d, v, glideTo, type = "sine", rev = 0) {
 }
 // A koto-like pluck: a few partials through a closing filter, with a tiny noise click for the pick
 function pluck(f, t, vol, decay = 1.8, music = false, rev = 0.4) {
-  const bus = music ? musicBus : sfxBus, room = music ? musicRev : sfxRev;
+  const bus = music ? musicOut() : sfxBus, room = music ? musicRoom() : sfxRev;
   const g = ac.createGain(), lp = ac.createBiquadFilter();
   lp.type = "lowpass";
   lp.frequency.setValueAtTime(Math.min(12000, f * 9), t);
@@ -124,7 +124,7 @@ function pluck(f, t, vol, decay = 1.8, music = false, rev = 0.4) {
 }
 // A small bell or wind chime: inharmonic partials with a long ring
 function bell(f, t, vol, music = false) {
-  const bus = music ? musicBus : sfxBus, room = music ? musicRev : sfxRev;
+  const bus = music ? musicOut() : sfxBus, room = music ? musicRoom() : sfxRev;
   [[1, 1, 3.2], [2.76, 0.4, 1.8], [5.4, 0.18, 1.0]].forEach(([m, a, d]) => {
     const o = ac.createOscillator(), g = ac.createGain();
     o.frequency.value = f * m;
@@ -239,8 +239,8 @@ function pad(chord, t, len) {
     o.start(t);
     o.stop(t + len + 2.1);
   }));
-  lp.connect(g).connect(musicBus);
-  send(g, musicRev, 0.5);
+  lp.connect(g).connect(musicOut());
+  send(g, musicRoom(), 0.5);
 }
 // A soft taiko: a low skin tone that drops in pitch, and a little thud of noise
 function taiko(t, vol) {
@@ -251,8 +251,8 @@ function taiko(t, vol) {
   g.gain.setValueAtTime(0, t);
   g.gain.linearRampToValueAtTime(vol, t + 0.01);
   g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
-  o.connect(g).connect(musicBus);
-  send(g, musicRev, 0.25);
+  o.connect(g).connect(musicOut());
+  send(g, musicRoom(), 0.25);
   o.start(t);
   o.stop(t + 0.65);
 }
@@ -296,7 +296,7 @@ function startRain() {
   lfo.frequency.value = 0.11;
   depth.gain.value = 0.004;
   lfo.connect(depth).connect(g.gain);
-  n.connect(hp).connect(lp).connect(g).connect(musicBus);
+  n.connect(hp).connect(lp).connect(g).connect(musicOut());
   n.start();
   lfo.start();
   return { stop: () => { try { n.stop(); lfo.stop(); } catch (e) {} } };
@@ -312,14 +312,36 @@ function startWater() {
   lfo.frequency.value = 0.07;
   depth.gain.value = 0.008;
   lfo.connect(depth).connect(g.gain);
-  n.connect(f).connect(g).connect(musicBus);
+  n.connect(f).connect(g).connect(musicOut());
   n.start();
   lfo.start();
   return { stop: () => { try { n.stop(); lfo.stop(); } catch (e) {} } };
 }
 let rain = null;
+/* Each time the music starts it gets its own pair of gains, one to the music bus and one to the room's reverb. Notes
+   already scheduled ring out through them, so when the music stops or the mood changes, those two are faded out in a
+   moment: the old mood stops at once instead of ringing on under the new one. */
+let musicSession = null;
+function newMusicSession() {
+  endMusicSession();
+  const out = ac.createGain(), room = ac.createGain();
+  out.connect(musicBus);
+  room.connect(musicRev);
+  musicSession = { out, room };
+}
+function endMusicSession() {
+  const s = musicSession;
+  if (!s) return;
+  musicSession = null;
+  const t = ac.currentTime;
+  [s.out, s.room].forEach(g => { g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + 0.25); });
+  setTimeout(() => { try { s.out.disconnect(); s.room.disconnect(); } catch (e) {} }, 400);
+}
+const musicOut = () => (musicSession || (newMusicSession(), musicSession)).out;
+const musicRoom = () => (musicSession || (newMusicSession(), musicSession)).room;
 function startMusic() {
   if (musicTimer || !ac) return;
+  newMusicSession();
   nextBar = ac.currentTime + 0.3;
   water = startWater();
   if (mood().rain) rain = startRain();
@@ -329,6 +351,7 @@ function startMusic() {
 function stopMusic() {
   clearInterval(musicTimer);
   musicTimer = 0;
+  if (ac) endMusicSession();
   if (water) { water.stop(); water = null; }
   if (rain) { rain.stop(); rain = null; }
 }
