@@ -180,7 +180,25 @@ function buildPondLayers() {
       o.globalCompositeOperation = "source-over";
     }
     pondCache.over = over;
+    // Where decorations cover the water, at the water grid's size: koi pass under them but never aim for them
+    pondCover = null;
+    if (shown.length && pondWet) {
+      const c = document.createElement("canvas");
+      c.width = pondWet.w; c.height = pondWet.h;
+      const cx = c.getContext("2d");
+      shown.forEach(d => { const im = pondImage(pondFile(p, `mask-${d.key}.png`)); if (imgReady(im)) cx.drawImage(im, 0, 0, c.width, c.height); });
+      const data = cx.getImageData(0, 0, c.width, c.height).data, cells = new Uint8Array(c.width * c.height);
+      for (let i = 0; i < cells.length; i++) cells[i] = data[i * 4 + 3] > 60 ? 1 : 0;
+      pondCover = cells;
+    }
   }
+}
+let pondCover = null;
+function underDecor(x, y) {
+  if (!pondCover || !pondWet) return false;
+  const f = pondFit(), u = (x - f.x) / f.w, v = (y - f.y) / f.h;
+  if (u < 0 || v < 0 || u >= 1 || v >= 1) return false;
+  return pondCover[Math.floor(v * pondWet.h) * pondWet.w + Math.floor(u * pondWet.w)] === 1;
 }
 // Is a point in the world in the open water?
 function inWater(x, y) {
@@ -191,13 +209,22 @@ function inWater(x, y) {
 }
 // Open water all round a point, so a koi there is well away from the edge
 const roomy = (x, y, r) => inWater(x, y) && [0, 1, 2, 3, 4, 5, 6, 7].every(k => inWater(x + Math.cos(k * 0.785) * r, y + Math.sin(k * 0.785) * r));
-// A random spot well inside the open water, for a koi to make its way to
+// A random spot well inside the open water, and not under a decoration, for a koi to make its way to
 function waterSpot() {
   for (const r of [48, 32, 18, 0]) for (let k = 0; k < 60; k++) {
     const x = Math.random() * innerWidth, y = Math.random() * innerHeight;
-    if (roomy(x, y, r)) return { x, y };
+    if (roomy(x, y, r) && (r === 0 || !underDecor(x, y))) return { x, y };
   }
   return { x: innerWidth / 2, y: innerHeight / 2 };
+}
+// The nearest spot to (x, y) with open water all round it, so food dropped by the edge lands where koi can reach it
+function reachable(x, y) {
+  if (roomy(x, y, 22)) return { x, y };
+  for (let r = 8; r < 140; r += 8) for (let k = 0; k < 16; k++) {
+    const a = k * Math.PI / 8, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+    if (roomy(px, py, 22)) return { x: px, y: py };
+  }
+  return null;
 }
 let fishLayer = null;
 function sizePond() {
@@ -397,6 +424,21 @@ function pondLoop(now) {
   pondFish.forEach(f => {
     if (!f.goal || f.goalIn <= 0 || Math.hypot(f.goal.x - f.x, f.goal.y - f.y) < 30) { f.goal = waterSpot(); f.goalIn = 6 + Math.random() * 6; }
     f.goalIn -= dt;
+    // A koi that has hardly moved for two seconds (wedged in a corner, nosing at the edge) gets a new goal in open
+    // water and heads for it, turning on the spot if it has to
+    f.watch = f.watch || { x: f.x, y: f.y, t: 0 };
+    f.watch.t += dt;
+    if (f.watch.t > 2) {
+      if (Math.hypot(f.x - f.watch.x, f.y - f.watch.y) < 14) { f.goal = waterSpot(); f.goalIn = 8; f.unstick = 1.6; }
+      f.watch = { x: f.x, y: f.y, t: 0 };
+    }
+    if (f.unstick > 0) {
+      f.unstick -= dt;
+      const want = Math.atan2(f.goal.y - f.y, f.goal.x - f.x), da = wrapAngle(want - f.a);
+      f.a += Math.max(-2.6 * dt, Math.min(2.6 * dt, da));
+      f.turnTarget = 0; f.turn = 0; f.turnVel = 0; f.timer = 0.5;
+      f.vTarget = Math.abs(da) < 0.6 ? 26 : 8;
+    }
     const px = f.x, py = f.y;
     stepFish(f, dt, innerWidth, innerHeight, pondFood);
     const head = a => inWater(f.x + Math.cos(a) * f.len * 0.55, f.y + Math.sin(a) * f.len * 0.55);
@@ -538,15 +580,18 @@ function pondTap(sx, sy) {
     tick();
     return;
   }
-  // Tapping the water drops a few pellets, and the koi come to eat. On the bank nothing falls in.
+  // Tapping the water drops a few pellets, and the koi come to eat. On the bank nothing falls in; by the edge it lands
+  // a little further out, where the koi can reach it.
   if (!inWater(x, y)) return;
+  const spot = reachable(x, y);
+  if (!spot) return;
   const ring = document.createElement("div");
   ring.className = "tap-ring";
   ring.style.left = sx + "px";
   ring.style.top = sy + "px";
   $("pondView").appendChild(ring);
   setTimeout(() => ring.remove(), 1200);
-  pondFood = { left: 8, bits: [...Array(6)].map(() => ({ x: x + (Math.random() - 0.5) * 22, y: y + (Math.random() - 0.5) * 22 })).filter(b => inWater(b.x, b.y)) };
+  pondFood = { left: 8, bits: [...Array(6)].map(() => ({ x: spot.x + (Math.random() - 0.5) * 22, y: spot.y + (Math.random() - 0.5) * 22 })).filter(b => inWater(b.x, b.y)) };
   if (!pondFood.bits.length) pondFood = null;
   voice(520, 0, 0.12, 0.03, 380);
 }
