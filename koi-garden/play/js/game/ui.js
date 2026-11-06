@@ -71,6 +71,7 @@ function syncSettings() {
   syncCloudNote();
   syncAudioUI();
   $("bigToggle").checked = !!prefs.big;
+  $("relaxedToggle").checked = !!prefs.relaxed;
   $("calmToggle").checked = !!prefs.calm;
   $("adsTitle").textContent = noAds ? "Ads removed" : "Remove ads";
   $("adsText").textContent = noAds
@@ -79,6 +80,11 @@ function syncSettings() {
   $("buyNoAds").hidden = noAds;
   if (!noAds && nativeApp) window.MBNative.noAdsPrice().then(pr => { if (pr) $("buyNoAds").textContent = `Remove ads · ${pr}`; });
 }
+$("relaxedToggle").addEventListener("change", e => {
+  prefs.relaxed = e.target.checked;
+  savePrefs();
+  track("setting", { data: { relaxed: prefs.relaxed } });
+});
 $("bigToggle").addEventListener("change", e => { prefs.big = e.target.checked; savePrefs(); applyPrefs(); render(); });
 $("calmToggle").addEventListener("change", e => { prefs.calm = e.target.checked; savePrefs(); applyPrefs(); });
 $("settingsRemind").addEventListener("click", () => openRemind(() => { syncSettings(); openCard("settingsCard"); }));

@@ -300,10 +300,12 @@ const G = { journey: null, endless: null, daily: null };
 let daily = { last: "", streak: 0, best: {}, night: false, restoredOn: "" };
 let journey = { unlocked: 1, stars: {}, pearls: 0, fails: {}, koi: [], streak: 0, gift: "", owned: [] };
 let look = { board: "sand", stones: "river" };
-let prefs = { big: false, calm: false, endless: "normal" };
+let prefs = { big: false, calm: false, endless: "normal", relaxed: false };
 // Endless difficulty: how many pieces are in hand. Each keeps its own best score.
 const ENDLESS_LEVELS = { easy: { hand: 3, name: "Easy", key: "mb-best-9-easy" }, normal: { hand: 2, name: "Normal", key: "mb-best-9" }, hard: { hand: 1, name: "Hard", key: "mb-best-9-hard" } };
-const handSize = () => S && S.mode === "endless" ? (ENDLESS_LEVELS[S.level || "normal"] || ENDLESS_LEVELS.normal).hand : 2;
+// Journey has two in hand, three with Relaxed Journey on; the Daily is two for everyone
+const handSize = () => !S ? 2 : S.mode === "endless" ? (ENDLESS_LEVELS[S.level || "normal"] || ENDLESS_LEVELS.normal).hand
+  : S.mode === "journey" && prefs.relaxed && !S.tut ? 3 : 2;
 const dealHand = () => Array.from({ length: handSize() }, () => dealPiece());
 const endlessBest = () => S && S.level === "easy" ? bestEasy : S && S.level === "hard" ? bestHard : best;
 function setEndlessBest(v) {

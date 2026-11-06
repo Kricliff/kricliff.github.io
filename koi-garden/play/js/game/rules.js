@@ -81,7 +81,7 @@ function startLevel(n) {
     const lay = KL.layout(n, L);
     Object.assign(S, { board: lay.board, preset: lay.preset, ice: lay.ice, lotus: lay.lotus, blossom: lay.blossom || {} });
   }
-  S.tray = [dealPiece(), dealPiece()];
+  S.tray = dealHand();
   if (S.tut === 1) S.tray[0] = { g: ["x"], c: 3 };
   // Jokers waiting at the start: the win streak, plus a gift from the task basket
   if (!S.tut) {
@@ -90,7 +90,7 @@ function startLevel(n) {
     S.boost = S.jokers.length;
   }
   G.journey = S;
-  entering.add(0); entering.add(1);
+  enterAll();
   shownScore = 0;
 }
 function startGame(games, level) {
