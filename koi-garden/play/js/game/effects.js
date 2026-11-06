@@ -20,25 +20,51 @@ function readPalette() {
 function sizeCanvases() {
   const dpr = Math.min(2, devicePixelRatio || 1);
   [fxCanvas, koiCanvas].forEach(c => {
-    c.width = innerWidth * dpr;
-    c.height = innerHeight * dpr;
+    c.width = Math.round(innerWidth * dpr);
+    c.height = Math.round(innerHeight * dpr);
     c.style.width = innerWidth + "px";
     c.style.height = innerHeight + "px";
     c.getContext("2d").setTransform(dpr, 0, 0, dpr, 0, 0);
   });
+}
+// The whole effects canvas, whatever the page's size says now: in-app browsers (Messenger, Instagram) change the
+// viewport without a resize event, and clearing only innerWidth x innerHeight then left old frames smeared on screen
+function clearFx() {
+  fx.save();
+  fx.setTransform(1, 0, 0, 1, 0, 0);
+  fx.globalAlpha = 1;
+  fx.globalCompositeOperation = "source-over";
+  fx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
+  fx.restore();
+}
+// The canvases follow the viewport even when no resize event comes
+function fxSizeOk() {
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  if (fxCanvas.width !== Math.round(innerWidth * dpr) || fxCanvas.height !== Math.round(innerHeight * dpr)) sizeCanvases();
 }
 function spawn(p) {
   if (reduceMotion) return;
   // Calm effects keep about a third of the particles, and all koi
   if (prefs.calm && !p.catchable && !["koi", "leap", "orbit", "dart", "petal"].includes(p.type) && Math.random() > 0.35) return;
   parts.push(Object.assign({ t: 0, delay: 0, rot: 0, vr: 0, g: 900, drag: 0.985, phase: 0 }, p));
-  if (!fxRunning) { fxRunning = true; lastFx = performance.now(); requestAnimationFrame(fxLoop); }
+  if (!fxRunning) { fxSizeOk(); fxRunning = true; lastFx = performance.now(); requestAnimationFrame(fxLoop); }
 }
 function fxLoop(now) {
   const dt = Math.min(0.05, (now - lastFx) / 1000);
   lastFx = now;
-  fx.clearRect(0, 0, innerWidth, innerHeight);
-  parts = parts.filter(p => {
+  fxSizeOk();
+  clearFx();
+  const dpr = fxCanvas.width / innerWidth || 1;
+  fx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  parts = parts.filter(p => { try { return stepPart(p, dt); } catch (e) { fx.restore(); return false; } });
+  // Particles born during the frame (a trail behind something moving) join for the next one
+  if (fxLater.length) { parts.push(...fxLater.map(p => Object.assign({ t: 0, delay: 0, rot: 0, vr: 0, g: 900, drag: 0.985, phase: 0 }, p))); fxLater = []; }
+  if (parts.length) requestAnimationFrame(fxLoop);
+  else { fxRunning = false; clearFx(); }
+}
+// One particle for one frame: false when it is done. A particle that fails to draw is dropped, and the loop carries on.
+function stepPart(p, dt) {
+  {
     if (p.delay > 0) { p.delay -= dt; return true; }
     p.t += dt;
     if (p.t >= p.life) return false;
@@ -100,11 +126,7 @@ function fxLoop(now) {
     }
     fx.restore();
     return true;
-  });
-  // Particles born during the frame (a trail behind something moving) join for the next one
-  if (fxLater.length) { parts.push(...fxLater.map(p => Object.assign({ t: 0, delay: 0, rot: 0, vr: 0, g: 900, drag: 0.985, phase: 0 }, p))); fxLater = []; }
-  if (parts.length) requestAnimationFrame(fxLoop);
-  else { fxRunning = false; fx.clearRect(0, 0, innerWidth, innerHeight); }
+  }
 }
 function cellCenter(i) {
   const r = cellEls[i].getBoundingClientRect();
@@ -408,6 +430,7 @@ function drawWarpedKoi(c, img, len, phase, bend, amp, alpha, strips, tint) {
   if (alpha >= 0.95) { c.globalAlpha = alpha; drawKoiSprite(c, img, len, phase, bend, amp, strips); return; }
   const bw = len * 1.1, bh = len * h / w + len * 0.8;
   const pw = Math.ceil(bw * s), ph = Math.ceil(bh * s);
+  if (!(pw >= 1 && ph >= 1 && pw < 4096 && ph < 4096)) return;
   if (warpCv.width < pw || warpCv.height < ph) {
     warpCv.width = Math.max(warpCv.width, pw);
     warpCv.height = Math.max(warpCv.height, ph);
