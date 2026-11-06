@@ -49,6 +49,7 @@
   <div class="tray" id="tray">
     <div class="slot" data-i="0"></div>
     <div class="slot" data-i="1"></div>
+    <div class="slot" data-i="2" hidden></div>
     <div class="slot joker-slot empty" id="jokerSlot" data-i="j" aria-label="Joker koi"></div>
   </div>
   <div class="below" id="below">
@@ -409,6 +410,17 @@
     <div class="btns"><button class="btn primary" id="breakDone">Back to the pond</button></div>
   </div>
 
+  <div class="card" id="endlessCard" hidden>
+    <p class="eyebrow">Endless</p>
+    <h2>How do you want to play?</h2>
+    <p class="note">Play until no piece fits. Each way keeps its own best score.</p>
+    <div class="endless-pick" id="endlessPick">
+      <button class="btn" data-level="easy"><b>Easy</b><small>Three pieces to choose from</small></button>
+      <button class="btn" data-level="normal"><b>Normal</b><small>Two pieces, as in the Journey</small></button>
+      <button class="btn" data-level="hard"><b>Hard</b><small>One piece at a time. Plan ahead</small></button>
+    </div>
+  </div>
+
   <div class="card" id="overCard" hidden>
     <p class="eyebrow" id="overEyebrow">No moves left</p>
     <div class="big-num" id="overScore">0</div>
@@ -417,6 +429,9 @@
     <div class="btns">
       <button class="btn primary" id="continueBtn"><span class="tag">Ad</span>Keep playing <small>· clears the centre</small></button>
       <button class="btn" id="againBtn">New game</button>
+    </div>
+    <div class="modes level-modes" id="overLevel" role="group" aria-label="Endless difficulty">
+      <button class="mode" data-level="easy">Easy</button><button class="mode" data-level="normal">Normal</button><button class="mode" data-level="hard">Hard</button>
     </div>
     <button class="link-btn" id="overBreathe">Take three calm breaths first</button>
     <button class="link-btn" id="overTasks">Pond tasks</button>

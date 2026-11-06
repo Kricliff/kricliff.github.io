@@ -2,7 +2,7 @@
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
 /* ---------- Overlays ---------- */
-const cards = ["promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "testerCard", "jokerCard", "shopCard"];
+const cards = ["endlessCard", "promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "testerCard", "jokerCard", "shopCard"];
 function openCard(id) {
   clearSurprises();
   overlay.hidden = false;
@@ -44,7 +44,7 @@ $("resetBtn").addEventListener("click", () => openCard("resetCard"));
 $("resetKeep").addEventListener("click", () => { syncSettings(); openCard("settingsCard"); });
 $("resetYes").addEventListener("click", async () => {
   try {
-    ["mb-journey", "mb-daily", "mb-best-9", "mb-lanterns", "mb-tasks", "mb-joker-tut", "mb-joker-seen"].forEach(k => localStorage.removeItem(k));
+    ["mb-journey", "mb-daily", "mb-best-9", "mb-best-9-easy", "mb-best-9-hard", "mb-lanterns", "mb-tasks", "mb-joker-tut", "mb-joker-seen"].forEach(k => localStorage.removeItem(k));
     localStorage.setItem("mb-epoch", String(localEpoch() + 1));
   } catch (e) {}
   // Clear the iCloud copy too, or it would bring the old progress back
@@ -351,4 +351,31 @@ $("settingsStyle").addEventListener("click", () => { closeOverlay(); openStyles(
   x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => $(done).click());
   $(card).prepend(x);
+});
+
+/* ---------- Endless: Easy (three pieces), Normal (two) or Hard (one) ---------- */
+function paintEndlessPick() {
+  const lv = prefs.endless || "normal";
+  document.querySelectorAll("#endlessPick .btn, #overLevel .mode").forEach(b => {
+    const on = b.dataset.level === lv;
+    b.classList.toggle("primary", on && b.classList.contains("btn"));
+    b.setAttribute("aria-pressed", String(on));
+  });
+}
+$("endlessPick").addEventListener("click", e => {
+  const b = e.target.closest("[data-level]");
+  if (!b) return;
+  prefs.endless = b.dataset.level;
+  savePrefs();
+  startGame(G.endless ? G.endless.games : 0, prefs.endless);
+  closeOverlay();
+  render();
+  setTimeout(() => toast(`Endless · ${ENDLESS_LEVELS[prefs.endless].name}`), 200);
+});
+$("overLevel").addEventListener("click", e => {
+  const b = e.target.closest("[data-level]");
+  if (!b) return;
+  prefs.endless = b.dataset.level;
+  savePrefs();
+  paintEndlessPick();
 });

@@ -35,10 +35,11 @@ $("breakDone").addEventListener("click", () => {
 });
 
 function showOver() {
-  if (!S.statsSent) { S.statsSent = true; track("endless_end", { data: { score: S.score } }); }
+  if (!S.statsSent) { S.statsSent = true; track("endless_end", { data: { score: S.score, level: S.level || "normal" } }); }
+  paintEndlessPick();
   $("overScore").textContent = S.score;
   $("overEyebrow").textContent = S.newBest ? "New personal best" : "No moves left";
-  $("overStats").innerHTML = `Best <b>${best}</b> · <b>${S.clears}</b> clears · <b>${S.harmony}</b> Harmony`;
+  $("overStats").innerHTML = `${S.level && S.level !== "normal" ? ENDLESS_LEVELS[S.level].name + " · best" : "Best"} <b>${endlessBest()}</b> · <b>${S.clears}</b> clears · <b>${S.harmony}</b> Harmony`;
   $("overQuote").textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)];
   $("continueBtn").hidden = S.continued;
   $("overTasks").innerHTML = tasksLabel();
@@ -51,13 +52,13 @@ $("continueBtn").addEventListener("click", () => {
     S.continued = true;
     S.over = false;
     S.prev = null;
-    S.tray = [dealPiece(), dealPiece()];
+    S.tray = dealHand();
     closeOverlay();
     render();
     bowl(3);
   });
 });
-$("againBtn").addEventListener("click", () => newGame(true));
+$("againBtn").addEventListener("click", () => newGame(true, prefs.endless));
 $("overTasks").addEventListener("click", () => openTasks(showOver));
 $("dailyTasks").addEventListener("click", () => openTasks(showDailyCard));
 $("overBreathe").addEventListener("click", () => showBreak(showOver));

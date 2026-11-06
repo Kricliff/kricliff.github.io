@@ -300,10 +300,22 @@ const G = { journey: null, endless: null, daily: null };
 let daily = { last: "", streak: 0, best: {}, night: false, restoredOn: "" };
 let journey = { unlocked: 1, stars: {}, pearls: 0, fails: {}, koi: [], streak: 0, gift: "", owned: [] };
 let look = { board: "sand", stones: "river" };
-let prefs = { big: false, calm: false };
+let prefs = { big: false, calm: false, endless: "normal" };
+// Endless difficulty: how many pieces are in hand. Each keeps its own best score.
+const ENDLESS_LEVELS = { easy: { hand: 3, name: "Easy", key: "mb-best-9-easy" }, normal: { hand: 2, name: "Normal", key: "mb-best-9" }, hard: { hand: 1, name: "Hard", key: "mb-best-9-hard" } };
+const handSize = () => S && S.mode === "endless" ? (ENDLESS_LEVELS[S.level || "normal"] || ENDLESS_LEVELS.normal).hand : 2;
+const dealHand = () => Array.from({ length: handSize() }, () => dealPiece());
+const endlessBest = () => S && S.level === "easy" ? bestEasy : S && S.level === "hard" ? bestHard : best;
+function setEndlessBest(v) {
+  const lv = S.level === "easy" || S.level === "hard" ? S.level : "normal";
+  if (lv === "easy") bestEasy = v; else if (lv === "hard") bestHard = v; else best = v;
+  try { localStorage.setItem(ENDLESS_LEVELS[lv].key, v); } catch (e) {}
+}
+const enterAll = () => { for (let i = 0; i < 3; i++) entering.add(i); };
 let noAds = false, sessions = 0;
 let lanterns = { week: "", count: 0, claimed: [] };
 let tasks = { day: "", list: [], opened: false };
+let bestEasy = 0, bestHard = 0;
 let best = 0, muted = false, tutDone = false, promised = false;
 let remind = { on: false, time: "19:00" };
 let garden = "auto";
@@ -312,6 +324,8 @@ let clearing = {};
 const ads = { lastBreak: 0, lastReward: 0, rounds: 0 };
 try {
   best = +localStorage.getItem("mb-best-9") || 0;
+  bestEasy = +localStorage.getItem("mb-best-9-easy") || 0;
+  bestHard = +localStorage.getItem("mb-best-9-hard") || 0;
   muted = localStorage.getItem("mb-muted") === "1";
   tutDone = localStorage.getItem("mb-tut") === "done";
   promised = localStorage.getItem("mb-promise") === "1";

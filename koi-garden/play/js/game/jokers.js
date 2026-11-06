@@ -224,7 +224,7 @@ function useJoker(r, c) {
   buzz([20, 40, 20]);
   const token = clearToken = {};
   setTimeout(() => { if (clearToken === token) { clearing = {}; render(); } }, 900);
-  if (S.mode === "endless" && S.score > best) { best = S.score; try { localStorage.setItem("mb-best-9", best); } catch (e) {} }
+  if (S.mode === "endless" && S.score > endlessBest()) setEndlessBest(S.score);
   tasksAdd(S.mode === "endless" ? { joker: 1, koi: freed, endless: S.score } : { joker: 1, koi: freed });
   render();
   if (S.mode === "journey") {

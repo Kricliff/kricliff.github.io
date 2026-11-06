@@ -126,7 +126,7 @@ function render() {
   if (S.mode === "journey" && goalHead()) { /* the goal is in the header, painted by paintScore() */ }
   else if (S.mode === "journey") { $("bestLabel").textContent = "Level"; $("best").textContent = S.level; }
   else if (S.mode === "daily") { $("bestLabel").textContent = "Best"; $("best").textContent = Math.max(daily.best[S.day] || 0, S.practice ? 0 : S.score); }
-  else { $("bestLabel").textContent = "Best"; $("best").textContent = Math.max(best, S.score); }
+  else { $("bestLabel").textContent = S.level && S.level !== "normal" ? `Best · ${ENDLESS_LEVELS[S.level].name}` : "Best"; $("best").textContent = Math.max(endlessBest(), S.score); }
   paintStarGoals();
 
   const pill = $("pill");
@@ -184,9 +184,11 @@ function renderTray() {
   const m = metrics();
   const k = prefs.big ? 1 : 0.72, room = prefs.big ? 4.6 : 5.8;
   const s = Math.max(10, Math.min(m.cell * k, slots[0].clientWidth / room, slots[0].clientHeight / room));
+  trayEl.dataset.hand = S.tray.length;
   slots.forEach((slot, i) => {
     slot.innerHTML = "";
     slot.className = "slot";
+    slot.hidden = i >= S.tray.length;
     const p = S.tray[i];
     if (!p) { slot.removeAttribute("aria-label"); return; }
     const sh = parse(p.g);
@@ -521,10 +523,10 @@ function place(slot, r, c) {
   tasksAdd(gains);
   worldMove(placedIdx, gains);
   if (S.mode === "endless") {
-    if (S.score > best) {
-      if (!S.newBest && best > 0) { S.newBest = true; setTimeout(() => toast("New personal best"), 500); }
-      best = S.score;
-      try { localStorage.setItem("mb-best-9", best); } catch (e) {}
+    const was = endlessBest();
+    if (S.score > was) {
+      if (!S.newBest && was > 0) { S.newBest = true; setTimeout(() => toast("New personal best"), 500); }
+      setEndlessBest(S.score);
     }
     if (S.score >= 800 && S.placed % 8 === 0) setTimeout(dropRock, 450);
   }

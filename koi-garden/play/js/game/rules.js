@@ -93,14 +93,14 @@ function startLevel(n) {
   entering.add(0); entering.add(1);
   shownScore = 0;
 }
-function startGame(games) {
-  S = { mode: "endless", board: Array(N * N).fill(0), score: 0, combo: 0, miss: 0, continued: false, over: false,
+function startGame(games, level) {
+  S = { mode: "endless", level: level || prefs.endless || "normal", board: Array(N * N).fill(0), score: 0, combo: 0, miss: 0, continued: false, over: false,
     games, clears: 0, harmony: 0, placed: 0, newBest: false, undoLeft: UNDO_PER_GAME, prev: null, jokers: [], tut: 0, tutMoves: 0 };
   if (!tutDone) tutorialBoard();
-  S.tray = [dealPiece(), dealPiece()];
+  S.tray = dealHand();
   if (S.tut === 1) S.tray[0] = { g: ["x"], c: 3 };
   G.endless = S;
-  entering.add(0); entering.add(1);
+  enterAll();
   shownScore = 0;
 }
 function startDaily(practice) {
@@ -132,7 +132,8 @@ function switchMode(mode) {
     if (G.journey && !G.journey.over) S = G.journey;
     else { startLevel(currentLevel()); shownScore = 0; closeOverlay(); render(); openMap(); return; }
   } else {
-    if (G.endless) S = G.endless; else startGame(0);
+    if (G.endless) S = G.endless;
+    else { startGame(0); if (tutDone) { closeOverlay(); render(); openCard("endlessCard"); paintEndlessPick(); return; } }
   }
   shownScore = S.score;
   closeOverlay();
@@ -153,9 +154,9 @@ function betweenRounds(go, allowed = true) {
   if (due) { ads.lastBreak = now; showAd("interstitial", go); }
   else go();
 }
-function newGame(afterRound) {
+function newGame(afterRound, level) {
   const games = (G.endless ? G.endless.games : 0) + 1;
-  const go = () => { startGame(games); closeOverlay(); render(); };
+  const go = () => { startGame(games, level); closeOverlay(); render(); };
   if (afterRound) betweenRounds(go); else go();
 }
 // From the win card the next level starts with one tap; the intro card only comes when there is something new to read

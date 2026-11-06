@@ -455,7 +455,7 @@ $("failSkip").addEventListener("click", () => showAd("skip", () => {
 }));
 $("swapBtn").addEventListener("click", () => {
   if (S.mode !== "journey" || S.over || drag || !overlay.hidden) return;
-  const swap = () => { clearHint(); S.tray = S.tray.map(p => p && fairPiece(10, 2)); entering.add(0); entering.add(1); closeOverlay(); render(); tick(); };
+  const swap = () => { clearHint(); S.tray = S.tray.map(p => p && fairPiece(10, 2)); enterAll(); closeOverlay(); render(); tick(); };
   if (journey.pearls >= SWAP_COST) { journey.pearls -= SWAP_COST; saveJourney(); swap(); }
   else showAd("swap", swap);
 });
