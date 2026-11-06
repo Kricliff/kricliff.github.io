@@ -522,6 +522,8 @@ function canRestore() {
 }
 function updateModes() {
   ["Journey", "Endless", "Daily"].forEach(m => $("mode" + m).setAttribute("aria-pressed", String(S.mode === m.toLowerCase())));
+  // On a Journey level the board gets the room: Endless and Daily are on the home screen
+  document.querySelector("header .modes").hidden = S.mode === "journey";
   const t = today();
   $("modeDaily").textContent = `Daily #${t.num}`;
   $("modeDaily").classList.toggle("new", !playedOfficial() && S.mode !== "daily");

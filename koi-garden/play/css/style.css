@@ -2527,7 +2527,8 @@ html.big { font-size: 120%; }
 #eventCard[data-festival="lantern"] .fest-sky i { border-radius: 40% 40% 45% 45%; width: 11px; height: 14px; background: #ff8a3a; box-shadow: 0 0 12px #ffb35c; }
 #eventCard[data-festival="sakura"] .fest-sky i { border-radius: 60% 0 60% 0; background: #ffb7cf; box-shadow: none; }
 @keyframes fest-float { 50% { transform: translateY(-7px); opacity: 0.6; } }
-#eventCard > *:not(.fest-sky) { position: relative; }
+#eventCard > *:not(.fest-sky):not(.card-close) { position: relative; }
+#eventCard > .card-close { z-index: 2; }
 .fest-koi { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border-radius: 14px; text-align: left;
   background: color-mix(in srgb, var(--fest) 16%, var(--card-well)); font-size: 0.82rem; color: var(--card-muted); }
 .fest-koi img { width: 92px; height: 40px; object-fit: contain; flex: none; filter: drop-shadow(2px 4px 3px rgba(0, 0, 0, 0.3)); }

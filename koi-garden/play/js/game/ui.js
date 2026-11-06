@@ -318,3 +318,16 @@ function useStyle(kind, id) {
   tick();
 }
 $("settingsStyle").addEventListener("click", () => { closeOverlay(); openStyles(() => { syncSettings(); openCard("settingsCard"); }); });
+
+/* ---------- A ✕ in the top corner of the longer cards ----------
+   It does what the card's own Back or Done button does, so nobody has to scroll down for it. */
+[["koiCard", "koiDone"], ["tasksCard", "tasksDone"], ["eventCard", "eventDone"], ["settingsCard", "settingsDone"],
+ ["helpCard", "helpDone"], ["shopCard", "shopDone"], ["infoCard", "infoDone"]].forEach(([card, done]) => {
+  const x = document.createElement("button");
+  x.className = "card-close";
+  x.type = "button";
+  x.textContent = "✕";
+  x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => $(done).click());
+  $(card).prepend(x);
+});
