@@ -310,6 +310,7 @@ function setEndlessBest(v) {
   const lv = S.level === "easy" || S.level === "hard" ? S.level : "normal";
   if (lv === "easy") bestEasy = v; else if (lv === "hard") bestHard = v; else best = v;
   try { localStorage.setItem(ENDLESS_LEVELS[lv].key, v); } catch (e) {}
+  cloudSoon();
 }
 const enterAll = () => { for (let i = 0; i < 3; i++) entering.add(i); };
 let noAds = false, sessions = 0;
@@ -350,7 +351,7 @@ const saveDaily = () => { try { localStorage.setItem("mb-daily", JSON.stringify(
    The phone's own storage stays the source the game reads. iCloud holds a copy, so a new
    iPhone or a reinstall picks up where the player left off. "epoch" goes up on Start over,
    so an older copy on iCloud never brings back progress the player chose to clear. */
-const CLOUD_KEYS = { journey: "mb-journey", daily: "mb-daily", best: "mb-best-9", tut: "mb-tut" };
+const CLOUD_KEYS = { journey: "mb-journey", daily: "mb-daily", best: "mb-best-9", bestEasy: "mb-best-9-easy", bestHard: "mb-best-9-hard", tut: "mb-tut" };
 const localEpoch = () => { try { return +localStorage.getItem("mb-epoch") || 0; } catch (e) { return 0; } };
 function cloudSnapshot() {
   const data = { epoch: localEpoch() };
@@ -376,7 +377,8 @@ function cloudAhead(local, cloud) {
   if (!cloud || (cloud.epoch || 0) !== local.epoch) return take;
   if (cloud.journey && ahead(journeyRank(cloud.journey), journeyRank(local.journey))) take.journey = cloud.journey;
   if (cloud.daily && ahead(dailyRank(cloud.daily), dailyRank(local.daily))) take.daily = cloud.daily;
-  if ((+cloud.best || 0) > (+local.best || 0)) take.best = cloud.best;
+  // Each Endless record keeps the higher of the two
+  ["best", "bestEasy", "bestHard"].forEach(k => { if ((+cloud[k] || 0) > (+local[k] || 0)) take[k] = cloud[k]; });
   if (cloud.tut === "done" && local.tut !== "done") take.tut = "done";
   return take;
 }
@@ -437,7 +439,7 @@ async function cloudRestore() {
 }
 // iCloud sometimes delivers its copy a little after launch on a new iPhone. Bring it in
 // straight away if this phone has no progress yet; otherwise it is merged on the next push.
-const hasProgress = () => { const l = cloudSnapshot(); return !!(l.journey || l.daily || +l.best); };
+const hasProgress = () => { const l = cloudSnapshot(); return !!(l.journey || l.daily || +l.best || +l.bestEasy || +l.bestHard); };
 function cloudChanged() {
   window.MBNative.cloudLoad().then(cloud => {
     if (!cloud) return;
