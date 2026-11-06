@@ -238,7 +238,7 @@ function currentRow(s, fresh) {
   let pips = "";
   for (let k = 1; k <= CURRENT_MAX; k++) {
     const step = CURRENT_STEPS.find(st => st.at === k);
-    pips += `<i class="pip${k <= shown ? " on" : ""}${step ? " step" : ""}${fresh && k === shown ? " bloom" : ""}">${step ? `<img src="${ALL_KOI[JOKERS[step.joker].koi].img}" alt="">` : ""}</i>`;
+    pips += `<i class="pip${k <= shown ? " on" : ""}${step ? " pip-joker" : ""}${fresh && k === shown ? " bloom" : ""}">${step ? `<img src="${ALL_KOI[JOKERS[step.joker].koi].img}" alt="">` : ""}</i>`;
   }
   return `<div class="pips" aria-hidden="true">${pips}</div>`;
 }

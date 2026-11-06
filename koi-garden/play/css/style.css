@@ -1199,7 +1199,7 @@ html.big { font-size: 120%; }
   display: grid;
   place-items: center;
 }
-.pip.step { width: 28px; height: 28px; }
+.pip.pip-joker { width: 28px; height: 28px; }
 .pip img { width: 150%; max-width: none; transform: rotate(-35deg); opacity: 0.25; filter: grayscale(1); pointer-events: none; }
 .pip.on {
   background: radial-gradient(circle at 50% 38%, #fff3b8 0 16%, var(--p5) 46%, color-mix(in srgb, black 12%, var(--p5)) 100%);
@@ -1221,7 +1221,7 @@ html.big { font-size: 120%; }
 @keyframes bloom-ring { 0% { transform: scale(0.8); opacity: 0.9; } 100% { transform: scale(2); opacity: 0; } }
 .map-current { flex-direction: row; justify-content: center; gap: 10px; font-size: 0.8rem; font-weight: 700; color: var(--card-muted); }
 .map-current .pip { width: 12px; height: 12px; }
-.map-current .pip.step { width: 20px; height: 20px; }
+.map-current .pip.pip-joker { width: 20px; height: 20px; }
 .current-lost { font-size: 0.88rem; color: var(--card-muted); }
 .current-lost b { color: var(--accent); }
 
