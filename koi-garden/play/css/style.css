@@ -1859,28 +1859,34 @@ html.big { font-size: 120%; }
 .home-chip .pip { width: 14px; height: 14px; }
 .home-tools { margin-left: auto; display: flex; gap: 6px; }
 .home .icon-btn { background: color-mix(in srgb, var(--wood) 88%, transparent); border-color: var(--wood-hi); color: #fff3dc; -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* The name on a hanging wooden plaque, so it reads clearly over the shoji doors by day and by night */
 .home-logo {
   margin: clamp(10px, 4vh, 36px) 0 0;
-  font: 900 clamp(2.5rem, 12vw, 3.4rem)/0.95 var(--display);
+  align-self: center;
+  padding: 14px 26px 12px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #7a4a2a, #5a341c);
+  box-shadow: inset 0 0 0 3px #9c6a40, inset 0 0 0 6px #4a2a14, 0 10px 24px rgba(0, 0, 0, 0.35);
+  font: 900 clamp(2.3rem, 11vw, 3.1rem)/0.95 var(--display);
   text-align: center;
-  color: #fff6e3;
-  -webkit-text-stroke: 7px var(--wood);
-  paint-order: stroke fill;
-  text-shadow: 0 6px 0 color-mix(in srgb, black 35%, var(--wood)), 0 10px 22px rgba(0, 0, 0, 0.3);
+  color: #fff3dc;
+  text-shadow: 0 3px 0 #3a1f0e;
   letter-spacing: -0.01em;
 }
-.home-logo span:first-child { color: #ff8a5c; }
+.home-logo span:first-child { color: #ffa070; }
 .home-logo small {
-  display: block;
-  margin-top: 10px;
-  font: 700 0.72rem var(--body);
-  letter-spacing: 0.32em;
+  display: table;
+  margin: 10px auto 0;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: #c8402e;
+  box-shadow: 0 2px 0 #7e2216;
+  font: 700 0.8rem var(--body);
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--wood);
-  -webkit-text-stroke: 0;
+  color: #fff3dc;
   text-shadow: none;
 }
-:root[data-garden="night"] .home-logo small { color: #e9dcff; }
 /* Badges beside the moon window, on plaques like the window's wood */
 .home-side {
   position: absolute;
@@ -1996,7 +2002,8 @@ html.big { font-size: 120%; }
 /* Short phones: a smaller logo and window */
 @media (max-height: 700px) {
   .home { --moon: min(46vw, 40vh, 200px); }
-  .home-logo { font-size: 2.3rem; }
+  .home-logo { font-size: 1.8rem; padding: 7px 16px 7px; margin-top: 6px; }
+  .home-logo small { margin-top: 6px; padding: 3px 11px; font-size: 0.66rem; }
   .hb-icon { width: 52px; height: 52px; }
 }
 
