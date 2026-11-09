@@ -8,7 +8,7 @@
 <title>Koi Garden</title>
 <link rel="icon" href="img/icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="img/icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=4e5b8c2-1331">
+<link rel="stylesheet" href="css/style.css?v=c05a0f4-1413">
 </head>
 <body>
 <div class="pond" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -93,6 +93,7 @@
       <div class="home-links">
         <button class="home-link" id="homeMap">Map</button>
         <button class="home-link" id="homeEndless">Endless</button>
+        <button class="home-link" id="homeRecords">Records</button>
       </div>
     </div>
   </div>
@@ -415,6 +416,26 @@
     <div class="btns"><button class="btn primary" id="breakDone">Back to the pond</button></div>
   </div>
 
+  <div class="card" id="recordsCard" hidden>
+    <p class="eyebrow">Records</p>
+    <h2>Your best</h2>
+    <div class="rec-block">
+      <p class="rec-head">Endless</p>
+      <div class="rec-tiles" id="recEndless"></div>
+    </div>
+    <div class="rec-block">
+      <p class="rec-head">Daily <span id="recDailySub"></span></p>
+      <div class="rec-tiles" id="recDaily"></div>
+      <div class="rec-bars" id="recBars" aria-hidden="true"></div>
+      <p class="rec-bars-note" id="recBarsNote"></p>
+    </div>
+    <div class="rec-block">
+      <p class="rec-head">Journey</p>
+      <div class="rec-tiles" id="recJourney"></div>
+    </div>
+    <div class="btns"><button class="btn primary" id="recordsDone">Back</button></div>
+  </div>
+
   <div class="card" id="endlessCard" hidden>
     <p class="eyebrow">Endless</p>
     <h2>How do you want to play?</h2>
@@ -439,6 +460,7 @@
       <button class="mode" data-level="easy">Easy</button><button class="mode" data-level="normal">Normal</button><button class="mode" data-level="hard">Hard</button>
     </div>
     <div class="gc-row" id="overRank" hidden><span></span><button class="link-btn" id="overBoard">Leaderboard</button></div>
+    <button class="link-btn" id="overRecords">Your records</button>
     <button class="link-btn" id="overBreathe">Take three calm breaths first</button>
     <button class="link-btn" id="overTasks">Pond tasks</button>
   </div>
@@ -454,6 +476,7 @@
       <button class="btn" id="dailyJourney">Back to the journey</button>
     </div>
     <div class="gc-row" id="dailyRank" hidden><span></span><button class="link-btn" id="dailyBoard">Leaderboard</button></div>
+    <button class="link-btn" id="dailyRecords">Your records</button>
     <button class="link-btn" id="dailyRemind">Remind me tomorrow</button>
     <button class="link-btn" id="dailyTasks">Pond tasks</button>
     <p class="eyebrow" id="nextDaily"></p>
@@ -611,24 +634,24 @@
 
 <canvas class="fx" id="fx" aria-hidden="true"></canvas>
 
-<script src="js/native.js?v=4e5b8c2-1331"></script>
-<script src="js/levels.js?v=4e5b8c2-1331"></script>
-<script src="js/game/core.js?v=4e5b8c2-1331"></script>
-<script src="js/game/stats.js?v=4e5b8c2-1331"></script>
-<script src="js/game/rules.js?v=4e5b8c2-1331"></script>
-<script src="js/game/map.js?v=4e5b8c2-1331"></script>
-<script src="js/game/board.js?v=4e5b8c2-1331"></script>
-<script src="js/game/jokers.js?v=4e5b8c2-1331"></script>
-<script src="js/game/effects.js?v=4e5b8c2-1331"></script>
-<script src="js/game/pond.js?v=4e5b8c2-1331"></script>
-<script src="js/game/world.js?v=4e5b8c2-1331"></script>
-<script src="js/game/ui.js?v=4e5b8c2-1331"></script>
-<script src="js/game/home.js?v=4e5b8c2-1331"></script>
-<script src="js/game/garden.js?v=4e5b8c2-1331"></script>
-<script src="js/game/shop.js?v=4e5b8c2-1331"></script>
-<script src="js/game/tester.js?v=4e5b8c2-1331"></script>
-<script src="js/game/results.js?v=4e5b8c2-1331"></script>
-<script src="js/game/audio.js?v=4e5b8c2-1331"></script>
-<script src="js/game/boot.js?v=4e5b8c2-1331"></script>
+<script src="js/native.js?v=c05a0f4-1413"></script>
+<script src="js/levels.js?v=c05a0f4-1413"></script>
+<script src="js/game/core.js?v=c05a0f4-1413"></script>
+<script src="js/game/stats.js?v=c05a0f4-1413"></script>
+<script src="js/game/rules.js?v=c05a0f4-1413"></script>
+<script src="js/game/map.js?v=c05a0f4-1413"></script>
+<script src="js/game/board.js?v=c05a0f4-1413"></script>
+<script src="js/game/jokers.js?v=c05a0f4-1413"></script>
+<script src="js/game/effects.js?v=c05a0f4-1413"></script>
+<script src="js/game/pond.js?v=c05a0f4-1413"></script>
+<script src="js/game/world.js?v=c05a0f4-1413"></script>
+<script src="js/game/ui.js?v=c05a0f4-1413"></script>
+<script src="js/game/home.js?v=c05a0f4-1413"></script>
+<script src="js/game/garden.js?v=c05a0f4-1413"></script>
+<script src="js/game/shop.js?v=c05a0f4-1413"></script>
+<script src="js/game/tester.js?v=c05a0f4-1413"></script>
+<script src="js/game/results.js?v=c05a0f4-1413"></script>
+<script src="js/game/audio.js?v=c05a0f4-1413"></script>
+<script src="js/game/boot.js?v=c05a0f4-1413"></script>
 </body>
 </html>

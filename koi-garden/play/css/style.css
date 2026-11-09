@@ -2885,3 +2885,19 @@ html.big { font-size: 120%; }
 /* Game Center: the player's place under the score */
 .gc-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; font-size: 0.86rem; color: var(--card-muted); }
 .gc-row span { font-weight: 700; color: var(--card-fg); }
+
+/* ---------- Records ---------- */
+.rec-block { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+.rec-head { margin: 0; text-align: left; font: 800 0.95rem var(--display); color: var(--card-fg); }
+.rec-head span { font: 600 0.8rem var(--body); color: var(--card-muted); }
+.rec-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.rec-tile { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 10px 4px 9px; border-radius: 14px; background: var(--card-well); }
+.rec-tile b { font: 900 1.35rem var(--display); color: var(--card-fg); font-variant-numeric: tabular-nums; }
+.rec-tile span { font-size: 0.8rem; font-weight: 700; color: var(--card-fg); }
+.rec-tile small { font-size: 0.74rem; color: var(--card-muted); }
+.rec-bars { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; align-items: end; height: 54px; padding: 0 2px; }
+.rec-bars i { display: block; height: var(--h); border-radius: 4px 4px 2px 2px; background: color-mix(in srgb, var(--accent) 75%, var(--card-well)); }
+.rec-bars i.none { height: 4px; background: var(--card-line); }
+.rec-bars i.today { background: var(--accent); }
+.rec-bars-note { margin: 0; align-self: center; text-align: center; font-size: 0.76rem; color: var(--card-muted); }
+.home-links { flex-wrap: wrap; justify-content: center; }

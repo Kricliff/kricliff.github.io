@@ -2,7 +2,7 @@
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
 /* ---------- Overlays ---------- */
-const cards = ["endlessCard", "promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "testerCard", "jokerCard", "shopCard"];
+const cards = ["recordsCard", "endlessCard", "promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "testerCard", "jokerCard", "shopCard"];
 function openCard(id) {
   clearSurprises();
   overlay.hidden = false;
@@ -348,7 +348,7 @@ $("settingsStyle").addEventListener("click", () => { closeOverlay(); openStyles(
 
 /* ---------- A ✕ in the top corner of the longer cards ----------
    It does what the card's own Back or Done button does, so nobody has to scroll down for it. */
-[["koiCard", "koiDone"], ["tasksCard", "tasksDone"], ["eventCard", "eventDone"], ["settingsCard", "settingsDone"],
+[["recordsCard", "recordsDone"], ["koiCard", "koiDone"], ["tasksCard", "tasksDone"], ["eventCard", "eventDone"], ["settingsCard", "settingsDone"],
  ["helpCard", "helpDone"], ["shopCard", "shopDone"], ["infoCard", "infoDone"]].forEach(([card, done]) => {
   const x = document.createElement("button");
   x.className = "card-close";

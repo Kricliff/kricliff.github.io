@@ -77,6 +77,7 @@ function recordDaily() {
   if (daily.last !== S.day) {
     daily.streak = daily.last === dayOffset(-1) ? daily.streak + 1 : 1;
     daily.last = S.day;
+    daily.longest = Math.max(daily.longest || 0, daily.streak);
     if (daily.streak % 7 === 0 || RARE_KOI.some(r => r.at === daily.streak)) S.milestone = daily.streak;
   }
   daily.best[S.day] = S.score;
@@ -218,7 +219,7 @@ function showAd(kind, onDone) {
    One board for each Endless level and one for the Daily, set up in App Store Connect with these IDs.
    The cards show the player's place among friends and roughly among everyone, not a long list:
    a calm game should not make most players feel far behind. Apple's own screen has the full lists. */
-const GC_BOARDS = { easy: "koigarden.endless.easy", normal: "koigarden.endless.normal", hard: "koigarden.endless.hard", daily: "koigarden.daily" };
+const GC_BOARDS = { easy: "koigarden.endless.easy", normal: "koigarden.endless.normal", hard: "koigarden.endless.hard", daily: "koigarden.daily.board" };
 const gcOn = () => nativeApp && window.MBNative && window.MBNative.hasGames;
 let gcSigned = null;
 function gcReady() {
@@ -255,3 +256,35 @@ function gcPost(board, score, rowId) {
 }
 $("overBoard").addEventListener("click", () => window.MBNative && window.MBNative.gcShow($("overRank").dataset.board));
 $("dailyBoard").addEventListener("click", () => window.MBNative && window.MBNative.gcShow($("dailyRank").dataset.board));
+
+/* ---------- Records: the player's own bests, on the phone, with or without Game Center ---------- */
+let recordsBack = null;
+const recTile = (label, value, sub) => `<div class="rec-tile"><b>${value}</b><span>${label}</span>${sub ? `<small>${sub}</small>` : ""}</div>`;
+function openRecords(back) {
+  recordsBack = back || null;
+  $("recEndless").innerHTML = recTile("Easy", bestEasy || "–", "3 pieces") + recTile("Normal", best || "–", "2 pieces") + recTile("Hard", bestHard || "–", "1 piece");
+  // The Daily: what is kept on the phone (the last 30 days)
+  const days = Object.entries(daily.best || {}).sort(([a], [b]) => a < b ? -1 : 1);
+  const scores = days.map(([, v]) => +v || 0);
+  const top = scores.length ? Math.max(...scores) : 0;
+  const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const longest = Math.max(daily.longest || 0, liveStreak());
+  $("recDailySub").textContent = days.length ? `· ${days.length} ${days.length === 1 ? "day" : "days"} played` : "";
+  $("recDaily").innerHTML = recTile("Best day", top || "–") + recTile("Average", avg || "–") + recTile("Streak", liveStreak(), longest > liveStreak() ? `longest ${longest}` : "");
+  // The last 14 days as small bars; days not played stay empty
+  const bars = [];
+  for (let k = 13; k >= 0; k--) {
+    const key = dayOffset(-k), v = +(daily.best || {})[key] || 0;
+    bars.push(`<i class="${v ? "" : "none"}${k === 0 ? " today" : ""}" style="--h:${top ? Math.max(6, Math.round(v / top * 100)) : 6}%"></i>`);
+  }
+  $("recBars").innerHTML = bars.join("");
+  $("recBarsNote").textContent = days.length ? "The last 14 days" : "Play the Daily to start your record";
+  const stars = Object.values(journey.stars).reduce((a, b) => a + (+b || 0), 0);
+  const threes = Object.values(journey.stars).filter(v => +v === 3).length;
+  $("recJourney").innerHTML = recTile("Level", currentLevel()) + recTile("Stars", stars, `${threes} with 3★`) + recTile("Koi", journey.koi.length, `of ${ALL_KOI.length}`);
+  openCard("recordsCard");
+}
+$("recordsDone").addEventListener("click", () => { const b = recordsBack; recordsBack = null; if (b) b(); else closeOverlay(); });
+$("homeRecords").addEventListener("click", () => { if (overlay.hidden) openRecords(closeOverlay); });
+$("overRecords").addEventListener("click", () => openRecords(resumeOverCard));
+$("dailyRecords").addEventListener("click", () => openRecords(showDailyCard));
