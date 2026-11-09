@@ -236,7 +236,7 @@ function startMapLife() {
   life.raf = requestAnimationFrame(frame);
 }
 // Butterflies over the chapters with gardens and flowers: wandering, wings beating
-const MAP_AIR_PACE = 0.6;
+const MAP_AIR_PACE = 0.3;
 const MAP_BUTTERFLIES = new Set(["koi-pond", "bamboo-grove", "lotus-lake", "cherry-hill", "tea-house"]);
 const BUTTERFLY_COLOURS = ["#ffd75e", "#ff9ec4", "#ffffff", "#9fd8ff", "#ffb36b"];
 const butterfly = (W, H) => ({ x: Math.random() * W, y: Math.random() * H, a: Math.random() * 6.28, ph: Math.random() * 6.28,
