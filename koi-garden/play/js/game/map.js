@@ -24,6 +24,22 @@ const DECOR = Object.fromEntries(["pad", "bridge", "blossom", "rock", "lantern",
   .map(k => [k, `<img src="img/map/${k}.webp" alt="">`]).concat([
     ["koi", '<img src="img/koi/04-ogon.png" alt="">'], ["bamboo", '<img src="img/ui/bamboo-clump.webp" alt="">'], ["lotus", '<img src="img/lotus.webp" alt="">']]));
 const DECOR_UPRIGHT = { bridge: 1.3, blossom: 1.5, lantern: 1.1, maple: 1.5, pine: 1.5, pagoda: 1.5, reeds: 1.1, bamboo: 1.5 };
+/* Each chapter's own look, by its scene (so chapters after 10 that reuse a name also reuse its look): a painted stretch
+   of water with its own banks, a landmark by the chapter's last stone that lights up when the chapter is done, and
+   for most chapters stepping stones of their own. Painted with Everygen (assets/map/make_map.py). */
+const CHAPTER_LOOK = [
+  { mark: "azumaya" },
+  { mark: "bamboo-gate", stone: "moss" },
+  { mark: "lotus-pavilion", stone: "pad" },
+  { mark: "moon-bridge", stone: "wood" },
+  { mark: "cherry-shrine", stone: "cherry" },
+  { mark: "waterfall" },
+  { mark: "tea-house", stone: "wood" },
+  { mark: "maple-gate", stone: "maple" },
+  { mark: "bell", stone: "snow" },
+  { mark: "golden", stone: "gold" }
+];
+const stoneImg = k => k === "pad" ? "img/map/pad.webp" : `img/map/stone-${k}.webp`;
 let mapGeo = null;
 function mapGeometry(maxC, W) {
   const H = MAP_BOTTOM + maxC * (PER_CHAPTER * MAP_STEP + MAP_GATE) + MAP_TOP;
@@ -60,14 +76,21 @@ function buildMap() {
   for (let c = 1; c <= maxC; c++) {
     const z = ZONES[(c - 1) % ZONES.length];
     const top = g.gateY(c) - MAP_GATE / 2, bottom = c === 1 ? g.H : g.gateY(c - 1) - MAP_GATE / 2;
-    html += `<div class="zone" style="top:${top}px;height:${bottom - top}px;--tint:${z.tint}"></div>`;
+    const sc = sceneOfChapter(c), look = CHAPTER_LOOK[sc];
+    html += `<div class="zone" style="top:${top}px;height:${bottom - top}px;--tint:${z.tint};background-image:url(img/map/ch-${sc + 1}.webp)"></div>`;
+    // The chapter's landmark beside its last stone, across the water from it; lit once the chapter is done
+    const endP = g.pos(c * PER_CHAPTER), leftSide = endP.x > W / 2, size = Math.min(170, W * 0.42);
+    const done = cur > c * PER_CHAPTER;
+    html += `<div class="landmark${done ? " lit" : ""}" style="left:${(leftSide ? W * 0.2 : W * 0.8) - size / 2}px;top:${endP.y - size * 0.62}px;width:${size}px;height:${size}px">`
+      + `<img src="img/map/mark-${look.mark}.webp" alt=""></div>`;
     // At each gate a view into the chapter's garden, which the stream runs through
     const gy = c === 1 ? g.H - 150 : g.gateY(c - 1), open = cur > (c - 1) * PER_CHAPTER;
     html += `<div class="gate-garden${open ? "" : " shut"}" style="top:${gy - 170}px;background-image:url(${sceneImg(sceneOfChapter(c))})"></div>`;
     // Scenery along both banks: something every stone or so, alternating sides, never on the path
     const rnd = seeded(hashSeed("map-zone-" + c));
-    for (let k = 0; k < 16; k++) {
-      const n = (c - 1) * PER_CHAPTER + 1 + Math.floor((k + rnd() * 0.9) * PER_CHAPTER / 16);
+    for (let k = 0; k < 8; k++) {
+      const n = (c - 1) * PER_CHAPTER + 1 + Math.floor((k + rnd() * 0.9) * PER_CHAPTER / 8);
+      if (n >= c * PER_CHAPTER - 1) continue;
       const p = g.pos(n), side = p.x > W / 2 ? -1 : 1;
       const kind = z.decor[k % z.decor.length], up = DECOR_UPRIGHT[kind], size = (40 + rnd() * 30) * (up || 1);
       const x = W / 2 + side * W * (0.33 + rnd() * 0.12), y = p.y + (rnd() - 0.5) * MAP_STEP;
@@ -98,9 +121,10 @@ function buildMap() {
   for (let n = 1; n <= last; n++) {
     const p = g.pos(n), L = levelDef(n);
     const done = journey.stars[n] !== undefined, locked = n > cur, st = journey.stars[n] || 0;
-    html += `<button class="step${done ? " done" : ""}${locked ? " locked" : ""}${n === cur ? " current" : ""}${L.hard ? " hard" : ""}" data-n="${n}" style="left:${p.x}px;top:${p.y}px"`
+    const stone = CHAPTER_LOOK[sceneOfChapter(chapterOf(n))].stone;
+    html += `<button class="step${done ? " done" : ""}${locked ? " locked" : ""}${n === cur ? " current" : ""}${L.hard ? " hard" : ""}${st === 3 ? " three" : ""}${stone ? " themed" : ""}" data-n="${n}" style="left:${p.x}px;top:${p.y}px"`
       + ` aria-label="${locked ? `Level ${n}, locked` : `Level ${n}${done ? `, ${st} stars` : ""}`}">`
-      + `${L.hard ? '<span class="hard-tag">HARD</span>' : ""}<b>${n}</b>`
+      + `${stone ? `<i class="stone-img" style="background-image:url(${stoneImg(stone)})"></i>` : ""}${L.hard ? '<span class="hard-tag">HARD</span>' : ""}<b>${n}</b>`
       + (done ? `<span class="step-stars">${"★".repeat(st)}<i>${"★".repeat(3 - st)}</i></span>` : "") + `</button>`;
   }
   // Your koi
@@ -117,9 +141,21 @@ function mapChapterInView() {
   const sc = $("mapScroll"), mid = sc.scrollTop + sc.clientHeight / 2;
   let c = 1;
   for (let k = 1; mapGeo && k <= 200; k++) { if (mapGeo.gateY(k) > mid) c = k + 1; else break; }
+  const changed = mapChapterNow !== c;
   mapChapterNow = c;
   $("mapChapter").textContent = `Chapter ${c} · ${chapterName(c)}`;
+  // This chapter's progress: levels done and stars, out of what it holds
+  const first = (c - 1) * PER_CHAPTER + 1;
+  let doneN = 0, starsN = 0;
+  for (let n = first; n < first + PER_CHAPTER; n++) if (journey.stars[n] !== undefined) { doneN++; starsN += +journey.stars[n] || 0; }
+  $("mapProgress").textContent = `${doneN}/${PER_CHAPTER} levels · ${starsN}/${PER_CHAPTER * 3} ★`;
+  if (changed && mapBannerReady) {
+    const b = $("mapBanner");
+    b.innerHTML = `<small>Chapter ${c}</small>${chapterName(c)}`;
+    restartClass(b, "show");
+  }
 }
+let mapBannerReady = false;
 function openMap() {
   clearSurprises();
   closeOverlay();
@@ -140,7 +176,10 @@ function openMap() {
   const cur = currentLevel(), seen = journey.mapSeen || cur;
   const sc = $("mapScroll");
   sc.scrollTop = mapGeo.pos(cur).y - sc.clientHeight * 0.55;
+  mapBannerReady = false;
+  mapChapterNow = 0;
   mapChapterInView();
+  setTimeout(() => { mapBannerReady = true; }, 600);
   // After a win, the koi starts on the stone it left and hops across to the new one
   if (seen < cur && !reduceMotion) {
     placeMapKoi(seen);
@@ -181,16 +220,50 @@ function startMapLife() {
     mapCx.setTransform(dpr, 0, 0, dpr, 0, 0);
     mapCx.clearRect(0, 0, W, H);
     drawShimmer(mapCx, W, H, now / 1000, 0.75);
-    const kindName = SCENES[sceneOfChapter(mapChapterNow)].air, kind = AIR[kindName];
-    if (kindName !== life.kindName) {
-      life.kindName = kindName;
+    const scene = SCENES[sceneOfChapter(mapChapterNow)], kindName = scene.air, kind = AIR[kindName];
+    if (kindName !== life.kindName || scene.id !== life.scene) {
+      life.scene = scene.id;
+      life.flies = MAP_BUTTERFLIES.has(scene.id) ? [...Array(prefs.calm ? 2 : 4)].map(() => butterfly(W, H)) : [];
       if (kind && kind.img) worldImage(kind.img);
       life.list = kind ? [...Array(Math.round(kind.n * (prefs.calm ? 0.5 : 1)))].map(() => airBit(kind, W, H, false)) : [];
     }
     drawAirBits(mapCx, kind, life.list, W, H, dt, now);
+    drawButterflies(mapCx, life.flies || [], W, H, dt, now);
     mapCx.globalAlpha = 1;
   };
   life.raf = requestAnimationFrame(frame);
+}
+// Butterflies over the chapters with gardens and flowers: wandering, wings beating
+const MAP_BUTTERFLIES = new Set(["koi-pond", "bamboo-grove", "lotus-lake", "cherry-hill", "tea-house"]);
+const BUTTERFLY_COLOURS = ["#ffd75e", "#ff9ec4", "#ffffff", "#9fd8ff", "#ffb36b"];
+const butterfly = (W, H) => ({ x: Math.random() * W, y: Math.random() * H, a: Math.random() * 6.28, ph: Math.random() * 6.28,
+  c: BUTTERFLY_COLOURS[Math.floor(Math.random() * BUTTERFLY_COLOURS.length)], s: 6 + Math.random() * 4 });
+function drawButterflies(c, list, W, H, dt, now) {
+  list.forEach(b => {
+    b.a += Math.sin(now / 900 + b.ph) * 1.4 * dt;
+    b.x += Math.cos(b.a) * 24 * dt;
+    b.y += Math.sin(b.a) * 18 * dt;
+    if (b.x < -20) b.x = W + 15; else if (b.x > W + 20) b.x = -15;
+    if (b.y < -20) b.y = H + 15; else if (b.y > H + 20) b.y = -15;
+    const flap = 0.25 + 0.75 * Math.abs(Math.sin(now / 85 + b.ph));
+    c.save();
+    c.translate(b.x, b.y);
+    c.rotate(b.a + Math.PI / 2);
+    c.globalAlpha = 0.92;
+    c.fillStyle = b.c;
+    c.shadowColor = "rgba(0, 0, 0, 0.25)";
+    c.shadowBlur = 3;
+    c.beginPath();
+    c.ellipse(-b.s * 0.45 * flap, -b.s * 0.15, b.s * 0.5 * flap + 0.4, b.s * 0.6, -0.3, 0, 6.283);
+    c.ellipse(b.s * 0.45 * flap, -b.s * 0.15, b.s * 0.5 * flap + 0.4, b.s * 0.6, 0.3, 0, 6.283);
+    c.ellipse(-b.s * 0.3 * flap, b.s * 0.35, b.s * 0.32 * flap + 0.3, b.s * 0.38, -0.5, 0, 6.283);
+    c.ellipse(b.s * 0.3 * flap, b.s * 0.35, b.s * 0.32 * flap + 0.3, b.s * 0.38, 0.5, 0, 6.283);
+    c.fill();
+    c.shadowBlur = 0;
+    c.fillStyle = "#3a2a1a";
+    c.fillRect(-0.8, -b.s * 0.55, 1.6, b.s * 1.1);
+    c.restore();
+  });
 }
 function stopMapLife() { if (mapLife) cancelAnimationFrame(mapLife.raf); mapLife = null; mapCx.clearRect(0, 0, mapCv.width, mapCv.height); }
 $("mapWorld").addEventListener("click", e => {

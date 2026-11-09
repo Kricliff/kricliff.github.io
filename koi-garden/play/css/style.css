@@ -2901,3 +2901,35 @@ html.big { font-size: 120%; }
 .rec-bars i.today { background: var(--accent); }
 .rec-bars-note { margin: 0; align-self: center; text-align: center; font-size: 0.76rem; color: var(--card-muted); }
 .home-links { flex-wrap: wrap; justify-content: center; }
+
+/* ---------- The map, chapter by chapter (9 November 2026) ---------- */
+.zone { background-size: 100% auto; background-repeat: repeat-y; background-position: center top; }
+.zone::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent, var(--tint) 12%, var(--tint) 88%, transparent); opacity: 0.35; }
+:root[data-garden="night"] .zone { filter: brightness(0.55) saturate(0.8) hue-rotate(8deg); }
+/* The painted water already reads as a stream, so the drawn one is fainter */
+.stream .bank { stroke: rgba(4, 34, 40, 0.16); }
+.stream .water { opacity: 0.32; }
+.stream .deep { opacity: 0.2; }
+.landmark { position: absolute; pointer-events: none; z-index: 0; filter: grayscale(0.7) brightness(0.78) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.3)); transition: filter 0.6s; }
+.landmark img { width: 100%; height: 100%; object-fit: contain; max-width: none; }
+.landmark.lit { filter: drop-shadow(0 0 14px rgba(255, 220, 140, 0.55)) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.3)); }
+:root[data-garden="night"] .landmark { filter: grayscale(0.7) brightness(0.5) drop-shadow(0 8px 8px rgba(0, 0, 0, 0.3)); }
+:root[data-garden="night"] .landmark.lit { filter: brightness(0.85) drop-shadow(0 0 16px rgba(255, 210, 120, 0.7)); }
+/* Chapter stones: the painted stone itself, greyed while locked */
+.step.themed::before { display: none; }
+.step .stone-img { position: absolute; inset: 0; background: center / contain no-repeat; }
+.step.themed { color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.6); }
+.step.themed.locked .stone-img { filter: grayscale(0.85) brightness(0.72); }
+/* Three stars: a golden rim */
+.step.done.three { box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 85%, transparent), 0 0 14px color-mix(in srgb, var(--gold) 55%, transparent); }
+.map-title .map-total { display: none; }
+#mapProgress { font-weight: 700; color: var(--on-water); }
+/* The name of a chapter as it comes into view */
+.map-banner { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 92px); transform: translate(-50%, -8px); z-index: 3; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; padding: 10px 22px 12px; border-radius: 16px; opacity: 0;
+  background: linear-gradient(180deg, #7a4a2a, #5a341c); box-shadow: inset 0 0 0 2px #9c6a40, 0 10px 24px rgba(0, 0, 0, 0.35);
+  color: #fff3dc; font: 900 1.35rem var(--display); white-space: nowrap; }
+.map-banner small { font: 700 0.72rem var(--body); letter-spacing: 0.2em; text-transform: uppercase; color: #ffcf9a; }
+.map-banner.show { animation: map-banner 2.2s var(--ease-out); }
+@keyframes map-banner { 0% { opacity: 0; transform: translate(-50%, -8px); } 15%, 75% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .map-banner.show { animation-duration: 1.6s; } }
