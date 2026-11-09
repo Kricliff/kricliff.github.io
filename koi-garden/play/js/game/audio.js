@@ -375,7 +375,7 @@ function scheduleMusic() {
   while (nextBar < ac.currentTime + 1.5) { playBar(nextBar, bar++); nextBar += mood().bar; }
 }
 // Rain on the pond: a soft hiss that comes and goes, under the music
-function startRain() {
+function startRain(out) {
   const n = ac.createBufferSource(), hp = ac.createBiquadFilter(), lp = ac.createBiquadFilter(), g = ac.createGain(), lfo = ac.createOscillator(), depth = ac.createGain();
   n.buffer = noiseBuf;
   n.loop = true;
@@ -386,13 +386,13 @@ function startRain() {
   lfo.frequency.value = 0.11;
   depth.gain.value = 0.004;
   lfo.connect(depth).connect(g.gain);
-  n.connect(hp).connect(lp).connect(g).connect(musicOut());
+  n.connect(hp).connect(lp).connect(g).connect(out || musicOut());
   n.start();
   lfo.start();
   return { stop: () => { try { n.stop(); lfo.stop(); } catch (e) {} } };
 }
 // Quiet water under everything: low filtered noise that swells and settles
-function startWater() {
+function startWater(out) {
   const n = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), lfo = ac.createOscillator(), depth = ac.createGain();
   n.buffer = noiseBuf;
   n.loop = true;
@@ -402,7 +402,7 @@ function startWater() {
   lfo.frequency.value = 0.07;
   depth.gain.value = 0.008;
   lfo.connect(depth).connect(g.gain);
-  n.connect(f).connect(g).connect(musicOut());
+  n.connect(f).connect(g).connect(out || musicOut());
   n.start();
   lfo.start();
   return { stop: () => { try { n.stop(); lfo.stop(); } catch (e) {} } };
@@ -429,8 +429,6 @@ function endMusicSession() {
 }
 const musicOut = () => (musicSession || (newMusicSession(), musicSession)).out;
 const musicRoom = () => (musicSession || (newMusicSession(), musicSession)).room;
-// Each mood's recorded track and nature sound (www/audio)
-const MOOD_SOUNDS = { garden: "stream", rain: "rain", night: "night", festival: "bamboo" };
 const moodId = () => (MOODS[previewMood] ? previewMood : MOODS[audio.mood] ? audio.mood : "garden");
 let musicTrack = null, musicFallback = false, natureTrack = null, natureMood = "";
 const musicPlaying = () => !!(musicTimer || musicTrack);
@@ -470,11 +468,14 @@ function restartMusic() {
   melody = Math.round((mood().melody[0] + mood().melody[1]) / 2);
   startMusic();
 }
-// Nature sounds follow the mood, on their own bus and volume
+// Nature sounds follow the mood, on their own bus and volume. They are made here in code (water, and rain for
+// Rain on the Pond): the recorded ones from Everygen had a voice talking in them, so none of those are used.
 function startNature() {
   if (natureTrack || !ac) return;
   natureMood = moodId();
-  natureTrack = loopTrack(`audio/nature-${MOOD_SOUNDS[natureMood]}.mp3`, natureBus, () => stopNature());
+  const layers = [startWater(natureBus)];
+  if (MOODS[natureMood].rain) layers.push(startRain(natureBus));
+  natureTrack = { stop: () => layers.forEach(l => l.stop()), pause() {}, resume() {} };
 }
 function stopNature() {
   if (natureTrack) { natureTrack.stop(); natureTrack = null; }
