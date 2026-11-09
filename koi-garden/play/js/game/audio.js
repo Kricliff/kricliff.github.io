@@ -2,11 +2,12 @@
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
 /* ---------- Sound & music ----------
-   Everything is synthesised with Web Audio, so the app carries no sound files. Effects and music
-   each run through their own volume, with a soft room reverb, and both have an on/off switch and a
-   volume slider in Settings. The music is generated as it plays: koto-like plucks in a Japanese
-   pentatonic scale over a slow pad, a low root note, the odd wind chime and quiet water. */
-let audio = { sfx: 0.8, music: 0.5, sfxOn: true, musicOn: true };
+   Music, nature sounds and the main effects are recordings made with Everygen (www/audio, made by
+   assets/audio/make_audio.sh). Each music mood has its own track and its own nature sound; the tracks loop
+   with a crossfade. The smaller effects are synthesised with Web Audio, and so is the old generated music,
+   which still plays if a track cannot load. Effects, music and nature each have an on/off switch and a
+   volume slider in Settings. */
+let audio = { sfx: 0.8, music: 0.5, sfxOn: true, musicOn: true, nature: 0.5, natureOn: true };
 try {
   const saved = localStorage.getItem("mb-audio");
   if (saved) audio = Object.assign(audio, JSON.parse(saved));
@@ -14,9 +15,10 @@ try {
   else if (muted) audio.sfxOn = audio.musicOn = false;
 } catch (e) {}
 const saveAudio = () => { try { localStorage.setItem("mb-audio", JSON.stringify(audio)); } catch (e) {} };
-let ac = null, sfxBus = null, musicBus = null, sfxRev = null, musicRev = null, noiseBuf = null, ducked = false;
+let ac = null, sfxBus = null, musicBus = null, natureBus = null, sfxRev = null, musicRev = null, noiseBuf = null, ducked = false;
 const sfxLevel = () => audio.sfxOn ? audio.sfx : 0;
 const musicLevel = () => audio.musicOn && !ducked ? audio.music * 0.75 : 0;
+const natureLevel = () => audio.natureOn && !ducked ? audio.nature * 0.8 : 0;
 function makeNoise(secs) {
   const b = ac.createBuffer(1, ac.sampleRate * secs, ac.sampleRate), d = b.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -46,12 +48,16 @@ function audioInit() {
     musicBus = ac.createGain();
     sfxBus.gain.value = 0;
     musicBus.gain.value = 0;
+    natureBus = ac.createGain();
+    natureBus.gain.value = 0;
     sfxBus.connect(master);
     musicBus.connect(master);
+    natureBus.connect(master);
     const room = impulse(2.6);
     sfxRev = ac.createConvolver(); sfxRev.buffer = room; sfxRev.connect(sfxBus);
     musicRev = ac.createConvolver(); musicRev.buffer = room; musicRev.connect(musicBus);
     noiseBuf = makeNoise(2);
+    loadSamples();
   }
   if (ac.state !== "running" && !document.hidden) ac.resume().catch(() => {});
   applyAudio();
@@ -62,9 +68,90 @@ function applyAudio() {
   const t = ac.currentTime;
   sfxBus.gain.setTargetAtTime(sfxLevel(), t, 0.05);
   musicBus.gain.setTargetAtTime(musicLevel(), t, 0.8);
+  natureBus.gain.setTargetAtTime(natureLevel(), t, 0.8);
   clearTimeout(musicStopTimer);
   if (audio.musicOn && audio.music > 0) startMusic();
   else musicStopTimer = setTimeout(stopMusic, 2500);
+  clearTimeout(natureStopTimer);
+  if (audio.natureOn && audio.nature > 0) startNature();
+  else natureStopTimer = setTimeout(stopNature, 2500);
+}
+let natureStopTimer = 0;
+
+/* Recorded effects: decoded once, then played through the effects bus. sample() returns false while a file is
+   still loading or could not load, so each effect falls back to its synthesised version. */
+const SAMPLE_NAMES = ["place", "clear", "koi", "win", "fail"];
+const samples = {};
+let samplesAsked = false;
+function loadSamples() {
+  if (samplesAsked || !ac) return;
+  samplesAsked = true;
+  SAMPLE_NAMES.forEach(n => fetch(`audio/sfx-${n}.mp3`)
+    .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+    .then(b => new Promise((ok, fail) => ac.decodeAudioData(b, ok, fail)))
+    .then(buf => { samples[n] = buf; })
+    .catch(() => {}));
+}
+function sample(name, vol = 0.3, rate = 1, at = 0) {
+  if (!ac || sfxLevel() <= 0 || !samples[name]) return false;
+  const s = ac.createBufferSource(), g = ac.createGain();
+  s.buffer = samples[name];
+  s.playbackRate.value = rate;
+  g.gain.value = vol;
+  s.connect(g).connect(sfxBus);
+  send(g, sfxRev, 0.12);
+  s.start(ac.currentTime + at);
+  return true;
+}
+
+/* A recorded loop played through Web Audio. Two <audio> elements take turns, so the end of the track fades into
+   its start instead of stopping. Streaming keeps memory low: a three-minute track decoded whole would take 60 MB.
+   onFail runs if the file cannot be played, so the caller can fall back. */
+function loopTrack(src, out, onFail) {
+  const FADE = 4;
+  const els = [new Audio(src), new Audio(src)], gains = [];
+  let cur = 0, stopped = false, failed = false;
+  els.forEach(el => {
+    el.preload = "auto";
+    const g = ac.createGain();
+    g.gain.value = 0;
+    ac.createMediaElementSource(el).connect(g).connect(out);
+    gains.push(g);
+    el.addEventListener("error", () => { if (!stopped && !failed) { failed = true; onFail && onFail(); } });
+  });
+  const startOne = i => {
+    const el = els[i], g = gains[i], t = ac.currentTime;
+    try { el.currentTime = 0; } catch (e) {}
+    el.play().catch(() => {});
+    g.gain.cancelScheduledValues(t);
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(1, t + (i === cur && t < 1 ? 0.5 : FADE));
+  };
+  // iOS lets a page start audio only from a touch; starting and pausing the second element here, inside the
+  // same touch, lets it take over later on its own
+  els[1].play().then(() => { if (cur !== 1) els[1].pause(); }).catch(() => {});
+  startOne(0);
+  const timer = setInterval(() => {
+    if (stopped || document.hidden) return;
+    const el = els[cur];
+    if (!el.duration || el.currentTime < el.duration - FADE - 0.3) return;
+    const old = cur, t = ac.currentTime;
+    cur = 1 - cur;
+    startOne(cur);
+    gains[old].gain.cancelScheduledValues(t);
+    gains[old].gain.setValueAtTime(gains[old].gain.value, t);
+    gains[old].gain.linearRampToValueAtTime(0, t + FADE);
+    setTimeout(() => { if (cur !== old) els[old].pause(); }, FADE * 1000 + 300);
+  }, 250);
+  return {
+    stop() {
+      stopped = true;
+      clearInterval(timer);
+      setTimeout(() => els.forEach(el => { el.pause(); el.removeAttribute("src"); try { el.load(); } catch (e) {} }), 500);
+    },
+    pause() { els.forEach(el => el.pause()); },
+    resume() { if (!stopped) els[cur].play().catch(() => {}); }
+  };
 }
 // Music fades out while an ad plays and comes back after
 function duck(on) { ducked = on; applyAudio(); }
@@ -157,15 +244,17 @@ function swoosh(t0, dur, from, to, vol, q = 0.9, type = "bandpass", rev = 0.2) {
 
 /* Sound effects */
 // Stone set on sand: a soft wooden knock
-function knock() { voice(240, 0, 0.14, 0.09, 150); voice(720, 0, 0.05, 0.02); }
-function tick() { voice(880, 0, 0.06, 0.03, 660); }
+function knock() { if (sample("place", 0.32, 0.94 + Math.random() * 0.12)) return; voice(240, 0, 0.14, 0.09, 150); voice(720, 0, 0.05, 0.02); }
+function tick() { if (sample("place", 0.16, 1.45)) return; voice(880, 0, 0.06, 0.03, 660); }
 // Picking up a piece, and letting go of one that has nowhere to go
 function lift() { voice(560, 0, 0.06, 0.02, 700); }
 function nope() { voice(150, 0, 0.16, 0.06, 95); }
 // A light tap for buttons
-function tap() { voice(1250, 0, 0.035, 0.012, 950); }
+function tap() { if (sample("place", 0.09, 1.9)) return; voice(1250, 0, 0.035, 0.012, 950); }
 // Singing bowl: a base tone with slightly detuned partials, rising with each step
 function bowl(steps, vol = 0.05) {
+  // The recorded chime, a step higher with each line or combo
+  if (sample("clear", vol * 6, 2 ** (([0, 2, 4, 5, 7, 9, 12][Math.min(steps, 6)] - 4) / 12))) return;
   const base = [196, 220, 247, 262, 294, 330, 392][Math.min(steps, 6)];
   voice(base, 0, 2.4, vol, 0, "sine", 0.35);
   voice(base * 2.01, 0, 1.8, vol * 0.5, 0, "sine", 0.35);
@@ -180,7 +269,8 @@ function run(degs, gap = 0.09, vol = 0.07, decay = 1.6) {
 }
 function comboSound(c) { run([...Array(Math.min(c, 5))].map((_, k) => 7 + k), 0.07, 0.05, 1.2); }
 function chime(gold) { run(gold ? [9, 11, 14] : [9, 11], 0.11, 0.05, 1.8); }
-function sfxSplash(at = 0) { swoosh(at, 0.45, 2400, 500, 0.09, 0.7); swoosh(at + 0.02, 0.25, 900, 300, 0.05, 1.2, "lowpass", 0); }
+// The recorded splash already has the koi leaping out and back in, so only the first of the pair plays it
+function sfxSplash(at = 0) { if (samples.koi && sfxLevel() > 0) { if (at < 0.2) sample("koi", 0.3, 0.95 + Math.random() * 0.1, at); return; } swoosh(at, 0.45, 2400, 500, 0.09, 0.7); swoosh(at + 0.02, 0.25, 900, 300, 0.05, 1.2, "lowpass", 0); }
 function rustle() { swoosh(0, 0.35, 2600, 1400, 0.035, 1.5); voice(330, 0.05, 0.12, 0.03, 440); }
 function whoosh() { swoosh(0, 0.45, 300, 3200, 0.06, 1.1); }
 // Shoji doors: wood sliding on wood, then a soft bump as they meet or stop
@@ -192,12 +282,12 @@ function doors(open) {
 function winSound(stars) {
   if (!sfxOk()) return;
   const t = ac.currentTime;
-  [5, 7, 8, 10, 12].forEach((d, k) => pluck(hz(d), t + k * 0.1, 0.06, 2));
+  if (!sample("win", 0.34)) [5, 7, 8, 10, 12].forEach((d, k) => pluck(hz(d), t + k * 0.1, 0.06, 2));
   // One bell per star, in time with the stars landing on the card
   for (let k = 0; k < stars; k++) bell(hz(14 + k * 2), t + 0.2 + k * 0.22 + 0.25, 0.05);
 }
 function starSound(k) { if (sfxOk()) { const t = ac.currentTime; bell(hz(10 + k * 2), t, 0.04); pluck(hz(5 + k * 2), t, 0.05, 1.4); } }
-function failSound() { if (sfxOk()) { const t = ac.currentTime; pluck(hz(5), t, 0.06, 1.6); pluck(hz(3), t + 0.22, 0.06, 2.2); } }
+function failSound() { if (sample("fail", 0.3)) return; if (sfxOk()) { const t = ac.currentTime; pluck(hz(5), t, 0.06, 1.6); pluck(hz(3), t + 0.22, 0.06, 2.2); } }
 function basketSound() { run([5, 7, 9, 10, 12, 14], 0.08, 0.06, 2); }
 function stillSound() { if (sfxOk()) { const t = ac.currentTime; [10, 12, 14, 15, 17].forEach((d, k) => bell(hz(d), t + k * 0.14, 0.035)); } }
 
@@ -339,9 +429,25 @@ function endMusicSession() {
 }
 const musicOut = () => (musicSession || (newMusicSession(), musicSession)).out;
 const musicRoom = () => (musicSession || (newMusicSession(), musicSession)).room;
+// Each mood's recorded track and nature sound (www/audio)
+const MOOD_SOUNDS = { garden: "stream", rain: "rain", night: "night", festival: "bamboo" };
+const moodId = () => (MOODS[previewMood] ? previewMood : MOODS[audio.mood] ? audio.mood : "garden");
+let musicTrack = null, musicFallback = false, natureTrack = null, natureMood = "";
+const musicPlaying = () => !!(musicTimer || musicTrack);
 function startMusic() {
-  if (musicTimer || !ac) return;
+  if (musicTimer || musicTrack || !ac) return;
   newMusicSession();
+  if (!musicFallback) {
+    const session = musicSession;
+    musicTrack = loopTrack(`audio/music-${moodId()}.mp3`, musicOut(), () => {
+      // The track would not play: use the music the game generates instead
+      if (musicSession !== session) return;
+      musicFallback = true;
+      stopMusic();
+      if (audio.musicOn && audio.music > 0) startMusic();
+    });
+    return;
+  }
   nextBar = ac.currentTime + 0.3;
   water = startWater();
   if (mood().rain) rain = startRain();
@@ -351,16 +457,27 @@ function startMusic() {
 function stopMusic() {
   clearInterval(musicTimer);
   musicTimer = 0;
+  if (musicTrack) { musicTrack.stop(); musicTrack = null; }
   if (ac) endMusicSession();
   if (water) { water.stop(); water = null; }
   if (rain) { rain.stop(); rain = null; }
 }
 // A new mood starts on the next bar: what is already sounding rings out
 function restartMusic() {
-  if (!musicTimer) return;
+  if (natureTrack && natureMood !== moodId()) { stopNature(); if (audio.natureOn && audio.nature > 0) startNature(); }
+  if (!musicPlaying()) return;
   stopMusic();
   melody = Math.round((mood().melody[0] + mood().melody[1]) / 2);
   startMusic();
+}
+// Nature sounds follow the mood, on their own bus and volume
+function startNature() {
+  if (natureTrack || !ac) return;
+  natureMood = moodId();
+  natureTrack = loopTrack(`audio/nature-${MOOD_SOUNDS[natureMood]}.mp3`, natureBus, () => stopNature());
+}
+function stopNature() {
+  if (natureTrack) { natureTrack.stop(); natureTrack = null; }
 }
 const moodOwned = id => !MOODS[id].price || (journey.owned || []).includes("music-" + id);
 let moodBuying = null, moodTimer = 0;
@@ -428,13 +545,15 @@ function listenMood(id) {
   audioInit();
   previewMood = id;
   restartMusic();
-  if (!musicTimer && audio.musicOn) startMusic();
+  if (!musicPlaying() && audio.musicOn) startMusic();
   clearTimeout(moodTimer);
   moodTimer = setTimeout(() => { endPreview(); if (typeof paintShop === "function" && !$("shopView").hidden) paintShop(); }, 16000);
 }
 // Leaving the app quiets everything; coming back picks up where it was
 document.addEventListener("visibilitychange", () => {
   if (!ac) return;
+  // Recorded tracks are <audio> elements, which keep going on their own, so pause them too
+  [musicTrack, natureTrack].forEach(tr => tr && (document.hidden ? tr.pause() : tr.resume()));
   if (document.hidden) ac.suspend().catch(() => {});
   else ac.resume().catch(() => {});
 });
@@ -442,7 +561,7 @@ document.addEventListener("visibilitychange", () => {
 /* Settings: a switch and a slider for effects, and the same for music */
 function syncAudioUI() {
   paintMoods();
-  [["sfx", "sfxOn", "sfxVol"], ["music", "musicOn", "musicVol"]].forEach(([k, on, vol]) => {
+  [["sfx", "sfxOn", "sfxVol"], ["music", "musicOn", "musicVol"], ["nature", "natureOn", "natureVol"]].forEach(([k, on, vol]) => {
     $(on).checked = audio[k + "On"];
     const r = $(vol);
     r.value = Math.round(audio[k] * 100);
@@ -450,7 +569,7 @@ function syncAudioUI() {
     r.style.setProperty("--fill", r.value + "%");
   });
 }
-[["sfx", "sfxOn", "sfxVol"], ["music", "musicOn", "musicVol"]].forEach(([k, on, vol]) => {
+[["sfx", "sfxOn", "sfxVol"], ["music", "musicOn", "musicVol"], ["nature", "natureOn", "natureVol"]].forEach(([k, on, vol]) => {
   $(on).addEventListener("change", e => {
     audio[k + "On"] = e.target.checked;
     saveAudio();
