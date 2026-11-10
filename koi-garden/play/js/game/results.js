@@ -40,7 +40,8 @@ function showOver() {
   gcPost(GC_BOARDS[S.level] || GC_BOARDS.normal, S.score, "overRank");
   $("overScore").textContent = S.score;
   $("overEyebrow").textContent = S.newBest ? "New personal best" : "No moves left";
-  $("overStats").innerHTML = `${S.level && S.level !== "normal" ? ENDLESS_LEVELS[S.level].name + " · best" : "Best"} <b>${endlessBest()}</b> · <b>${S.clears}</b> clears · <b>${S.harmony}</b> Harmony`;
+  $("overStats").innerHTML = `${S.level && S.level !== "normal" ? ENDLESS_LEVELS[S.level].name + " · best" : "Best"} <b>${endlessBest()}</b> · <b>${S.clears}</b> clears · <b>${S.harmony}</b> Harmony`
+    + (S.pearls ? ` · <b>+${S.pearls}</b> pearls` : "");
   $("overQuote").textContent = QUOTES[Math.floor(Math.random() * QUOTES.length)];
   $("continueBtn").hidden = S.continued;
   $("overTasks").innerHTML = tasksLabel();
@@ -67,7 +68,7 @@ $("restart").addEventListener("click", () => {
   if (!overlay.hidden || drag) return;
   if (S.mode === "daily") {
     if (S.over) finishDaily();
-    else if (S.practice) { startDaily(true); render(); }
+    else if (S.practice) { if (S.weekly) startWeekly(true); else startDaily(true); render(); }
   } else if (S.mode === "journey") playLevel(S.level, false);
   else newGame(false);
 });
@@ -80,6 +81,8 @@ function recordDaily() {
     daily.longest = Math.max(daily.longest || 0, daily.streak);
     if (daily.streak % 7 === 0 || RARE_KOI.some(r => r.at === daily.streak)) S.milestone = daily.streak;
   }
+  // Pearls for the day's official Daily, once a day
+  if (daily.best[S.day] === undefined) { journey.pearls += DAILY_PEARLS; S.pearls = DAILY_PEARLS; saveJourney(); }
   daily.best[S.day] = S.score;
   setTimeout(syncNativeReminders, 0);
   tasksAdd({ daily: 1 });
@@ -89,12 +92,28 @@ function recordDaily() {
   while (keys.length > 30) { const k = keys.shift(); delete daily.best[k]; if (daily.stats) delete daily.stats[k]; }
   saveDaily();
 }
+// The official score of the week's challenge: pearls the first time, and the last twelve weeks are kept
+function recordWeekly() {
+  if (weekly.best[S.day] === undefined) { journey.pearls += WEEKLY_PEARLS; S.pearls = WEEKLY_PEARLS; saveJourney(); }
+  weekly.best[S.day] = S.score;
+  const keys = Object.keys(weekly.best).sort();
+  while (keys.length > 12) delete weekly.best[keys.shift()];
+  saveWeekly();
+}
+// The score a friend sent along in a challenge link, when it is for the board just played
+const friendScore = () => challenge && challenge.day === S.day && !!challenge.weekly === !!S.weekly ? challenge.score : 0;
 function shareText() {
+  if (S.weekly) return `Koi Garden · Weekly #${S.num}\n⭐ ${weekly.best[S.day]} points\n✨ ${S.harmony} Harmony · ${S.clears} clears`;
   const day = S.day, st = (daily.stats || {})[day] || { clears: S.clears, harmony: S.harmony };
   const s = liveStreak();
   return `Koi Garden · Daily #${S.num}\n⭐ ${daily.best[day]} points\n✨ ${st.harmony} Harmony · ${st.clears} clears\n🔥 ${s}-day streak`;
 }
 function finishDaily() {
+  if (S.weekly) {
+    if (!S.practice && !S.recorded) { recordWeekly(); S.recorded = true; }
+    showDailyCard();
+    return;
+  }
   if (!S.statsSent) { S.statsSent = true; track("daily_end", { data: { score: S.score, practice: !!S.practice } }); }
   if (!S.practice && !S.recorded) { recordDaily(); S.recorded = true; }
   if (S.milestone) {
@@ -120,29 +139,54 @@ function finishDaily() {
 $("rewardUse").addEventListener("click", () => openPond(showDailyCard));
 $("rewardLater").addEventListener("click", showDailyCard);
 function showDailyCard() {
-  const allPlaced = S.dealt >= DAILY_PIECES && !S.tray.some(Boolean);
-  const official = daily.best[S.day];
-  $("dailyEyebrow").textContent = `${S.practice ? "Practice" : "Official"} · Daily #${S.num} · ${allPlaced ? `all ${DAILY_PIECES} pieces placed` : "no moves left"}`;
+  const W = S.weekly, store = W ? weekly : daily, name = W ? "Weekly" : "Daily";
+  const allPlaced = S.dealt >= piecesTotal() && !S.tray.some(Boolean);
+  const official = store.best[S.day];
+  $("dailyEyebrow").textContent = `${S.practice ? "Practice" : "Official"} · ${name} #${S.num} · ${allPlaced ? `all ${piecesTotal()} pieces placed` : "no moves left"}`;
   $("dailyScore").textContent = S.score;
-  const s = liveStreak();
-  $("dailyStats").innerHTML = (S.practice ? `Official score today <b>${official}</b><br>` : "")
-    + `Streak <b>${s}</b> ${s === 1 ? "day" : "days"}`
-    + (() => {
-      const next = RARE_KOI.find(r => r.at > s && !journey.koi.includes(rareIndex(r)));
-      return next ? ` · ${next.at - s} more ${next.at - s === 1 ? "day" : "days"} for the rare ${next.name}` : "";
-    })();
+  // A friend's score from a challenge link, set against the official score
+  const friend = friendScore(), diff = official - friend;
+  const versus = !friend || official === undefined ? "" : (diff > 0 ? `You beat your friend’s <b>${friend}</b> by <b>${diff}</b>`
+    : diff < 0 ? `<b>${-diff}</b> short of your friend’s <b>${friend}</b>` : `Level with your friend at <b>${friend}</b>`) + "<br>";
+  let line;
+  if (W) {
+    const top = Math.max(0, ...Object.values(weekly.best).map(v => +v || 0));
+    line = `Your best week <b>${top}</b>`;
+  } else {
+    const s = liveStreak();
+    const next = RARE_KOI.find(r => r.at > s && !journey.koi.includes(rareIndex(r)));
+    line = `Streak <b>${s}</b> ${s === 1 ? "day" : "days"}` + (next ? ` · ${next.at - s} more ${next.at - s === 1 ? "day" : "days"} for the rare ${next.name}` : "");
+  }
+  $("dailyStats").innerHTML = (S.practice ? `Official score ${W ? "this week" : "today"} <b>${official}</b><br>` : "")
+    + (S.pearls ? `<b>+${S.pearls}</b> pearls for ${W ? "this week’s challenge" : "today’s Daily"}<br>` : "") + versus + line;
   syncRemind();
+  $("dailyRemind").hidden = W;
   $("shareText").textContent = shareText();
   $("copyBtn").textContent = nativeApp ? "Share result" : "Copy result";
-  const mid = new Date(); mid.setHours(24, 0, 0, 0);
-  const mins = Math.max(1, Math.round((mid - new Date()) / 60000));
-  $("nextDaily").textContent = `New challenge in ${Math.floor(mins / 60)} h ${mins % 60} min`;
+  $("dailyChallenge").hidden = official === undefined;
+  $("dailyChallenge").textContent = "Challenge a friend";
+  $("dailyAgain").innerHTML = `<span class="tag">Ad</span>Practise ${W ? "this week’s" : "today’s"} board`;
+  const until = W ? thisWeek().end : (() => { const m = new Date(); m.setHours(24, 0, 0, 0); return m; })();
+  const mins = Math.max(1, Math.round((until - new Date()) / 60000)), days = Math.floor(mins / 1440);
+  $("nextDaily").textContent = days ? `New challenge in ${days} d ${Math.floor((mins % 1440) / 60)} h` : `New challenge in ${Math.floor(mins / 60)} h ${mins % 60} min`;
   $("dailyTasks").innerHTML = tasksLabel();
   openCard("dailyCard");
   bowl(4, 0.05);
-  // Only the official score of the day goes to the leaderboard
-  if (!S.practice) gcPost(GC_BOARDS.daily, daily.best[S.day], "dailyRank"); else $("dailyRank").hidden = true;
+  // Only the official score goes to the leaderboard
+  if (!S.practice) gcPost(W ? GC_BOARDS.weekly : GC_BOARDS.daily, official, "dailyRank"); else $("dailyRank").hidden = true;
 }
+// "Challenge a friend": a link to the same board with the score to beat
+function challengeLink() {
+  const score = (S.weekly ? weekly : daily).best[S.day];
+  return `${CHALLENGE_URL}?d=${S.day}&s=${score}${S.weekly ? "&w=1" : ""}`;
+}
+$("dailyChallenge").addEventListener("click", () => {
+  const btn = $("dailyChallenge"), score = (S.weekly ? weekly : daily).best[S.day];
+  const text = `I scored ${score} on Koi Garden ${S.weekly ? "Weekly" : "Daily"} #${S.num}. Same board for you: can you beat it?`, url = challengeLink();
+  if (nativeApp && window.Capacitor.Plugins.Share) { window.Capacitor.Plugins.Share.share({ text, url }).catch(() => {}); return; }
+  try { navigator.clipboard.writeText(`${text} ${url}`).then(() => { btn.textContent = "Link copied"; }, () => { btn.textContent = url; }); }
+  catch (e) { btn.textContent = url; }
+});
 $("copyBtn").addEventListener("click", () => {
   const btn = $("copyBtn"), txt = shareText();
   if (nativeApp && window.Capacitor.Plugins.Share) { window.Capacitor.Plugins.Share.share({ text: txt }).catch(() => {}); return; }
@@ -157,7 +201,7 @@ $("copyBtn").addEventListener("click", () => {
   } catch (e) { selectIt(); }
 });
 $("dailyRemind").addEventListener("click", () => openRemind(() => openCard("dailyCard")));
-$("dailyAgain").addEventListener("click", () => showAd("practice", () => { startDaily(true); closeOverlay(); render(); }));
+$("dailyAgain").addEventListener("click", () => showAd("practice", () => { if (S.weekly) startWeekly(true); else startDaily(true); closeOverlay(); render(); }));
 $("dailyJourney").addEventListener("click", () => switchMode("journey"));
 
 /* ---------- Ads (placeholders) ---------- */
@@ -219,7 +263,7 @@ function showAd(kind, onDone) {
    One board for each Endless level and one for the Daily, set up in App Store Connect with these IDs.
    The cards show the player's place among friends and roughly among everyone, not a long list:
    a calm game should not make most players feel far behind. Apple's own screen has the full lists. */
-const GC_BOARDS = { easy: "koigarden.endless.easy", normal: "koigarden.endless.normal", hard: "koigarden.endless.hard", daily: "koigarden.daily.board" };
+const GC_BOARDS = { easy: "koigarden.endless.easy", normal: "koigarden.endless.normal", hard: "koigarden.endless.hard", daily: "koigarden.daily.board", weekly: "koigarden.weekly.board" };
 const gcOn = () => nativeApp && window.MBNative && window.MBNative.hasGames;
 let gcSigned = null;
 function gcReady() {
@@ -279,6 +323,9 @@ function openRecords(back) {
   }
   $("recBars").innerHTML = bars.join("");
   $("recBarsNote").textContent = days.length ? "The last 14 days" : "Play the Daily to start your record";
+  const weeks = Object.values(weekly.best || {}).map(v => +v || 0), wk = thisWeek();
+  $("recWeekly").innerHTML = recTile("This week", weekly.best[wk.key] !== undefined ? weekly.best[wk.key] : "–", `week ${wk.num}`)
+    + recTile("Best week", weeks.length ? Math.max(...weeks) : "–") + recTile("Weeks played", weeks.length);
   const stars = Object.values(journey.stars).reduce((a, b) => a + (+b || 0), 0);
   const threes = Object.values(journey.stars).filter(v => +v === 3).length;
   $("recJourney").innerHTML = recTile("Level", currentLevel()) + recTile("Stars", stars, `${threes} with 3★`) + recTile("Koi", journey.koi.length, `of ${ALL_KOI.length}`);

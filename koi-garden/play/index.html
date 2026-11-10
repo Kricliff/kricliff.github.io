@@ -8,7 +8,7 @@
 <title>Koi Garden</title>
 <link rel="icon" href="img/icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="img/icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=f214abd-1844">
+<link rel="stylesheet" href="css/style.css?v=cd5e9f9-1456">
 </head>
 <body>
 <div class="pond" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -93,6 +93,7 @@
       <div class="home-links">
         <button class="home-link" id="homeMap">Map</button>
         <button class="home-link" id="homeEndless">Endless</button>
+        <button class="home-link" id="homeWeekly">Weekly</button>
         <button class="home-link" id="homeRecords">Records</button>
       </div>
     </div>
@@ -109,6 +110,7 @@
     <button class="icon-btn" id="mapClose" aria-label="Back to the game" title="Back">✕</button>
   </div>
   <div class="map-bottom">
+    <button class="map-hunt" id="mapHunt" hidden></button>
     <button class="home-play map-play" id="mapPlay"><b>Play level 1</b><small></small><span class="home-boost" id="mapBoost" hidden>×1</span></button>
   </div>
 </div>
@@ -124,6 +126,17 @@
       <li>The daily challenge never interrupts you.</li>
     </ul>
     <div class="btns"><button class="btn primary" id="promiseOk">Let’s play</button></div>
+  </div>
+
+  <div class="card" id="challengeCard" hidden>
+    <p class="eyebrow">A challenge</p>
+    <div class="big-num" id="challengeScore">0</div>
+    <h2 id="challengeTitle">A friend scored 0</h2>
+    <p id="challengeText"></p>
+    <div class="btns">
+      <button class="btn primary" id="challengePlay">Play the Daily</button>
+      <button class="btn" id="challengeLater">Later</button>
+    </div>
   </div>
 
   <div class="card" id="statsCard" hidden>
@@ -148,6 +161,7 @@
     <span class="goal-badge" id="levelPieces">20 pieces</span>
     <div class="current" id="levelCurrent" hidden></div>
     <p id="levelNote"></p>
+    <p class="trail-row" id="levelTrail" hidden></p>
     <details class="note stars-help"><summary>How stars work</summary><span id="levelStars">Stars: 1 for the goal, more for a high score.</span> Every piece left adds 20 points at the end. Extra pieces from a video give 1 star at most.</details>
     <div class="btns">
       <button class="btn primary" id="levelPlay">Play</button>
@@ -166,6 +180,7 @@
     <div class="new-koi" id="winKoi" hidden><img id="winKoiImg" alt="" width="96" height="40"><span id="winKoiName"></span></div>
     <div class="current" id="winCurrent"></div>
     <div class="chest-row" id="winChest"></div>
+    <p class="trail-row" id="winTrail" hidden></p>
     <button class="garden-nudge" id="winGarden" hidden></button>
     <div class="btns">
       <button class="btn primary next-btn" id="winNext">Next level</button>
@@ -262,7 +277,8 @@
         <ul class="rules">
           <li>Win Journey levels in a row to build a <b>win streak</b>.</li>
           <li>1 win in a row: the next level starts with an <b>Arrow Koi</b>. 3 in a row: an Arrow and a <b>Ripple Koi</b>. 5 in a row: a <b>Rainbow Koi</b> too.</li>
-          <li>Losing a level ends the current. Keep going with a video and win, and it is saved.</li>
+          <li>A <b>streak shield</b> (60 pearls, where you buy jokers) keeps your streak through one lost level.</li>
+          <li>Losing a level takes the streak down one step: from 5 to 3, from 3 to 1, from 1 to none. Keep going with a video or pearls and win, and it is saved.</li>
         </ul>
       </details>
       <details>
@@ -431,6 +447,10 @@
       <p class="rec-bars-note" id="recBarsNote"></p>
     </div>
     <div class="rec-block">
+      <p class="rec-head">Weekly challenge</p>
+      <div class="rec-tiles" id="recWeekly"></div>
+    </div>
+    <div class="rec-block">
       <p class="rec-head">Journey</p>
       <div class="rec-tiles" id="recJourney"></div>
     </div>
@@ -473,6 +493,7 @@
     <pre class="share" id="shareText"></pre>
     <div class="btns">
       <button class="btn primary" id="copyBtn">Copy result</button>
+      <button class="btn" id="dailyChallenge">Challenge a friend</button>
       <button class="btn" id="dailyAgain"><span class="tag">Ad</span>Practise today’s board</button>
       <button class="btn" id="dailyJourney">Back to the journey</button>
     </div>
@@ -635,24 +656,24 @@
 
 <canvas class="fx" id="fx" aria-hidden="true"></canvas>
 
-<script src="js/native.js?v=f214abd-1844"></script>
-<script src="js/levels.js?v=f214abd-1844"></script>
-<script src="js/game/core.js?v=f214abd-1844"></script>
-<script src="js/game/stats.js?v=f214abd-1844"></script>
-<script src="js/game/rules.js?v=f214abd-1844"></script>
-<script src="js/game/map.js?v=f214abd-1844"></script>
-<script src="js/game/board.js?v=f214abd-1844"></script>
-<script src="js/game/jokers.js?v=f214abd-1844"></script>
-<script src="js/game/effects.js?v=f214abd-1844"></script>
-<script src="js/game/pond.js?v=f214abd-1844"></script>
-<script src="js/game/world.js?v=f214abd-1844"></script>
-<script src="js/game/ui.js?v=f214abd-1844"></script>
-<script src="js/game/home.js?v=f214abd-1844"></script>
-<script src="js/game/garden.js?v=f214abd-1844"></script>
-<script src="js/game/shop.js?v=f214abd-1844"></script>
-<script src="js/game/tester.js?v=f214abd-1844"></script>
-<script src="js/game/results.js?v=f214abd-1844"></script>
-<script src="js/game/audio.js?v=f214abd-1844"></script>
-<script src="js/game/boot.js?v=f214abd-1844"></script>
+<script src="js/native.js?v=cd5e9f9-1456"></script>
+<script src="js/levels.js?v=cd5e9f9-1456"></script>
+<script src="js/game/core.js?v=cd5e9f9-1456"></script>
+<script src="js/game/stats.js?v=cd5e9f9-1456"></script>
+<script src="js/game/rules.js?v=cd5e9f9-1456"></script>
+<script src="js/game/map.js?v=cd5e9f9-1456"></script>
+<script src="js/game/board.js?v=cd5e9f9-1456"></script>
+<script src="js/game/jokers.js?v=cd5e9f9-1456"></script>
+<script src="js/game/effects.js?v=cd5e9f9-1456"></script>
+<script src="js/game/pond.js?v=cd5e9f9-1456"></script>
+<script src="js/game/world.js?v=cd5e9f9-1456"></script>
+<script src="js/game/ui.js?v=cd5e9f9-1456"></script>
+<script src="js/game/home.js?v=cd5e9f9-1456"></script>
+<script src="js/game/garden.js?v=cd5e9f9-1456"></script>
+<script src="js/game/shop.js?v=cd5e9f9-1456"></script>
+<script src="js/game/tester.js?v=cd5e9f9-1456"></script>
+<script src="js/game/results.js?v=cd5e9f9-1456"></script>
+<script src="js/game/audio.js?v=cd5e9f9-1456"></script>
+<script src="js/game/boot.js?v=cd5e9f9-1456"></script>
 </body>
 </html>

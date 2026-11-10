@@ -9,8 +9,14 @@ const UNDO_PER_GAME = 2;
 const SWAP_COST = 20;
 const HINT_COST = 15;
 // Pearls buy help in a Journey level: a joker koi in the gold slot, or five more pieces when you run out
-const JOKER_PRICE = { arrow: 60, ripple: 90, rainbow: 120 };
-const MORE_PIECES = 5, MORE_PIECES_COST = 80;
+const JOKER_PRICE = { arrow: 30, ripple: 50, rainbow: 70 };
+const MORE_PIECES = 5, MORE_PIECES_COST = 40;
+// A level lost twice or more gets a few more pieces on the next try: 2 for each loss from the second, at most 6
+const HELP_PER_FAIL = 2, HELP_MAX = 6;
+const helpPieces = n => Math.min(HELP_MAX, HELP_PER_FAIL * Math.max(0, ((journey.fails || {})[n] || 0) - 1));
+// Pearls outside the Journey: for the day's official Daily, and at these scores in one Endless game
+const DAILY_PEARLS = 20;
+const ENDLESS_PEARLS = [[500, 10], [1000, 20], [2000, 40]];
 const AD_GAP_MS = 150000;       // at least 2.5 minutes between ad breaks
 const AD_AFTER_REWARD_MS = 90000;
 const FREE_ROUNDS = 2;          // no ad break in the first rounds of a session
@@ -113,13 +119,67 @@ const FESTIVAL_KOI = [
   { name: "Sakura Ogon", img: "img/koi/31-sakura-ogon.png", festival: "sakura", festName: "Sakura Week" },
   { name: "Kin Ki Utsuri", img: "img/koi/32-kin-ki-utsuri.png", festival: "firefly", festName: "Firefly Night" }
 ];
+// Two more koi in each of chapters 2-10, for winning its fifth and tenth level (both Hard), so the collection keeps
+// growing after chapter 1. Painted in code like the chapter koi.
+const MILESTONE_KOI = [
+  { name: "Kigoi", img: "img/koi/33-kigoi.png", level: 20 },
+  { name: "Aka Matsuba", img: "img/koi/34-aka-matsuba.png", level: 25 },
+  { name: "Shiro Bekko", img: "img/koi/35-shiro-bekko.png", level: 35 },
+  { name: "Nezu Ogon", img: "img/koi/36-nezu-ogon.png", level: 40 },
+  { name: "Ki Bekko", img: "img/koi/37-ki-bekko.png", level: 50 },
+  { name: "Aka Bekko", img: "img/koi/38-aka-bekko.png", level: 55 },
+  { name: "Budo Goromo", img: "img/koi/39-budo-goromo.png", level: 65 },
+  { name: "Sumi Goromo", img: "img/koi/40-sumi-goromo.png", level: 70 },
+  { name: "Kin Matsuba", img: "img/koi/41-kin-matsuba.png", level: 80 },
+  { name: "Yamatonishiki", img: "img/koi/42-yamatonishiki.png", level: 85 },
+  { name: "Beni Kikokuryu", img: "img/koi/43-beni-kikokuryu.png", level: 95 },
+  { name: "Kindai Showa", img: "img/koi/44-kindai-showa.png", level: 100 },
+  { name: "Hi Showa", img: "img/koi/45-hi-showa.png", level: 110 },
+  { name: "Ki Matsuba", img: "img/koi/46-ki-matsuba.png", level: 115 },
+  { name: "Shiro Matsuba", img: "img/koi/47-shiro-matsuba.png", level: 125 },
+  { name: "Narumi Asagi", img: "img/koi/48-narumi-asagi.png", level: 130 },
+  { name: "Kin Hi Utsuri", img: "img/koi/49-kin-hi-utsuri.png", level: 140 },
+  { name: "Mukashi Ogon", img: "img/koi/50-mukashi-ogon.png", level: 145 }
+];
+// One koi for each of the first three rounds of the lotus trail (after level 150)
+const TRAIL_KOI = [
+  { name: "Kin Kikokuryu", img: "img/koi/51-kin-kikokuryu.png", round: 2 },
+  { name: "Tancho Sanke", img: "img/koi/52-tancho-sanke.png", round: 3 },
+  { name: "Kanoko Kohaku", img: "img/koi/53-kanoko-kohaku.png", round: 4 }
+];
 // Every koi has one index, kept for good since saved progress stores them: 0-14 from Journey levels, 15-18 rare,
-// 19-27 from chapters, 28-31 from festivals
+// 19-27 from chapters, 28-31 from festivals, 32-49 milestones, 50-52 the lotus trail
 const ALL_KOI = [...KOI_TYPES, ...RARE_KOI.map(r => ({ ...r, rare: true })), ...CHAPTER_KOI.map(k => ({ ...k, chapterKoi: true })),
-  ...FESTIVAL_KOI.map(k => ({ ...k, festivalKoi: true }))];
+  ...FESTIVAL_KOI.map(k => ({ ...k, festivalKoi: true })), ...MILESTONE_KOI.map(k => ({ ...k, milestoneKoi: true })),
+  ...TRAIL_KOI.map(k => ({ ...k, trailKoi: true }))];
 const rareIndex = r => KOI_TYPES.length + RARE_KOI.indexOf(r);
 const CHAPTER_KOI_START = KOI_TYPES.length + RARE_KOI.length;
 const FESTIVAL_KOI_START = CHAPTER_KOI_START + CHAPTER_KOI.length;
+const MILESTONE_KOI_START = FESTIVAL_KOI_START + FESTIVAL_KOI.length;
+const TRAIL_KOI_START = MILESTONE_KOI_START + MILESTONE_KOI.length;
+// The koi for winning level n, or -1 when that level has none
+const milestoneKoiIndex = n => { const k = MILESTONE_KOI.findIndex(m => m.level === n); return k < 0 ? -1 : MILESTONE_KOI_START + k; };
+const trailKoiIndex = round => { const k = TRAIL_KOI.findIndex(t => t.round === round); return k < 0 ? -1 : TRAIL_KOI_START + k; };
+
+/* ---------- The lotus trail: something new to play for after level 150 ----------
+   From level 151 every pond has lotus flowers on it (three, when lotus is not the goal already). They are not part of
+   the goal: the level ends when the goal is met, so the flowers have to be collected on the way. Up to three count
+   for each level, the best win is kept, and each round of 135 levels has three gifts: pearls, pearls, and pearls
+   with the round's koi. */
+const TRAIL_FROM = 151, TRAIL_ROUND = 135, TRAIL_PER_LEVEL = 3;
+const TRAIL_GOALS = [60, 130, 200], TRAIL_PEARLS = [100, 150, 250];
+const trailRound = n => n < TRAIL_FROM ? 0 : Math.floor((n - TRAIL_FROM) / TRAIL_ROUND) + 2;
+function trailCount(round) {
+  const from = TRAIL_FROM + (round - 2) * TRAIL_ROUND;
+  let sum = 0;
+  Object.entries(journey.lotus || {}).forEach(([n, v]) => { if (+n >= from && +n < from + TRAIL_ROUND) sum += +v || 0; });
+  return sum;
+}
+// "34/60" towards the next gift of the round, or the round's total when every gift is taken
+function trailText(round) {
+  const now = trailCount(round), next = TRAIL_GOALS.find(g => g > now);
+  return next ? `${now}/${next}` : `${now} · every gift collected`;
+}
 // The koi for finishing chapter c, or -1 when that chapter has none
 const chapterKoiIndex = c => CHAPTER_KOI.some(k => k.chapter === c) ? CHAPTER_KOI_START + CHAPTER_KOI.findIndex(k => k.chapter === c) : -1;
 // Players who finished chapters before chapter koi existed get theirs; true when any were added
@@ -128,6 +188,11 @@ function grantChapterKoi() {
   CHAPTER_KOI.forEach(k => {
     const i = chapterKoiIndex(k.chapter);
     if (journey.unlocked > k.chapter * PER_CHAPTER && !journey.koi.includes(i)) { journey.koi.push(i); added = true; }
+  });
+  // The same for the milestone koi: a level counts when it was won (it has stars), not when it was skipped
+  MILESTONE_KOI.forEach(k => {
+    const i = milestoneKoiIndex(k.level);
+    if (journey.stars[k.level] > 0 && !journey.koi.includes(i)) { journey.koi.push(i); added = true; }
   });
   return added;
 }
@@ -144,9 +209,15 @@ const JOKERS = {
 };
 const MAX_JOKERS = 3;
 // Win streak: Journey levels won in a row. Steps 1, 3 and 5 start the next level with a joker ready.
-// Losing a level ends the current, unless the player keeps going with a video and wins.
+// Losing a level takes the streak down one step (5 to 3, 3 to 1, 1 to 0), so one loss never takes every joker
+// at once. Keeping going with a video or pearls and winning brings back what was lost.
 const CURRENT_STEPS = [{ at: 1, joker: "arrow" }, { at: 3, joker: "ripple" }, { at: 5, joker: "rainbow" }];
 const CURRENT_MAX = 5;
+// The streak after a loss: the joker step below the one the player stood on
+function streakAfterLoss(s) {
+  const reached = CURRENT_STEPS.filter(st => s >= st.at);
+  return reached.length > 1 ? reached[reached.length - 2].at : 0;
+}
 const currentJokers = s => CURRENT_STEPS.filter(st => s >= st.at).map(st => st.joker);
 const jokerList = list => list.map(t => JOKERS[t].name.replace(" Koi", "")).join(" + ") + " Koi";
 // Clearing the whole board at once
@@ -169,7 +240,8 @@ const NEW_IN = {
   91: "Tea House mixes everything you have met so far. Look at the goal first.",
   106: "New: maple leaves. Every few moves a leaf drifts onto an empty spot. Clear it like any stone before the board fills up.",
   121: "Snow Temple: more of the stones are frozen. Each needs two clears.",
-  136: "The last chapter, Golden Pagoda: everything at once. Take a breath before each Hard level."
+  136: "The last chapter, Golden Pagoda: everything at once. Take a breath before each Hard level.",
+  151: "New: the lotus trail. From here every pond has lotus flowers. They are not part of the goal, so collect them before you finish the level. Enough of them bring pearls and a new koi."
 };
 const goalTarget = L => KL.goalTarget(L);
 // What is still missing, in words: "2 koi", "1 lotus flower", "40 points"
@@ -221,6 +293,24 @@ function today() {
     label: d.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
   };
 }
+/* ---------- The weekly challenge ----------
+   Like the Daily, but one board for the whole week (Monday to Sunday) and twice as long. It runs as a Daily with
+   S.weekly set, so everything that holds for the Daily (the same pieces for everyone, no helpers, the first try is the
+   official one) holds here too. Its own best scores are kept in mb-weekly, and it has its own leaderboard. */
+const WEEKLY_PIECES = 60, WEEKLY_PEARLS = 40;
+const WEEKLY_EPOCH = new Date(2026, 10, 2);
+function thisWeek() {
+  const w = weekStart(), end = new Date(w);
+  end.setDate(end.getDate() + 7);
+  return { key: keyOf(w), num: Math.round((w - WEEKLY_EPOCH) / (7 * 864e5)) + 1, end };
+}
+// "weekly" for the weekly challenge, otherwise the game's mode
+const modeId = s => s && s.weekly ? "weekly" : s && s.mode;
+const piecesTotal = () => S.weekly ? WEEKLY_PIECES : DAILY_PIECES;
+// A link that opens the same board for a friend, with the score to beat (the web version of the game answers it)
+const CHALLENGE_URL = "https://kricliff.github.io/koi-garden/play/";
+// A streak shield: bought with pearls, it keeps the win streak the next time a Journey level is lost. One at a time.
+const SHIELD_COST = 60;
 function hashSeed(str) {
   let h = 2166136261;
   for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
@@ -296,9 +386,10 @@ document.querySelectorAll(".mini").forEach(m => {
 });
 
 let S;
-const G = { journey: null, endless: null, daily: null };
+const G = { journey: null, endless: null, daily: null, weekly: null };
+let weekly = { best: {} };
 let daily = { last: "", streak: 0, best: {}, night: false, restoredOn: "" };
-let journey = { unlocked: 1, stars: {}, pearls: 0, fails: {}, koi: [], streak: 0, gift: "", owned: [] };
+let journey = { unlocked: 1, stars: {}, pearls: 0, fails: {}, koi: [], streak: 0, gift: "", owned: [], lotus: {}, trail: [] };
 let look = { board: "sand", stones: "river" };
 let prefs = { big: false, calm: false, endless: "normal", relaxed: false };
 // Endless difficulty: how many pieces are in hand. Each keeps its own best score.
@@ -333,6 +424,7 @@ try {
   tutDone = localStorage.getItem("mb-tut") === "done";
   promised = localStorage.getItem("mb-promise") === "1";
   daily = Object.assign(daily, JSON.parse(localStorage.getItem("mb-daily") || "{}"));
+  weekly = Object.assign(weekly, JSON.parse(localStorage.getItem("mb-weekly") || "{}"));
   journey = Object.assign(journey, JSON.parse(localStorage.getItem("mb-journey") || "{}"));
   // Players who reached a 7-day streak before rare koi existed get their Tancho
   if ((daily.moon || daily.night) && !journey.koi.includes(15)) journey.koi.push(15);
@@ -347,6 +439,7 @@ try {
   localStorage.setItem("mb-sessions", String(sessions));
 } catch (e) {}
 const nativeApp = !!(window.MBNative && window.MBNative.isNative);
+const saveWeekly = () => { try { localStorage.setItem("mb-weekly", JSON.stringify(weekly)); } catch (e) {} };
 const saveDaily = () => { try { localStorage.setItem("mb-daily", JSON.stringify(daily)); } catch (e) {} cloudSoon(); };
 
 /* ---------- iCloud backup of progress ----------
@@ -449,6 +542,25 @@ function cloudChanged() {
     if (!hasProgress()) cloudRestore().then(more => { if (more) reloadOnce(); });
   });
 }
+/* ---------- The games in progress ----------
+   The Journey level, the Endless game and the Daily being played are kept on the phone, so they are still there when
+   iOS has closed the app in the background. Without this a level in progress was lost, and the official Daily could
+   be started over by closing the app. boot.js reads it back and checks it before using it. */
+const GAME_KEY = "mb-game", GAME_SAVE_V = 1;
+let gameSaveTimer = 0, gameSaveOff = false;
+function saveGame() {
+  clearTimeout(gameSaveTimer);
+  gameSaveTimer = 0;
+  if (!S || gameSaveOff) return;
+  try { localStorage.setItem(GAME_KEY, JSON.stringify({ v: GAME_SAVE_V, mode: modeId(S), G })); } catch (e) {}
+}
+// Called after every render: at most one save every half second
+const saveGameSoon = () => { if (!gameSaveTimer) gameSaveTimer = setTimeout(saveGame, 500); };
+function savedGame() {
+  try { const d = JSON.parse(localStorage.getItem(GAME_KEY) || "null"); return d && d.v === GAME_SAVE_V && d.G ? d : {}; } catch (e) { return {}; }
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) saveGame(); });
+window.addEventListener("pagehide", saveGame);
 // The very first session has no banner and no ad breaks, so the first impression is the game itself
 const firstSession = () => sessions <= 1;
 const bannerOn = () => !firstSession() && !noAds;

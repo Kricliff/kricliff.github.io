@@ -51,7 +51,7 @@ function fairPiece(tries, minStones) {
 function dealPiece() {
   if (S.mode === "daily") {
     // Same sequence for everyone, so no re-rolls based on the board
-    if (S.dealt >= DAILY_PIECES) return null;
+    if (S.dealt >= piecesTotal()) return null;
     S.dealt++;
     return { g: pickShape(), c: randColor() };
   }
@@ -72,8 +72,9 @@ function tutorialBoard() {
 }
 function startLevel(n) {
   const L = levelDef(n);
+  const help = n === 1 && !tutDone ? 0 : helpPieces(n);
   S = { mode: "journey", level: n, board: Array(N * N).fill(0), score: 0, combo: 0, miss: 0, over: false, won: false,
-    dealt: 0, limit: L.pieces, clears: 0, harmony: 0, koi: 0, preset: {}, ice: {}, lotus: {}, lotusGot: 0, growIn: L.grow || 0, placed: 0,
+    dealt: 0, limit: L.pieces + help, help, replay: (journey.stars[n] || 0) > 0, clears: 0, harmony: 0, koi: 0, preset: {}, ice: {}, lotus: {}, lotusGot: 0, growIn: L.grow || 0, placed: 0,
     extra: false, paidPieces: false, rescued: false, doubled: false, failCounted: false, frogs: 0, blossom: {}, hopIn: L.hop || 0, fallIn: L.fall || 0, undoLeft: UNDO_PER_GAME, prev: null, jokers: [], tut: 0, tutMoves: 0 };
   if (n === 1 && !tutDone) tutorialBoard();
   else {
@@ -95,7 +96,7 @@ function startLevel(n) {
 }
 function startGame(games, level) {
   S = { mode: "endless", level: level || prefs.endless || "normal", board: Array(N * N).fill(0), score: 0, combo: 0, miss: 0, continued: false, over: false,
-    games, clears: 0, harmony: 0, placed: 0, newBest: false, undoLeft: UNDO_PER_GAME, prev: null, jokers: [], tut: 0, tutMoves: 0 };
+    games, clears: 0, harmony: 0, placed: 0, newBest: false, mile: 0, pearls: 0, undoLeft: UNDO_PER_GAME, prev: null, jokers: [], tut: 0, tutMoves: 0 };
   if (!tutDone) tutorialBoard();
   S.tray = dealHand();
   if (S.tut === 1) S.tray[0] = { g: ["x"], c: 3 };
@@ -121,13 +122,36 @@ function startDaily(practice) {
   entering.add(0); entering.add(1);
   shownScore = 0;
 }
+// The weekly challenge: the week's seed, a few more stones to start with, and twice the pieces
+function startWeekly(practice) {
+  const w = thisWeek();
+  S = { mode: "daily", weekly: true, practice: !!practice, day: w.key, num: w.num, label: `week ${w.num}`, rng: hashSeed("koi-garden-week-" + w.key),
+    board: Array(N * N).fill(0), score: 0, combo: 0, miss: 0, over: false, placed: 0,
+    dealt: 0, harmony: 0, clears: 0, recorded: false, jokers: [], tut: 0, tutMoves: 0 };
+  let n = 14 + Math.floor(rnd() * 6), guard = 0;
+  while (n > 0 && guard++ < 500) {
+    const i = Math.floor(rnd() * N * N);
+    if (S.board[i]) continue;
+    S.board[i] = randColor();
+    if (fullLines(S.board).length) { S.board[i] = 0; continue; }
+    n--;
+  }
+  S.tray = [dealPiece(), dealPiece()];
+  G.weekly = S;
+  entering.add(0); entering.add(1);
+  shownScore = 0;
+}
+const playedWeekly = () => weekly.best[thisWeek().key] !== undefined;
 const playedOfficial = () => daily.best[today().key] !== undefined;
 const currentLevel = () => journey.unlocked;
 function switchMode(mode) {
   // Sign in to Game Center before a game that has a leaderboard, so the score can go up when it ends
   if (mode !== "journey" && typeof gcReady === "function") gcReady();
-  if (drag || (S && S.mode === mode)) return;
-  if (mode === "daily") {
+  if (drag || (S && modeId(S) === mode)) return;
+  if (mode === "weekly") {
+    if (!G.weekly || G.weekly.day !== thisWeek().key) startWeekly(playedWeekly());
+    else S = G.weekly;
+  } else if (mode === "daily") {
     if (!G.daily || G.daily.day !== today().key) startDaily(playedOfficial());
     else S = G.daily;
   } else if (mode === "journey") {

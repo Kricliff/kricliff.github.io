@@ -60,13 +60,13 @@ function paintScore() {
 // Pieces and jokers left still add their points on the win card, so the stars can come at the very end too.
 function paintStarGoals() {
   const el = $("starGoals"), L = S.mode === "journey" && !S.tut ? levelDef(S.level) : null;
-  el.hidden = !(L && L.s2);
+  el.hidden = !(L && (L.s2 || L.p2));
   if (el.hidden) return;
   // With a goal in the header there are no points to compare with, so the stars simply light up: the first for the
   // goal, the next two for a high score (pieces and jokers left still add theirs at the end)
   el.classList.toggle("lamps", goalHead());
   if (goalHead()) {
-    const lit = !goalMet() ? 0 : S.score >= L.s3 ? 3 : S.score >= L.s2 ? 2 : 1;
+    const lit = !goalMet() ? 0 : L.p2 ? (piecesLeft() >= L.p3 ? 3 : piecesLeft() >= L.p2 ? 2 : 1) : S.score >= L.s3 ? 3 : S.score >= L.s2 ? 2 : 1;
     el.innerHTML = [0, 1, 2].map(k => `<span class="${k < lit ? "got" : ""}">★</span>`).join("");
     el.setAttribute("aria-label", `${lit} of 3 stars so far`);
     return;
@@ -125,15 +125,15 @@ function render() {
   applyScene();
   if (S.mode === "journey" && goalHead()) { /* the goal is in the header, painted by paintScore() */ }
   else if (S.mode === "journey") { $("bestLabel").textContent = "Level"; $("best").textContent = S.level; }
-  else if (S.mode === "daily") { $("bestLabel").textContent = "Best"; $("best").textContent = Math.max(daily.best[S.day] || 0, S.practice ? 0 : S.score); }
+  else if (S.mode === "daily") { $("bestLabel").textContent = "Best"; $("best").textContent = Math.max((S.weekly ? weekly : daily).best[S.day] || 0, S.practice ? 0 : S.score); }
   else { $("bestLabel").textContent = S.level && S.level !== "normal" ? `Best · ${ENDLESS_LEVELS[S.level].name}` : "Best"; $("best").textContent = Math.max(endlessBest(), S.score); }
   paintStarGoals();
 
   const pill = $("pill");
   pill.hidden = S.mode === "endless";
   if (S.mode === "daily") {
-    const left = DAILY_PIECES - S.dealt + S.tray.filter(Boolean).length;
-    pill.innerHTML = `${S.practice ? "Practice" : `#${S.num}`} <span class="dim">· ${left} ${left === 1 ? "piece" : "pieces"} left</span>`;
+    const left = piecesTotal() - S.dealt + S.tray.filter(Boolean).length;
+    pill.innerHTML = `${S.practice ? "Practice" : S.weekly ? `Week ${S.num}` : `#${S.num}`} <span class="dim">· ${left} ${left === 1 ? "piece" : "pieces"} left</span>`;
   } else if (S.mode === "journey") {
     const left = piecesLeft();
     const L = levelDef(S.level);
@@ -166,8 +166,9 @@ function render() {
   else if (S.tut === 2) hint.innerHTML = "Rows and columns clear too. <b>Tap a piece to rotate it.</b>";
   else if (S.combo > 1) hint.innerHTML = `Combo <b>×${S.combo}</b> · clear again within 3 moves`;
   else if (S.mode === "journey") hint.textContent = goalText(levelDef(S.level));
-  else if (S.mode === "daily") hint.textContent = S.practice ? "Practice. Your official score stays." : "Same pieces for everyone today.";
+  else if (S.mode === "daily") hint.textContent = S.practice ? "Practice. Your official score stays." : S.weekly ? "Same pieces for everyone this week." : "Same pieces for everyone today.";
   else hint.textContent = "Fill a row, a column or a 3×3 square.";
+  saveGameSoon();
 }
 function pieceEl(sh, color, size, gap) {
   const el = document.createElement("div");
@@ -493,7 +494,7 @@ function place(slot, r, c) {
     if (S.tut === 1 && beds) S.tut = 2;
     // Bigger moves earn stronger jokers, like special candies
     const earned = mono.length || n >= 3 ? "rainbow" : S.combo === 3 ? "ripple" : n === 2 ? "arrow" : null;
-    if (earned) setTimeout(() => grantJoker(earned), 500);
+    if (earned) grantJoker(earned);
   } else {
     if (++S.miss >= 3) S.combo = 0;
     // Bamboo grows while the player misses
@@ -528,6 +529,7 @@ function place(slot, r, c) {
       if (!S.newBest && was > 0) { S.newBest = true; setTimeout(() => toast("New personal best"), 500); }
       setEndlessBest(S.score);
     }
+    endlessPearls();
     if (S.score >= 800 && S.placed % 8 === 0) setTimeout(dropRock, 450);
   }
   render();

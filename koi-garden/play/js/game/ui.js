@@ -2,7 +2,7 @@
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
 /* ---------- Overlays ---------- */
-const cards = ["recordsCard", "endlessCard", "promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "testerCard", "jokerCard", "shopCard"];
+const cards = ["challengeCard", "recordsCard", "endlessCard", "promiseCard", "statsCard", "levelCard", "winCard", "failCard", "helpCard", "settingsCard", "resetCard", "koiCard", "eventCard", "streakCard", "infoCard", "breakCard", "overCard", "dailyCard", "remindCard", "rewardCard", "adCard", "tasksCard", "testerCard", "jokerCard", "shopCard"];
 function openCard(id) {
   clearSurprises();
   overlay.hidden = false;
@@ -43,8 +43,10 @@ $("settingsDone").addEventListener("click", backFromHeader);
 $("resetBtn").addEventListener("click", () => openCard("resetCard"));
 $("resetKeep").addEventListener("click", () => { syncSettings(); openCard("settingsCard"); });
 $("resetYes").addEventListener("click", async () => {
+  // Leaving the page saves the game in progress: not this time
+  gameSaveOff = true;
   try {
-    ["mb-journey", "mb-daily", "mb-best-9", "mb-best-9-easy", "mb-best-9-hard", "mb-lanterns", "mb-tasks", "mb-joker-tut", "mb-joker-seen"].forEach(k => localStorage.removeItem(k));
+    ["mb-journey", "mb-daily", "mb-best-9", "mb-best-9-easy", "mb-best-9-hard", "mb-lanterns", "mb-tasks", "mb-joker-tut", "mb-joker-seen", "mb-game", "mb-weekly"].forEach(k => localStorage.removeItem(k));
     localStorage.setItem("mb-epoch", String(localEpoch() + 1));
   } catch (e) {}
   // Clear the iCloud copy too, or it would bring the old progress back
@@ -119,7 +121,8 @@ function openKoi() {
   $("koiTitle").textContent = `${journey.koi.length} of ${ALL_KOI.length} koi`;
   ALL_KOI.forEach((k, i) => {
     const section = i === KOI_TYPES.length ? "Rare koi · Daily streak" : i === CHAPTER_KOI_START ? "Chapter koi · Journey"
-      : i === FESTIVAL_KOI_START ? "Festival koi · one each week" : "";
+      : i === FESTIVAL_KOI_START ? "Festival koi · one each week" : i === MILESTONE_KOI_START ? "Milestone koi · Hard levels in the Journey"
+      : i === TRAIL_KOI_START ? "Lotus trail koi · after level 150" : "";
     if (section) {
       const h = document.createElement("div");
       h.className = "koi-section";
@@ -134,7 +137,8 @@ function openKoi() {
     im.alt = owned ? k.name : "Locked koi";
     cell.appendChild(im);
     const name = document.createElement("span");
-    name.textContent = owned ? k.name : k.rare ? `${k.at}-day streak` : k.chapterKoi ? `Chapter ${k.chapter}` : k.festivalKoi ? k.festName : `Level ${i + 1}`;
+    name.textContent = owned ? k.name : k.rare ? `${k.at}-day streak` : k.chapterKoi ? `Chapter ${k.chapter}` : k.festivalKoi ? k.festName : k.milestoneKoi ? `Level ${k.level}`
+      : k.trailKoi ? `Lotus trail${["", "", " II", " III", " IV"][k.round]}` : `Level ${i + 1}`;
     cell.appendChild(name);
     grid.appendChild(cell);
   });

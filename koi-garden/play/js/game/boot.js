@@ -26,11 +26,13 @@ function start(data) {
   startKoi();
   syncAudioUI();
   applyGarden();
-  const ok = s => s && Array.isArray(s.board) && s.board.length === N * N && s.mode && typeof s.clears === "number" && typeof s.placed === "number";
+  const ok = s => s && Array.isArray(s.board) && s.board.length === N * N && Array.isArray(s.tray) && s.mode && typeof s.clears === "number" && typeof s.placed === "number";
   if (data && data.G) {
-    if (ok(data.G.journey) && "limit" in data.G.journey) G.journey = data.G.journey;
+    // A game is only taken back when it is whole (a board, pieces in hand) and its level still exists
+    if (ok(data.G.journey) && "limit" in data.G.journey && data.G.journey.level >= 1) G.journey = data.G.journey;
     if (ok(data.G.endless) && "undoLeft" in data.G.endless) G.endless = data.G.endless;
-    if (ok(data.G.daily) && data.G.daily.day === today().key && "practice" in data.G.daily) G.daily = data.G.daily;
+    if (ok(data.G.daily) && !data.G.daily.weekly && data.G.daily.day === today().key && "practice" in data.G.daily) G.daily = data.G.daily;
+    if (ok(data.G.weekly) && data.G.weekly.weekly && data.G.weekly.day === thisWeek().key && "practice" in data.G.weekly) G.weekly = data.G.weekly;
   }
   S = G[data && data.mode] || G.journey;
   if (!S) startLevel(currentLevel());
@@ -47,4 +49,4 @@ function start(data) {
   if (!promised) openCard("promiseCard");
   else maybeAskStats();
 }
-start({});
+start(savedGame());

@@ -71,7 +71,7 @@ function buildMap() {
   pts.push({ x: W / 2, y: 30 });
   const doneTo = Math.min(cur, last);
   let html = "";
-  const own = journey.koi.filter(i => koiImages[i]);
+  const own = journey.koi.filter(i => koiImages[i]), fish = [];
   // The chapters' stretches of garden
   for (let c = 1; c <= maxC; c++) {
     const z = ZONES[(c - 1) % ZONES.length];
@@ -97,13 +97,17 @@ function buildMap() {
       const turn = Math.round((rnd() - 0.5) * 40);
       html += `<div class="decor d-${kind}" style="left:${x - size / 2}px;top:${y - size / 2}px;width:${size}px;height:${size}px;--r:${up ? 0 : turn}deg">${DECOR[kind]}</div>`;
     }
-    // Two koi from your collection drift about in every chapter's water
+    // Two koi from your collection swim in every chapter's water, each in its own stretch beside the path
     for (let k = 0; k < 2; k++) {
       const n = (c - 1) * PER_CHAPTER + 3 + k * 7, p = g.pos(n), side = p.x > W / 2 ? -1 : 1;
-      const img = ALL_KOI[own.length ? own[(c * 3 + k) % own.length] : [0, 3][k]].img;
-      html += `<div class="map-fish" style="left:${W / 2 + side * W * 0.3}px;top:${p.y}px;--d:${-(c * 2.3 + k * 5.1).toFixed(1)}s;--s:${side}"><img src="${img}" alt=""></div>`;
+      const bw = Math.round(W * MAP_FISH_BOX.w), bh = MAP_FISH_BOX.h;
+      const f = makeFish(own.length ? own[(c * 3 + k) % own.length] : [0, 3][k], bw, bh, 50, 64);
+      Object.assign(f, { hx: W / 2 + side * W * 0.3 - bw / 2, hy: p.y - bh * 0.6, bw, bh });
+      fish.push(f);
     }
   }
+  // The koi are drawn here: above the gardens and the scenery, under the stream, the gates and the stones
+  html += `<canvas class="map-swim" id="mapSwim" aria-hidden="true"></canvas>`;
   // The stream, and the part of it already travelled
   html += `<svg class="stream" width="${W}" height="${g.H}" viewBox="0 0 ${W} ${g.H}" aria-hidden="true">`
     + `<path class="bank" d="${smoothPath(pts)}"/><path class="water" d="${smoothPath(pts)}"/><path class="deep" d="${smoothPath(pts)}"/><path class="shine" d="${smoothPath(pts)}"/>`
@@ -127,14 +131,151 @@ function buildMap() {
       + `${stone ? `<i class="stone-img" style="background-image:url(${stoneImg(stone)})"></i>` : ""}${L.hard ? '<span class="hard-tag">HARD</span>' : ""}<b>${n}</b>`
       + (done ? `<span class="step-stars">${"★".repeat(st)}<i>${"★".repeat(3 - st)}</i></span>` : "") + `</button>`;
   }
-  // Your koi
-  html += `<div class="map-koi" id="mapKoi"><img src="${ALL_KOI[own.length ? own[own.length - 1] : 0].img}" alt=""></div>`;
+  // Your koi, swimming round the stone you are on: drawn here, over the stones
+  html += `<canvas class="map-swim over" id="mapSwimOver" aria-hidden="true"></canvas>`;
   world.innerHTML = html;
+  mapFish = fish;
+  mapSwim = { cv: $("mapSwim"), over: $("mapSwimOver"), top: -1e9, W, H: 0 };
+  mapOwn = Object.assign(makeFish(own.length ? own[own.length - 1] : 0, 1, 1, 52, 52), { n: 0, amp: 0.8, turn: 0, ang: -Math.PI / 2, spin: MAP_OWN_SPIN, spinTarget: MAP_OWN_SPIN, burstIn: 4, hop: null });
 }
+
+/* ---------- Koi in the map's water ----------
+   They swim the way the koi behind the board do (makeFish, stepFish and drawFish in effects.js): a body that bends
+   with each tail beat and into each turn, a shadow on the bottom, unhurried drifts with now and then a burst of speed.
+   Each keeps to its own stretch of water, a box beside the path; near its edge it turns back in. They were CSS loops
+   before, the same circle over and over with a stiff wiggle.
+   The canvas lies inside the map and is twice the screen's height, so it scrolls with the map by itself and is only
+   moved (and drawn afresh) when the view has nearly reached its edge. A tap in the water sends nearby koi darting off. */
+const MAP_FISH_BOX = { w: 0.34, h: 300 };
+let mapFish = [], mapSwim = null;
+function stepMapFish(dt) { mapFish.forEach(f => stepFish(f, dt, f.bw, f.bh, null)); }
+function drawMapFish() {
+  const sw = mapSwim;
+  if (!sw || !sw.cv) return;
+  const sc = $("mapScroll"), H = sc.clientHeight, top = sc.scrollTop, dpr = Math.min(2, devicePixelRatio || 1);
+  if (H !== sw.H) {
+    sw.H = H;
+    [sw.cv, sw.over].forEach(cv => { cv.width = Math.round(sw.W * dpr); cv.height = Math.round(2 * H * dpr); cv.style.width = sw.W + "px"; cv.style.height = 2 * H + "px"; });
+    sw.top = -1e9;
+  }
+  // Move the canvases only when the view is close to their top or bottom edge
+  if (top < sw.top + 40 || top + H > sw.top + 2 * H - 40) { sw.top = Math.max(0, Math.round(top - H / 2)); sw.cv.style.top = sw.over.style.top = sw.top + "px"; }
+  drawMapOwn(dpr);
+  const c = sw.cv.getContext("2d"), night = isNight();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, sw.cv.width, sw.cv.height);
+  c.setTransform(dpr, 0, 0, dpr, 0, -sw.top * dpr);
+  // Seen through the water: a touch of its colour, more at night
+  const tint = [night ? "#0d2a44" : "#1f6f73", night ? 0.38 : 0.14];
+  mapFish.forEach(f => {
+    if (f.hy + f.bh + 60 < sw.top || f.hy - 60 > sw.top + 2 * H) return;
+    c.save();
+    c.translate(f.hx, f.hy);
+    drawFish(c, [f], 1, night ? 0.18 : 0.3, tint);
+    c.restore();
+  });
+}
+function mapFishTap(e) {
+  const w = $("mapWorld").getBoundingClientRect(), x = e.clientX - w.left, y = e.clientY - w.top;
+  let near = false;
+  mapFish.forEach(f => {
+    const fx = f.hx + f.x, fy = f.hy + f.y;
+    if (Math.hypot(fx - x, fy - y) > 150) return;
+    near = true;
+    // Away from the finger, fast, then back to an easy glide
+    f.a = Math.atan2(fy - y, fx - x);
+    f.turn = 0; f.turnTarget = 0; f.turnVel = 0;
+    f.v = f.vTarget = 58;
+    f.timer = 1.1;
+  });
+  ring("tap-ring map-tap", e.clientX, e.clientY);
+  if (near && sfxOk()) voice(620 + Math.random() * 120, 0, 0.12, 0.018, 420);
+}
+/* ---------- Your koi on the map ----------
+   It swims round the stone you are on, as a koi circles a rock: never quite the same lap twice, now slower, now with a
+   short burst, the body bent into the turn. After a win it leaps out of the water, across to the next stone, with a
+   splash where it lands, and swims on round that one. It was a picture turned in a circle before. */
+const MAP_OWN_R = 44, MAP_OWN_SPIN = 1.05, MAP_OWN_HOP = 0.75;
+let mapOwn = null;
 function placeMapKoi(n) {
-  const p = mapGeo.pos(n), el = $("mapKoi");
-  el.style.left = p.x + "px";
-  el.style.top = p.y + "px";
+  if (!mapOwn) return;
+  mapOwn.n = n;
+  mapOwn.hop = null;
+  const p = mapGeo.pos(n);
+  mapOwn.x = p.x + Math.cos(mapOwn.ang) * MAP_OWN_R;
+  mapOwn.y = p.y + Math.sin(mapOwn.ang) * MAP_OWN_R;
+}
+// From the stone it is on to stone n, in a leap; onLand runs as it touches the water again
+function hopMapKoi(n, onLand) {
+  const o = mapOwn;
+  if (!o) return;
+  const a = mapGeo.pos(o.n), b = mapGeo.pos(n);
+  // It lands on the side of the new stone that faces the old one, and swims on round from there
+  const land = Math.atan2(a.y - b.y, a.x - b.x) + 0.5;
+  o.hop = { from: { x: o.x, y: o.y }, to: { x: b.x + Math.cos(land) * MAP_OWN_R, y: b.y + Math.sin(land) * MAP_OWN_R }, t: 0, land, n, onLand };
+}
+function stepMapOwn(dt) {
+  const o = mapOwn;
+  if (!o || !mapGeo) return;
+  if (o.hop) {
+    const h = o.hop;
+    h.t = Math.min(1, h.t + dt / MAP_OWN_HOP);
+    const k = h.t < 0.5 ? 2 * h.t * h.t : 1 - 2 * (1 - h.t) * (1 - h.t);
+    const px = o.x, py = o.y;
+    o.x = h.from.x + (h.to.x - h.from.x) * k;
+    o.y = h.from.y + (h.to.y - h.from.y) * k;
+    if (Math.hypot(o.x - px, o.y - py) > 0.3) o.a = Math.atan2(o.y - py, o.x - px);
+    o.amp = 1.5;
+    o.turn = 0;
+    o.phase += dt * 14;
+    if (h.t >= 1) {
+      o.hop = null;
+      o.n = h.n;
+      o.ang = h.land;
+      o.spin = o.spinTarget = MAP_OWN_SPIN * 1.8;
+      o.burstIn = 1.2;
+      const w = $("mapWorld").getBoundingClientRect();
+      splash(w.left + o.x, w.top + o.y, 0);
+      ring("tap-ring map-tap", w.left + o.x, w.top + o.y);
+      if (h.onLand) h.onLand();
+    }
+    return;
+  }
+  // Round the stone: the speed drifts, and every few seconds there is a short burst or a slow glide
+  o.burstIn -= dt;
+  if (o.burstIn <= 0) {
+    o.spinTarget = MAP_OWN_SPIN * (Math.random() < 0.3 ? 1.9 : 0.55 + Math.random() * 0.7);
+    o.burstIn = 2.5 + Math.random() * 3.5;
+  }
+  o.spin += (o.spinTarget - o.spin) * Math.min(1, dt * 0.9);
+  o.ang += o.spin * dt;
+  // The lap is not a perfect circle: it swings a little wider and closer
+  const r = MAP_OWN_R + Math.sin(o.ang * 2 + o.phase * 0.05) * 5, p = mapGeo.pos(o.n);
+  const nx = p.x + Math.cos(o.ang) * r, ny = p.y + Math.sin(o.ang) * r;
+  o.a = Math.atan2(ny - o.y, nx - o.x) || o.ang + Math.PI / 2;
+  o.x = nx; o.y = ny;
+  o.turn = o.spin;
+  const speed = o.spin * r, ampTarget = Math.min(1.4, 0.45 + Math.abs(o.spinTarget - o.spin) * 0.8 + speed / 60);
+  o.amp += (ampTarget - o.amp) * Math.min(1, dt * 1.5);
+  o.phase += dt * (1.8 + speed * 0.09 + o.amp * 2.2);
+}
+function drawMapOwn(dpr) {
+  const o = mapOwn, cv = mapSwim && mapSwim.over;
+  if (!cv) return;
+  const c = cv.getContext("2d");
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, cv.width, cv.height);
+  if (!o || !o.n) return;
+  c.setTransform(dpr, 0, 0, dpr, 0, -mapSwim.top * dpr);
+  if (!o.hop) { drawFish(c, [o], 1, 0.35); return; }
+  // In the air: bigger as it rises, its shadow left behind on the water below
+  const lift = Math.sin(Math.PI * o.hop.t), s = 1 + 0.35 * lift;
+  c.save();
+  c.translate(o.x, o.y - 46 * lift);
+  c.scale(s, s);
+  c.translate(-o.x, -o.y);
+  drawFish(c, [o], 1, 0.35 * (1 - lift));
+  c.restore();
 }
 let mapChapterNow = 1;
 function mapChapterInView() {
@@ -148,7 +289,8 @@ function mapChapterInView() {
   const first = (c - 1) * PER_CHAPTER + 1;
   let doneN = 0, starsN = 0;
   for (let n = first; n < first + PER_CHAPTER; n++) if (journey.stars[n] !== undefined) { doneN++; starsN += +journey.stars[n] || 0; }
-  $("mapProgress").textContent = `${doneN}/${PER_CHAPTER} levels · ${starsN}/${PER_CHAPTER * 3} ★`;
+  $("mapProgress").textContent = `${doneN}/${PER_CHAPTER} levels · ${starsN}/${PER_CHAPTER * 3} ★`
+    + (first >= TRAIL_FROM ? ` · lotus ${trailText(trailRound(first))}` : "");
   if (changed && mapBannerReady) {
     const b = $("mapBanner");
     b.innerHTML = `<small>Chapter ${c}</small>${chapterName(c)}`;
@@ -185,29 +327,48 @@ function openMap() {
     placeMapKoi(seen);
     const next = $("mapWorld").querySelector(`.step[data-n="${cur}"]`);
     if (next) next.classList.add("rising");
-    setTimeout(() => {
-      const a = mapGeo.pos(seen), b = mapGeo.pos(cur), el = $("mapKoi");
-      el.animate([
-        { left: a.x + "px", top: a.y + "px" },
-        { left: (a.x + b.x) / 2 + "px", top: Math.min(a.y, b.y) - 50 + "px", offset: 0.5 },
-        { left: b.x + "px", top: b.y + "px" }
-      ], { duration: 700, easing: "cubic-bezier(0.645, 0.045, 0.355, 1)" });
-      placeMapKoi(cur);
-      setTimeout(() => { if (next) next.classList.add("rose"); bowl(4, 0.04); }, 650);
-    }, 450);
+    // Half a lap round the old stone first, then the leap
+    setTimeout(() => hopMapKoi(cur, () => { if (next) next.classList.add("rose"); bowl(4, 0.04); buzz(10); }), 700);
   } else placeMapKoi(cur);
   journey.mapSeen = cur;
   saveJourney();
+  huntAt = 0;
+  paintHunt();
   startMapLife();
 }
 function closeMap() { $("mapView").hidden = true; stopMapLife(); }
-$("mapScroll").addEventListener("scroll", () => { if (mapGeo) mapChapterInView(); }, { passive: true });
+/* ---------- Star hunt ----------
+   Levels that are won but have fewer than three stars (skipped ones too). The button on the map counts them and
+   scrolls to the next one each time it is tapped; the stone pulses, and a tap on it plays the level again. */
+let huntAt = 0;
+const huntLevels = () => { const out = []; for (let n = 1; n < currentLevel(); n++) if ((journey.stars[n] || 0) < 3) out.push(n); return out; };
+function paintHunt() {
+  const list = huntLevels(), b = $("mapHunt");
+  b.hidden = !list.length;
+  if (list.length) b.innerHTML = `<span>★★★</span> ${list.length} ${list.length === 1 ? "level" : "levels"} to perfect`;
+}
+$("mapHunt").addEventListener("click", () => {
+  const list = huntLevels();
+  if (!list.length || !mapGeo) return;
+  // The next one after the last stone shown, so every tap moves on
+  const n = list.find(k => k > huntAt) || list[0];
+  huntAt = n;
+  const sc = $("mapScroll"), st = journey.stars[n] || 0;
+  sc.scrollTo({ top: mapGeo.pos(n).y - sc.clientHeight * 0.5, behavior: reduceMotion ? "auto" : "smooth" });
+  $("mapWorld").querySelectorAll(".step.hunt").forEach(el => el.classList.remove("hunt"));
+  const step = $("mapWorld").querySelector(`.step[data-n="${n}"]`);
+  if (step) step.classList.add("hunt");
+  $("mapHunt").innerHTML = `Level ${n} · ${st ? "★".repeat(st) : "skipped"} · tap the stone to play it again`;
+  tick();
+});
+$("mapScroll").addEventListener("scroll", () => { if (mapGeo) mapChapterInView(); if (reduceMotion) drawMapFish(); }, { passive: true });
 /* Light moving on the water, and the chapter's petals, leaves, snow or fireflies drifting over the map */
 const mapCv = $("mapFx"), mapCx = mapCv.getContext("2d");
 let mapLife = null;
 function startMapLife() {
   stopMapLife();
-  if (reduceMotion) return;
+  // With reduced motion the koi hold still: drawn once here, and again as the map scrolls
+  if (reduceMotion) { drawMapFish(); return; }
   const dpr = Math.min(2, devicePixelRatio || 1);
   const life = mapLife = { raf: 0, last: performance.now(), kindName: "", list: [], W: 0, H: 0 };
   const frame = now => {
@@ -215,6 +376,9 @@ function startMapLife() {
     life.raf = requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - life.last) / 1000);
     life.last = now;
+    stepMapFish(dt);
+    stepMapOwn(dt);
+    drawMapFish();
     const W = mapCv.clientWidth, H = mapCv.clientHeight;
     if (W !== life.W || H !== life.H) { life.W = W; life.H = H; mapCv.width = W * dpr; mapCv.height = H * dpr; }
     mapCx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -222,21 +386,18 @@ function startMapLife() {
     drawShimmer(mapCx, W, H, now / 1000, 0.75);
     const scene = SCENES[sceneOfChapter(mapChapterNow)], kindName = scene.air, kind = AIR[kindName];
     if (kindName !== life.kindName || scene.id !== life.scene) {
-      life.kindName = kindName;
       life.scene = scene.id;
       life.flies = MAP_BUTTERFLIES.has(scene.id) ? [...Array(prefs.calm ? 2 : 4)].map(() => butterfly(W, H)) : [];
       if (kind && kind.img) worldImage(kind.img);
       life.list = kind ? [...Array(Math.round(kind.n * (prefs.calm ? 0.5 : 1)))].map(() => airBit(kind, W, H, false)) : [];
     }
-    // The map is big and calm: leaves, petals and snow drift a little slower than round the board
-    drawAirBits(mapCx, kind, life.list, W, H, dt * MAP_AIR_PACE, now);
-    drawButterflies(mapCx, life.flies || [], W, H, dt * 0.6, now);
+    drawAirBits(mapCx, kind, life.list, W, H, dt, now);
+    drawButterflies(mapCx, life.flies || [], W, H, dt, now);
     mapCx.globalAlpha = 1;
   };
   life.raf = requestAnimationFrame(frame);
 }
 // Butterflies over the chapters with gardens and flowers: wandering, wings beating
-const MAP_AIR_PACE = 0.3;
 const MAP_BUTTERFLIES = new Set(["koi-pond", "bamboo-grove", "lotus-lake", "cherry-hill", "tea-house"]);
 const BUTTERFLY_COLOURS = ["#ffd75e", "#ff9ec4", "#ffffff", "#9fd8ff", "#ffb36b"];
 const butterfly = (W, H) => ({ x: Math.random() * W, y: Math.random() * H, a: Math.random() * 6.28, ph: Math.random() * 6.28,
@@ -271,7 +432,7 @@ function drawButterflies(c, list, W, H, dt, now) {
 function stopMapLife() { if (mapLife) cancelAnimationFrame(mapLife.raf); mapLife = null; mapCx.clearRect(0, 0, mapCv.width, mapCv.height); }
 $("mapWorld").addEventListener("click", e => {
   const b = e.target.closest(".step");
-  if (!b) return;
+  if (!b) { if (!reduceMotion) mapFishTap(e); return; }
   const n = +b.dataset.n;
   if (n > currentLevel()) { restartClass(b, "nope"); knock(); return; }
   closeMap();
@@ -279,7 +440,7 @@ $("mapWorld").addEventListener("click", e => {
 });
 function openLevelIntro() {
   const L = levelDef(S.level);
-  $("levelEyebrow").textContent = `Level ${S.level} · ${L.hard ? "Hard · double pearls" : chapterName(chapterOf(S.level))}`;
+  $("levelEyebrow").textContent = `Level ${S.level} · ${L.hard ? "Hard · double pearls" : chapterName(chapterOf(S.level))}` + (S.replay ? " · playing again" : "");
   // A view of the garden this level is played in, at its time of day
   const sc = sceneNowFor(S), ls = $("levelScene");
   ls.style.backgroundImage = `url(${sceneImg(sc.k)})`;
@@ -287,13 +448,19 @@ function openLevelIntro() {
   $("levelSceneName").textContent = `Chapter ${chapterOf(S.level)} · ${chapterName(chapterOf(S.level))}`
     + (sc.rain ? " · rain" : sc.phase === "gold" ? " · afternoon" : sc.phase === "dusk" ? " · dusk" : "");
   $("levelGoal").textContent = goalText(L);
-  $("levelPieces").textContent = `${L.pieces} pieces`;
-  $("levelStars").textContent = L.s2 ? `Stars: 1 for the goal, 2 at ${L.s2} points, 3 at ${L.s3}.` : "Stars: 1 for the goal, more for a high score.";
+  $("levelPieces").textContent = `${S.limit} pieces` + (S.help ? ` · ${S.help} extra to help you through` : "");
+  $("levelStars").textContent = L.p2 ? `Stars: 1 for the goal, 2 with ${L.p2} ${L.p2 === 1 ? "piece" : "pieces"} left, 3 with ${L.p3} left.`
+    : L.s2 ? `Stars: 1 for the goal, 2 at ${L.s2} points, 3 at ${L.s3}.` : "Stars: 1 for the goal, more for a high score.";
   // What is new on this level always shows; a calm tip only now and then, so the card stays short
   const note = S.tut === 1 ? "Start by filling the glowing square in the middle."
     : NEW_IN[S.level] || (S.level % 4 === 1 ? TIPS[(S.level - 1) % TIPS.length] : "");
   $("levelNote").textContent = note;
   $("levelNote").hidden = !note;
+  const trail = $("levelTrail");
+  trail.hidden = !L.trail;
+  if (L.trail) trail.innerHTML = `<img src="img/lotus.webp" alt=""><span><b>Lotus trail</b> · `
+    + (L.goal === "lotus" ? `the first ${TRAIL_PER_LEVEL} flowers count` : `collect the ${TRAIL_PER_LEVEL} lotus flowers before you finish`)
+    + ` · ${trailText(trailRound(S.level))}</span>`;
   $("levelCard").querySelector(".stars-help").open = false;
   const cur = $("levelCurrent");
   cur.hidden = !!S.tut;
@@ -301,10 +468,11 @@ function openLevelIntro() {
     const s = journey.streak || 0;
     const waiting = S.jokers.length ? `You start with <b>${jokerList(S.jokers)}</b>${S.gift ? ", one a gift from your basket" : ""}.` : "";
     cur.innerHTML = currentRow(s, false) + `<p>${s
-      ? `<b>Win streak ×${s}</b> · ${waiting}`
+      ? `<b>Win streak ×${s}</b>${journey.shield ? " · shield ready" : ""} · ${waiting}`
       : `${waiting ? waiting + " " : ""}Win levels in a row for a <b>win streak</b>: jokers ready at the start.`}</p>`;
   }
-  $("levelShop").hidden = !!S.tut || S.jokers.length >= MAX_JOKERS;
+  $("levelShop").hidden = !!S.tut || (S.jokers.length >= MAX_JOKERS && !!journey.shield);
+  $("levelShop").innerHTML = `<i class="pearl"></i> ${S.jokers.length >= MAX_JOKERS ? "Get a streak shield" : "Bring a joker"}`;
   openCard("levelCard");
 }
 $("levelShop").addEventListener("click", () => openJokerShop(openLevelIntro));
@@ -350,9 +518,15 @@ function winLevel() {
   // and s3 (what the tuning bot scores in an average and a good win). Levels without them fall back on pieces left.
   // Extra pieces from a video cap it at one star, five pieces bought with pearls at two.
   const L = levelDef(S.level);
-  const earned = L.s2 ? (S.score >= L.s3 ? 3 : S.score >= L.s2 ? 2 : 1) : ratio >= 0.45 ? 3 : ratio >= 0.25 ? 2 : 1;
+  // On boards where the score is mostly luck (p2 and p3 instead of s2 and s3) the stars are for pieces left.
+  const earned = L.p2 ? (left >= L.p3 ? 3 : left >= L.p2 ? 2 : 1)
+    : L.s2 ? (S.score >= L.s3 ? 3 : S.score >= L.s2 ? 2 : 1) : ratio >= 0.45 ? 3 : ratio >= 0.25 ? 2 : 1;
   S.stars = S.extra ? 1 : Math.min(S.paidPieces ? 2 : 3, earned);
-  S.pearls = (10 + 5 * S.stars) * (levelDef(S.level).hard ? 2 : 1);
+  // A level that is already won pays only for stars it did not have, and does not move the win streak or the chest:
+  // otherwise level 1, played again and again, gave pearls, chests and three jokers for any Hard level.
+  const hadStars = journey.stars[S.level] || 0;
+  S.replay = hadStars > 0;
+  S.pearls = (S.replay ? 5 * Math.max(0, S.stars - hadStars) : 10 + 5 * S.stars) * (L.hard ? 2 : 1);
   // The last level of a chapter, the first time: a pearl bonus and the next chapter opens
   S.chapterDone = S.level % PER_CHAPTER === 0 && journey.unlocked <= S.level;
   if (S.chapterDone) S.pearls += CHAPTER_PEARLS;
@@ -371,14 +545,43 @@ function winLevel() {
     S.newKoi = chapterKoi;
     initKoi();
   }
+  // A milestone koi for the fifth and tenth level of chapters 2-10
+  const mileKoi = milestoneKoiIndex(S.level);
+  if (mileKoi >= 0 && !journey.koi.includes(mileKoi)) {
+    journey.koi.push(mileKoi);
+    S.newKoi = mileKoi;
+    initKoi();
+  }
+  // The lotus trail: up to three flowers count for a level, the best win is kept, and each round has three gifts
+  S.trail = null;
+  if (L.trail) {
+    const round = trailRound(S.level), before = trailCount(round);
+    journey.lotus = journey.lotus || {};
+    journey.trail = journey.trail || [];
+    const got = Math.min(TRAIL_PER_LEVEL, S.lotusGot || 0);
+    if (got > (journey.lotus[S.level] || 0)) journey.lotus[S.level] = got;
+    const now = trailCount(round);
+    S.trail = { got, gain: now - before, round, pearls: 0 };
+    TRAIL_GOALS.forEach((at, i) => {
+      const key = `${round}:${i}`;
+      if (now < at || journey.trail.includes(key)) return;
+      journey.trail.push(key);
+      journey.pearls += TRAIL_PEARLS[i];
+      S.trail.pearls += TRAIL_PEARLS[i];
+      const ki = i === TRAIL_GOALS.length - 1 ? trailKoiIndex(round) : -1;
+      const newKoi = ki >= 0 && !journey.koi.includes(ki);
+      if (newKoi) { journey.koi.push(ki); S.newKoi = ki; initKoi(); }
+      setTimeout(() => notify(`Lotus trail · ${at} flowers`, `+${TRAIL_PEARLS[i]} pearls` + (newKoi ? ` and a new koi: ${ALL_KOI[ki].name}` : ""), true), 2200 + i * 300);
+    });
+  }
   journey.stars[S.level] = Math.max(journey.stars[S.level] || 0, S.stars);
   journey.unlocked = Math.max(journey.unlocked, S.level + 1);
   delete journey.fails[S.level];
-  journey.streak = (journey.streak || 0) + 1;
-  fillChest();
+  if (S.replay) S.chestOpened = null;
+  else { journey.streak = (journey.streak || 0) + 1; fillChest(); }
   saveJourney();
   tasksAdd({ stars: S.stars });
-  track("level_end", { level: S.level, result: "win", stars: S.stars, data: { left, jokers: S.jokersUsed || 0, rescued: !!S.rescued, extra: !!S.extra } });
+  track("level_end", { level: S.level, result: "win", stars: S.stars, data: { left, help: S.help || 0, replay: S.replay, jokers: S.jokersUsed || 0, rescued: !!S.rescued, extra: !!S.extra } });
   setTimeout(() => checkStyleUnlocks(false), 1500);
   if (S.chapterDone) setTimeout(() => notify(`Chapter ${chapterOf(S.level)} complete · +${CHAPTER_PEARLS} pearls`, `${chapterName(chapterOf(S.level) + 1)} is open`, true), 2600);
   render();
@@ -390,8 +593,8 @@ function showWin() {
   $("winScore").textContent = S.score;
   $("winStats").innerHTML = `<b>+${S.bonus - (S.jokerBonus || 0)}</b> for pieces left`
     + (S.jokerBonus ? ` · <b>+${S.jokerBonus}</b> from unused jokers` : "")
-    + ` · <b>+${S.pearls * (S.doubled ? 2 : 1)}</b> pearls`;
-  $("winDouble").hidden = S.doubled;
+    + (S.replay && !S.pearls ? " · played again: pearls come with new stars" : ` · <b>+${S.pearls * (S.doubled ? 2 : 1)}</b> pearls`);
+  $("winDouble").hidden = S.doubled || !S.pearls;
   $("winKoi").hidden = !(S.newKoi >= 0);
   if (S.newKoi >= 0) {
     $("winKoiName").textContent = `New koi: ${ALL_KOI[S.newKoi].name}`;
@@ -399,13 +602,18 @@ function showWin() {
   }
   $("winNext").innerHTML = `Level ${S.level + 1}<small>${goalText(levelDef(S.level + 1))}</small>`;
   paintChest();
+  const tr = $("winTrail");
+  tr.hidden = !S.trail;
+  if (S.trail) tr.innerHTML = `<img src="img/lotus.webp" alt=""><span><b>Lotus trail</b> · ${S.trail.got} of ${TRAIL_PER_LEVEL} flowers here`
+    + (S.trail.gain ? ` · +${S.trail.gain}` : S.trail.got ? " · no more than your best" : "") + ` · ${trailText(S.trail.round)}</span>`;
   // Enough stars for something in the garden: say what, and open the garden with one tap
   const pick = gardenAffordable();
   $("winGarden").hidden = !pick;
   if (pick) $("winGarden").innerHTML = `<span class="gn-star">★ ${starsToSpend()}</span><span class="gn-text">Enough to restore the <b>${pick.name.toLowerCase()}</b> in your garden</span><span class="gn-go">Garden ›</span>`;
   const s = journey.streak || 0, step = CURRENT_STEPS.find(st => st.at === s);
-  $("winCurrent").innerHTML = currentRow(s, S.bank === undefined) + `<p><b>Win streak ×${s}</b> · `
-    + (step ? `New: ${JOKERS[step.joker].name}! ` : "") + `Next level starts with ${jokerList(currentJokers(s))}.</p>`;
+  $("winCurrent").hidden = S.replay && !s;
+  $("winCurrent").innerHTML = currentRow(s, S.bank === undefined && !S.replay) + `<p><b>Win streak ×${s}</b> · `
+    + (S.replay ? "A level played again leaves your streak as it is." : (step ? `New: ${JOKERS[step.joker].name}! ` : "") + `Next level starts with ${jokerList(currentJokers(s))}.`) + "</p>";
   openCard("winCard");
   if (S.bank === undefined) { winSound(S.stars); starsLand(S.stars); } else bowl(6, 0.05);
   // Pearls fly from the reward line into the pearl count, once per reward
@@ -443,8 +651,12 @@ function showFail(reason) {
     failSound();
     journey.fails[S.level] = (journey.fails[S.level] || 0) + 1;
     S.failCounted = true;
-    // The current ends here; keeping going with a video and winning brings it back
-    if (journey.streak) { S.lostStreak = journey.streak; journey.streak = 0; }
+    // The streak drops one step here; keeping going with a video and winning brings it back
+    // (not on a level played again: that neither builds the streak nor costs it)
+    // A streak shield takes the loss instead, once
+    S.shielded = 0;
+    if (journey.streak && !S.replay && journey.shield) { journey.shield = false; S.shielded = journey.streak; }
+    else if (journey.streak && !S.replay) { S.lostStreak = journey.streak; journey.streak = streakAfterLoss(journey.streak); }
     saveJourney();
     track("level_end", { level: S.level, result: "fail", data: { reason, jokers: S.jokersUsed || 0 } });
   }
@@ -473,10 +685,15 @@ function showFail(reason) {
   }
   $("failSkip").hidden = (journey.fails[S.level] || 0) < 3;
   const lost = $("failCurrent");
-  lost.hidden = !S.lostStreak;
-  if (S.lostStreak) lost.innerHTML = rescue.hidden
-    ? `Your <b>win streak ×${S.lostStreak}</b> has ended. Win a level to start a new one.`
-    : `Keep going to save your <b>win streak ×${S.lostStreak}</b>.`;
+  lost.hidden = !S.lostStreak && !S.shielded;
+  if (S.shielded) lost.innerHTML = `Your <b>streak shield</b> kept your win streak ×${S.shielded}. The shield is used up.`;
+  if (S.lostStreak) {
+    const kept = streakAfterLoss(S.lostStreak);
+    const now = kept ? `Your <b>win streak</b> slips from ×${S.lostStreak} to ×${kept}. You still start with ${jokerList(currentJokers(kept))}.`
+      : `Your <b>win streak ×${S.lostStreak}</b> has ended. Win a level to start a new one.`;
+    lost.innerHTML = rescue.hidden ? now : `Keep going to save your <b>win streak ×${S.lostStreak}</b>.`
+      + (kept ? ` Otherwise it slips to ×${kept}.` : "");
+  }
   openCard("failCard");
 }
 $("failRescue").addEventListener("click", () => {
@@ -531,6 +748,8 @@ $("failSkip").addEventListener("click", () => showAd("skip", () => {
 }));
 $("swapBtn").addEventListener("click", () => {
   if (S.mode !== "journey" || S.over || drag || !overlay.hidden) return;
+  // Nothing to swap when the pieces are used up and only jokers are left: do not take pearls or a video for it
+  if (!S.tray.some(Boolean)) { toast("No pieces to swap"); return; }
   const swap = () => { clearHint(); S.tray = S.tray.map(p => p && fairPiece(10, 2)); enterAll(); closeOverlay(); render(); tick(); };
   if (journey.pearls >= SWAP_COST) { journey.pearls -= SWAP_COST; saveJourney(); swap(); }
   else showAd("swap", swap);
@@ -556,7 +775,8 @@ function findHint() {
           if (S.board[i] === KOI) score += 60;
           if (S.preset && S.preset[i]) score += 15;
           if (S.board[i] === BAMBOO) score += 40;
-          if (S.lotus && S.lotus[i]) score += 60;
+          // A lotus is worth most when it is the goal; on the lotus trail it is a bonus
+          if (S.lotus && S.lotus[i]) score += S.mode === "journey" && levelDef(S.level).goal !== "lotus" ? 20 : 60;
         });
         cells.forEach(i => {
           const rr = Math.floor(i / N), cc = i % N;
@@ -586,6 +806,8 @@ function showHint() {
 }
 $("hintBtn").addEventListener("click", () => {
   if (S.mode === "daily" || S.over || drag || !overlay.hidden) return;
+  // No piece fits anywhere (a joker is keeping the round alive): say so instead of taking pearls for nothing
+  if (!findHint()) { toast(S.jokers && S.jokers.length ? "No piece fits · use your joker koi" : "No piece fits"); return; }
   if (journey.pearls >= HINT_COST) { journey.pearls -= HINT_COST; saveJourney(); showHint(); }
   else showAd("hint", showHint);
 });
@@ -597,7 +819,7 @@ function canRestore() {
     && (!daily.restoredOn || daysBetween(daily.restoredOn, today().key) >= 7);
 }
 function updateModes() {
-  ["Journey", "Endless", "Daily"].forEach(m => $("mode" + m).setAttribute("aria-pressed", String(S.mode === m.toLowerCase())));
+  ["Journey", "Endless", "Daily"].forEach(m => $("mode" + m).setAttribute("aria-pressed", String(modeId(S) === m.toLowerCase())));
   // On a Journey level the board gets the room: Endless and Daily are on the home screen
   document.querySelector("header .modes").hidden = S.mode === "journey";
   const t = today();

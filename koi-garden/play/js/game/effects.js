@@ -665,13 +665,17 @@ function drawSwimmers() {
   drawWorld(kx, W, H, t);
   drawMoonlight(kx, W, H, t, 0.7);
 }
+let koiSeenAt = 0;
+const pondCovered = () => pondOpen || (!homeEl.hidden && !homeEl.classList.contains("opening")) || !$("mapView").hidden || !$("gardenView").hidden;
 function koiLoop(now) {
   if (document.hidden) { koiPaused = true; return; }
   const dt = Math.min(0.05, (now - lastKoi) / 1000 || 0.016);
   lastKoi = now;
-  // The full koi pond covers the screen, so the background can rest
   requestAnimationFrame(koiLoop);
-  if (!pondOpen) {
+  // The home screen with its doors shut, the map, the garden and the full koi pond each cover the whole screen, so
+  // the background rests under them. It keeps going for a second after it is covered, while doors still slide shut.
+  if (!pondCovered()) koiSeenAt = now;
+  if (now - koiSeenAt < 1000) {
     // With a garden above the board the koi keep to the water below it, and a big combo draws them in
     const top = sceneTop(), lure = koiAttractor();
     if (lure) lure.bits[0] = { x: lure.bits[0].x, y: lure.bits[0].y - top };

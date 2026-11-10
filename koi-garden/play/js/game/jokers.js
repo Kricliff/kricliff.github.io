@@ -2,28 +2,31 @@
 // Part of the game. All files in js/game/ share one scope and load in the order index.html lists.
 
 /* ---------- Joker koi ---------- */
+// The joker is in the game the moment it is earned, so the end-of-round check after the same move sees it: a joker
+// earned with the very last piece used to be lost, because the level was called over before it arrived. Only the
+// announcement waits for the clear to play out.
 function grantJoker(type) {
   if (S.over) return;
   if (!S.jokers) S.jokers = [];
-  if (S.jokers.length >= MAX_JOKERS) {
-    journey.pearls += 10;
-    saveJourney();
-    toast("Joker spot full · +10 pearls");
-    return;
-  }
-  S.jokers.push(type);
-  renderJoker();
-  restartClass(jokerSlot, "gain");
-  toast(`${JOKERS[type].name}!`);
-  bowl(5, 0.04);
-  // The first time each kind is earned, its card shows what it does
-  let seen = [];
-  try { seen = JSON.parse(localStorage.getItem("mb-joker-seen") || "[]"); } catch (e) {}
-  if (!Array.isArray(seen)) seen = [];
-  if (!seen.includes(type)) {
-    try { localStorage.setItem("mb-joker-seen", JSON.stringify(seen.concat(type))); } catch (e) {}
-    setTimeout(() => { if (overlay.hidden && !S.over) openJokerCard(type, true); }, 900);
-  }
+  const game = S, full = S.jokers.length >= MAX_JOKERS;
+  if (full) { journey.pearls += 10; saveJourney(); }
+  else S.jokers.push(type);
+  setTimeout(() => {
+    if (S !== game) return;
+    if (full) { toast("Joker spot full · +10 pearls"); return; }
+    renderJoker();
+    restartClass(jokerSlot, "gain");
+    toast(`${JOKERS[type].name}!`);
+    bowl(5, 0.04);
+    // The first time each kind is earned, its card shows what it does
+    let seen = [];
+    try { seen = JSON.parse(localStorage.getItem("mb-joker-seen") || "[]"); } catch (e) {}
+    if (!Array.isArray(seen)) seen = [];
+    if (!seen.includes(type)) {
+      try { localStorage.setItem("mb-joker-seen", JSON.stringify(seen.concat(type))); } catch (e) {}
+      setTimeout(() => { if (S === game && overlay.hidden && !S.over) openJokerCard(type, true); }, 900);
+    }
+  }, 500);
 }
 // A card with a small board that shows which stones the joker takes
 function openJokerCard(type, earned) {
@@ -76,7 +79,23 @@ function paintJokerShop() {
     return `<button class="shop-item" data-type="${type}"${can ? "" : " disabled"} aria-label="${j.name}, ${j.does}, ${price} pearls">`
       + `<img src="${ALL_KOI[j.koi].img}" alt=""><span class="shop-what"><b>${j.name}</b><small>${j.short}</small></span>`
       + `<span class="shop-price"><i class="pearl"></i>${price}</span></button>`;
-  }).join("");
+  }).join("")
+    // The streak shield is not a joker: it waits until a level is lost, and then keeps the win streak
+    + `<button class="shop-item" data-type="shield"${!journey.shield && journey.pearls >= SHIELD_COST ? "" : " disabled"} aria-label="Streak shield, keeps your win streak the next time you lose a level, ${SHIELD_COST} pearls">`
+    + `<span class="shield-pic" aria-hidden="true">${SHIELD_SVG}</span><span class="shop-what"><b>Streak shield</b><small>${journey.shield ? "You have one ready" : "Keeps your win streak through one lost level"}</small></span>`
+    + `<span class="shop-price"><i class="pearl"></i>${SHIELD_COST}</span></button>`;
+}
+const SHIELD_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.500-7-10V6z"/><path d="M9 12l2.200 2.200L15.500 10"/></svg>';
+function buyShield() {
+  if (journey.shield || journey.pearls < SHIELD_COST) return;
+  journey.pearls -= SHIELD_COST;
+  journey.shield = true;
+  saveJourney();
+  track("buy", { level: S.level, data: { kind: "shield", pearls: SHIELD_COST } });
+  chime(true);
+  buzz([10, 30, 10]);
+  closeJokerShop();
+  toast("Streak shield ready");
 }
 function buyJoker(type) {
   const price = JOKER_PRICE[type];
@@ -99,7 +118,7 @@ function closeJokerShop() {
   shopBack = null;
   if (back) back(); else closeOverlay();
 }
-$("shopList").addEventListener("click", e => { const b = e.target.closest(".shop-item"); if (b && !b.disabled) buyJoker(b.dataset.type); });
+$("shopList").addEventListener("click", e => { const b = e.target.closest(".shop-item"); if (b && !b.disabled) { if (b.dataset.type === "shield") buyShield(); else buyJoker(b.dataset.type); } });
 $("shopDone").addEventListener("click", closeJokerShop);
 // The stones a joker removes when it lands on cell (r, c)
 function jokerCells(type, r, c) {
@@ -225,6 +244,7 @@ function useJoker(r, c) {
   const token = clearToken = {};
   setTimeout(() => { if (clearToken === token) { clearing = {}; render(); } }, 900);
   if (S.mode === "endless" && S.score > endlessBest()) setEndlessBest(S.score);
+  if (S.mode === "endless") endlessPearls();
   tasksAdd(S.mode === "endless" ? { joker: 1, koi: freed, endless: S.score } : { joker: 1, koi: freed });
   render();
   if (S.mode === "journey") {
@@ -232,6 +252,20 @@ function useJoker(r, c) {
     if (piecesLeft() === 0 && !S.jokers.length) { S.over = true; setTimeout(() => showFail("out"), 650); return; }
   }
   checkOver();
+}
+// Pearls at 500, 1000 and 2000 points in one Endless game, each once a game
+function endlessPearls() {
+  let got = 0;
+  while ((S.mile || 0) < ENDLESS_PEARLS.length && S.score >= ENDLESS_PEARLS[S.mile || 0][0]) {
+    const [at, pearls] = ENDLESS_PEARLS[S.mile || 0];
+    S.mile = (S.mile || 0) + 1;
+    got += pearls;
+    notify(`Endless · ${at} points`, `+${pearls} pearls`, true);
+  }
+  if (!got) return;
+  S.pearls = (S.pearls || 0) + got;
+  journey.pearls += got;
+  saveJourney();
 }
 // Endless pressure: a grey rock lands on an empty spot that does not complete a line
 function dropRock() {
@@ -294,7 +328,11 @@ function checkOver() {
   // A joker can always make room, as long as there is an empty cell to drop it on. Out of pieces in the Journey,
   // the jokers only count if they could still reach the goal on their own.
   const outOfPieces = S.mode === "journey" && piecesLeft() === 0;
-  if (S.jokers && S.jokers.length && S.board.some(v => !v) && !(outOfPieces && !jokersCanStillWin())) return;
+  if (S.jokers && S.jokers.length && S.board.some(v => !v) && !(outOfPieces && !jokersCanStillWin())) {
+    // In the Daily and the Weekly the round waits for the jokers once the pieces are gone: say so, once
+    if (S.mode === "daily" && !S.tray.some(Boolean) && !S.jokerNote) { S.jokerNote = true; setTimeout(() => toast("Pieces used up · drop your joker koi to finish"), 700); }
+    return;
+  }
   const left = S.tray.filter(Boolean);
   if (!left.length || left.every(p => !fitsAnyTurn(p.g))) {
     S.over = true;

@@ -183,6 +183,7 @@ function paintHome() {
   $("homeDaily").querySelector(".hb-label").textContent = played ? `Done · ${liveStreak()}🔥` : "Daily";
   $("homeDaily").classList.toggle("ready", !played);
   $("homeKoi").querySelector(".hb-label").textContent = `Koi ${journey.koi.length}/${ALL_KOI.length}`;
+  $("homeWeekly").textContent = playedWeekly() ? "Weekly ✓" : "Weekly";
   $("homeGarden").querySelector(".hb-label").textContent = gardenBoughtCount() ? `Garden ${gardenBoughtCount()}/${GARDEN.length * 5}` : "Garden";
   // A dot when there are enough stars to restore something
   $("gardenDot").hidden = !gardenAffordable();
@@ -228,6 +229,7 @@ function showHome(animate) {
   sizeMoon();
   moonBoost = 0;
   startMoon();
+  setTimeout(maybeShowChallenge, 700);
   if (!animate || reduceMotion) { homeEl.classList.remove("opening"); return; }
   // Start with the doors open, then let them slide shut
   homeEl.classList.add("opening", "instant");
@@ -236,6 +238,49 @@ function showHome(animate) {
   requestAnimationFrame(() => homeEl.classList.remove("opening"));
   doors(false);
 }
+/* ---------- A challenge from a friend ----------
+   "Challenge a friend" on the Daily and Weekly cards shares a link to the web version of the game with the board's day
+   and the score to beat (?d=2026-11-10&s=532, and w=1 for the weekly). The link is read here, kept for as long as its
+   board lasts, and shown once on the home screen. The result card then sets the two scores side by side. */
+let challenge = null;
+(function readChallenge() {
+  try {
+    const q = new URLSearchParams(location.search), day = q.get("d"), score = Math.round(+q.get("s"));
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day || "") && score > 0 && score < 1e6) {
+      localStorage.setItem("mb-challenge", JSON.stringify({ day, score, weekly: q.get("w") === "1" }));
+      // Keep the address clean, so a reload or a shared link does not carry the challenge along
+      history.replaceState(null, "", location.pathname);
+    }
+    challenge = JSON.parse(localStorage.getItem("mb-challenge") || "null");
+  } catch (e) { challenge = null; }
+})();
+const challengeLive = () => challenge && challenge.day === (challenge.weekly ? thisWeek().key : today().key);
+function maybeShowChallenge() {
+  if (!challenge || challenge.shown || !overlay.hidden) return;
+  challenge.shown = true;
+  const W = challenge.weekly, name = W ? "this week’s challenge" : "today’s Daily";
+  if (!challengeLive()) {
+    try { localStorage.removeItem("mb-challenge"); } catch (e) {}
+    challenge = null;
+    info("That challenge has ended", `It was for an earlier board. ${W ? "This week’s challenge" : "Today’s Daily"} is waiting for you instead.`);
+    return;
+  }
+  const mine = (W ? weekly : daily).best[challenge.day];
+  $("challengeScore").textContent = challenge.score;
+  $("challengeTitle").textContent = `A friend scored ${challenge.score} on ${name}`;
+  $("challengeText").innerHTML = mine === undefined ? "You get the same board and the same pieces. Your first try is the one that counts."
+    : mine > challenge.score ? `Your official score is <b>${mine}</b>. You are ahead by ${mine - challenge.score}.`
+    : mine < challenge.score ? `Your official score is <b>${mine}</b>, ${challenge.score - mine} short. You can practise the board, but the official score stays.`
+    : `Your official score is <b>${mine}</b> too. Level!`;
+  $("challengePlay").textContent = mine === undefined ? (W ? "Play the Weekly" : "Play the Daily") : "See my result";
+  openCard("challengeCard");
+}
+$("challengePlay").addEventListener("click", () => {
+  const mode = challenge && challenge.weekly ? "weekly" : "daily";
+  closeOverlay();
+  if (!homeEl.hidden) enterGame(() => switchMode(mode)); else switchMode(mode);
+});
+$("challengeLater").addEventListener("click", closeOverlay);
 let homeBusy = false;
 function enterGame(after) {
   if (homeBusy || homeEl.hidden) return;
@@ -262,6 +307,7 @@ function homePlay() {
 $("homePlay").addEventListener("click", homePlay);
 $("homeMap").addEventListener("click", () => enterGame(openMap));
 $("homeEndless").addEventListener("click", () => enterGame(() => switchMode("endless")));
+$("homeWeekly").addEventListener("click", () => enterGame(() => switchMode("weekly")));
 $("homeDaily").addEventListener("click", () => enterGame(() => switchMode("daily")));
 $("homeTasks").addEventListener("click", () => openTasks(closeOverlay));
 $("homeShop").addEventListener("click", () => { if (overlay.hidden) openShop("board"); });
