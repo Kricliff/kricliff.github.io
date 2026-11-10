@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["7DDKQ97KTV.com.kricliff.mentalblock"],
+        "components": [
+          { "/": "/koi-garden/play/*", "?": { "d": "*" }, "comment": "Bare utfordringslenker (med ?d=) åpner appen" }
+        ]
+      }
+    ]
+  }
+}
