@@ -386,18 +386,21 @@ function startMapLife() {
     drawShimmer(mapCx, W, H, now / 1000, 0.75);
     const scene = SCENES[sceneOfChapter(mapChapterNow)], kindName = scene.air, kind = AIR[kindName];
     if (kindName !== life.kindName || scene.id !== life.scene) {
+      life.kindName = kindName;
       life.scene = scene.id;
       life.flies = MAP_BUTTERFLIES.has(scene.id) ? [...Array(prefs.calm ? 2 : 4)].map(() => butterfly(W, H)) : [];
       if (kind && kind.img) worldImage(kind.img);
       life.list = kind ? [...Array(Math.round(kind.n * (prefs.calm ? 0.5 : 1)))].map(() => airBit(kind, W, H, false)) : [];
     }
-    drawAirBits(mapCx, kind, life.list, W, H, dt, now);
-    drawButterflies(mapCx, life.flies || [], W, H, dt, now);
+    // The map is big and calm: leaves, petals and snow drift a little slower than round the board
+    drawAirBits(mapCx, kind, life.list, W, H, dt * MAP_AIR_PACE, now);
+    drawButterflies(mapCx, life.flies || [], W, H, dt * 0.6, now);
     mapCx.globalAlpha = 1;
   };
   life.raf = requestAnimationFrame(frame);
 }
 // Butterflies over the chapters with gardens and flowers: wandering, wings beating
+const MAP_AIR_PACE = 0.3;
 const MAP_BUTTERFLIES = new Set(["koi-pond", "bamboo-grove", "lotus-lake", "cherry-hill", "tea-house"]);
 const BUTTERFLY_COLOURS = ["#ffd75e", "#ff9ec4", "#ffffff", "#9fd8ff", "#ffb36b"];
 const butterfly = (W, H) => ({ x: Math.random() * W, y: Math.random() * H, a: Math.random() * 6.28, ph: Math.random() * 6.28,
