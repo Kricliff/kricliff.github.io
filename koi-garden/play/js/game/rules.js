@@ -147,7 +147,9 @@ const currentLevel = () => journey.unlocked;
 function switchMode(mode) {
   // Sign in to Game Center before a game that has a leaderboard, so the score can go up when it ends
   if (mode !== "journey" && typeof gcReady === "function") gcReady();
-  if (drag || (S && modeId(S) === mode)) return;
+  if (drag) return;
+  // Already in this mode: a round that is over shows its card again (after Home on the end card, for example)
+  if (S && modeId(S) === mode) { if (S.over && overlay.hidden) resumeOverCard(); return; }
   if (mode === "weekly") {
     if (!G.weekly || G.weekly.day !== thisWeek().key) startWeekly(playedWeekly());
     else S = G.weekly;

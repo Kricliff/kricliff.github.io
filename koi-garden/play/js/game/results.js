@@ -61,6 +61,8 @@ $("continueBtn").addEventListener("click", () => {
   });
 });
 $("againBtn").addEventListener("click", () => newGame(true, prefs.endless));
+// Back to the home screen: the doors slide shut. Endless on the home screen opens this card again.
+$("overHome").addEventListener("click", () => showHome(true));
 $("overTasks").addEventListener("click", () => openTasks(showOver));
 $("dailyTasks").addEventListener("click", () => openTasks(showDailyCard));
 $("overBreathe").addEventListener("click", () => showBreak(showOver));
