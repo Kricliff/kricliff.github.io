@@ -394,7 +394,7 @@ function startMapLife() {
     }
     // The map is big and calm: leaves, petals and snow drift a little slower than round the board
     drawAirBits(mapCx, kind, life.list, W, H, dt * MAP_AIR_PACE, now);
-    drawButterflies(mapCx, life.flies || [], W, H, dt * 0.6, now);
+    drawButterflies(mapCx, life.flies || [], W, H, dt);
     mapCx.globalAlpha = 1;
   };
   life.raf = requestAnimationFrame(frame);
@@ -404,15 +404,29 @@ const MAP_AIR_PACE = 0.3;
 const MAP_BUTTERFLIES = new Set(["koi-pond", "bamboo-grove", "lotus-lake", "cherry-hill", "tea-house"]);
 const BUTTERFLY_COLOURS = ["#ffd75e", "#ff9ec4", "#ffffff", "#9fd8ff", "#ffb36b"];
 const butterfly = (W, H) => ({ x: Math.random() * W, y: Math.random() * H, a: Math.random() * 6.28, ph: Math.random() * 6.28,
-  c: BUTTERFLY_COLOURS[Math.floor(Math.random() * BUTTERFLY_COLOURS.length)], s: 6 + Math.random() * 4 });
-function drawButterflies(c, list, W, H, dt, now) {
+  c: BUTTERFLY_COLOURS[Math.floor(Math.random() * BUTTERFLY_COLOURS.length)], s: 6 + Math.random() * 4,
+  t: Math.random() * 10, beat: 0, glide: Math.random() * 2, wing: Math.random() * 6.28 });
+// Everything runs on each butterfly's own clock (b.t), so none of it is tied to the screen's frame rate. Before, the
+// wings beat on the page clock almost four times a second without a pause, and only the drift across the map had been
+// slowed down: the butterflies still looked frantic. Now they flutter in short bouts, two beats a second, and glide
+// with open wings in between, drifting about 9 px a second.
+const BUTTERFLY_SPEED = 9, BUTTERFLY_BEAT = 2 * Math.PI * 2;
+function drawButterflies(c, list, W, H, dt) {
   list.forEach(b => {
-    b.a += Math.sin(now / 900 + b.ph) * 1.4 * dt;
-    b.x += Math.cos(b.a) * 24 * dt;
-    b.y += Math.sin(b.a) * 18 * dt;
+    b.t += dt;
+    // A bout of beats, then a glide, each a second or two
+    if (b.beat > 0) { b.beat -= dt; if (b.beat <= 0) b.glide = 1 + Math.random() * 1.8; }
+    else { b.glide -= dt; if (b.glide <= 0) b.beat = 0.8 + Math.random() * 1.2; }
+    b.wing += dt * (b.beat > 0 ? BUTTERFLY_BEAT : 0);
+    // A slow, wandering course: it leans one way, then the other
+    b.a += Math.sin(b.t * 0.45 + b.ph) * 0.5 * dt;
+    const v = BUTTERFLY_SPEED * (b.beat > 0 ? 1.15 : 0.8);
+    b.x += Math.cos(b.a) * v * dt;
+    b.y += Math.sin(b.a) * v * 0.8 * dt;
     if (b.x < -20) b.x = W + 15; else if (b.x > W + 20) b.x = -15;
     if (b.y < -20) b.y = H + 15; else if (b.y > H + 20) b.y = -15;
-    const flap = 0.25 + 0.75 * Math.abs(Math.sin(now / 85 + b.ph));
+    // Gliding, the wings stay almost open; beating, they close and open
+    const flap = b.beat > 0 ? 0.3 + 0.7 * Math.abs(Math.cos(b.wing / 2)) : 0.9;
     c.save();
     c.translate(b.x, b.y);
     c.rotate(b.a + Math.PI / 2);
