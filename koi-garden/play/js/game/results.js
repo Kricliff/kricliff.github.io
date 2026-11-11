@@ -185,6 +185,7 @@ function challengeLink() {
 $("dailyChallenge").addEventListener("click", () => {
   const btn = $("dailyChallenge"), score = (S.weekly ? weekly : daily).best[S.day];
   const text = `I scored ${score} on Koi Garden ${S.weekly ? "Weekly" : "Daily"} #${S.num}. Same board for you: can you beat it?`, url = challengeLink();
+  rememberOwnChallenge({ day: S.day, score, weekly: !!S.weekly });
   if (nativeApp && window.Capacitor.Plugins.Share) { window.Capacitor.Plugins.Share.share({ text, url }).catch(() => {}); return; }
   try { navigator.clipboard.writeText(`${text} ${url}`).then(() => { btn.textContent = "Link copied"; }, () => { btn.textContent = url; }); }
   catch (e) { btn.textContent = url; }

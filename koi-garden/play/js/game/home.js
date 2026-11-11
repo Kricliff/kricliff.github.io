@@ -276,21 +276,33 @@ function showHome(animate) {
    and the score to beat (?d=2026-11-10&s=532, and w=1 for the weekly). The link is read here, kept for as long as its
    board lasts, and shown once on the home screen. The result card then sets the two scores side by side. */
 let challenge = null;
-// Keeps the challenge in a link's query (?d=…&s=…&w=1). True when the link held one.
+const sameChallenge = (a, b) => !!a && !!b && a.day === b.day && a.score === b.score && !!a.weekly === !!b.weekly;
+const saveChallenge = () => { try { localStorage.setItem("mb-challenge", JSON.stringify(challenge)); } catch (e) {} };
+// The challenges this player shared: their own link coming back (tapped in Messages, say) is not a friend's challenge
+function ownChallenges() { try { return JSON.parse(localStorage.getItem("mb-challenge-mine") || "[]"); } catch (e) { return []; } }
+function rememberOwnChallenge(c) {
+  try { localStorage.setItem("mb-challenge-mine", JSON.stringify([c, ...ownChallenges().filter(o => !sameChallenge(o, c))].slice(0, 8))); } catch (e) {}
+}
+// Keeps the challenge in a link's query (?d=…&s=…&w=1). True when the link held a new one from someone else.
 function takeChallenge(search) {
   try {
     const q = new URLSearchParams(search), day = q.get("d"), score = Math.round(+q.get("s"));
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day || "") || !(score > 0 && score < 1e6)) return false;
-    challenge = { day, score, weekly: q.get("w") === "1" };
-    localStorage.setItem("mb-challenge", JSON.stringify(challenge));
+    const c = { day, score, weekly: q.get("w") === "1" };
+    if (ownChallenges().some(o => sameChallenge(o, c))) return false;
+    // The same link again (the app opened by it once more) keeps whether it has been shown
+    if (sameChallenge(challenge, c)) return !challenge.shown;
+    challenge = c;
+    saveChallenge();
     return true;
   } catch (e) { return false; }
 }
 (function readChallenge() {
   // In the browser the challenge comes in the page's own address; keep the address clean afterwards, so a reload or
   // a shared link does not carry it along
-  if (takeChallenge(location.search)) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
   try { challenge = JSON.parse(localStorage.getItem("mb-challenge") || "null"); } catch (e) { challenge = null; }
+  takeChallenge(location.search);
+  if (new URLSearchParams(location.search).has("d")) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
 })();
 // In the app the challenge comes through a Universal Link: a tap on a link to the web version opens the app instead
 // (apple-app-site-association on kricliff.github.io, and Associated Domains in App.entitlements). Shown straight away
@@ -304,7 +316,9 @@ function challengeFromLink(url) {
 const challengeLive = () => challenge && challenge.day === (challenge.weekly ? thisWeek().key : today().key);
 function maybeShowChallenge() {
   if (!challenge || challenge.shown || !overlay.hidden) return;
+  // Shown once: remembered, so it does not come back every time the app starts
   challenge.shown = true;
+  saveChallenge();
   const W = challenge.weekly, name = W ? "this week’s challenge" : "today’s Daily";
   if (!challengeLive()) {
     try { localStorage.removeItem("mb-challenge"); } catch (e) {}
