@@ -124,7 +124,6 @@ $("gardenDots").addEventListener("click", e => { const b = e.target.closest(".gd
 $("gardenPrev").addEventListener("click", () => { if (gardenArea > 0) { gardenArea--; paintGarden(); } });
 $("gardenNext").addEventListener("click", () => { if (gardenArea < GARDEN.length - 1) { gardenArea++; paintGarden(); } });
 $("gardenDone").addEventListener("click", closeGarden);
-$("homeGarden").addEventListener("click", () => openGarden());
 
 /* ---------- The garden comes alive ----------
    Small things move in the picture: the main tree sways once it is restored, and something drifts through the air in

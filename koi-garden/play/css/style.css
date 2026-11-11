@@ -2005,6 +2005,15 @@ html.big { font-size: 120%; }
   .home-logo { font-size: 1.8rem; padding: 7px 16px 7px; margin-top: 6px; }
   .home-logo small { margin-top: 6px; padding: 3px 11px; font-size: 0.66rem; }
   .hb-icon { width: 52px; height: 52px; }
+  .home-side { gap: 12px; }
+}
+/* Very short phones (iPhone SE): smaller badges so they stay clear of the play button */
+@media (max-height: 600px) {
+  .home-side { gap: 8px; }
+  .hb { width: 76px; }
+  .hb-icon { width: 46px; height: 46px; }
+  .hb-icon img { width: 50px; }
+  .hb-label { font-size: 0.68rem; padding: 2px 7px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2888,7 +2897,9 @@ html.big { font-size: 120%; }
 .rec-bars i.none { height: 4px; background: var(--card-line); }
 .rec-bars i.today { background: var(--accent); }
 .rec-bars-note { margin: 0; align-self: center; text-align: center; font-size: 0.76rem; color: var(--card-muted); }
-.home-links { flex-wrap: wrap; justify-content: center; }
+/* The other ways to play share one row under the big button, all the same width */
+.home-links { width: min(340px, 86%); }
+.home-link { flex: 1; padding: 8px 6px; white-space: nowrap; }
 
 /* ---------- The map, chapter by chapter (9 November 2026) ---------- */
 .zone { background-size: 100% auto; background-repeat: repeat-y; background-position: center top; }
@@ -2937,3 +2948,17 @@ html.big { font-size: 120%; }
 .shield-pic { width: 44px; height: 44px; flex: none; display: grid; place-items: center; color: var(--gold); }
 .shield-pic svg { width: 32px; height: 32px; }
 .map-bottom { flex-direction: column; align-items: center; }
+
+/* ---------- Challenges and Collection (11 November 2026) ---------- */
+/* Five badges round the moon window: three on the left, two on the right spread to the same height */
+.home-side.r { justify-content: space-between; height: var(--side-h, auto); }
+#homeChallenges .hb-icon.cal { background: url(../img/ui/calendars.webp) center 60% / 80% no-repeat, radial-gradient(circle at 40% 30%, var(--water-hi), var(--water-deep)); }
+/* The number sits in the middle of the front page, below the red strip, at any badge size */
+#homeChallenges .hb-icon.cal b { position: absolute; left: 52%; top: 59%; margin: 0; transform: translate(-50%, -50%); line-height: 1; }
+#homeCollection .hb-icon img.paint { width: 56px; transform: none; }
+.pick-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.pick-tile { position: relative; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 8px 12px; }
+.pick-tile img { width: 72px; height: 60px; object-fit: contain; margin-bottom: 4px; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.18)); }
+.pick-tile b { font-size: 1.1rem; }
+.pick-tile small { font-size: 0.78rem; font-weight: 500; opacity: 0.85; line-height: 1.25; }
+.pick-tile.ready::after { content: ""; position: absolute; top: 8px; right: 8px; width: 11px; height: 11px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px var(--card); }

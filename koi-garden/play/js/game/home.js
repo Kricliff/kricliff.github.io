@@ -178,17 +178,50 @@ function paintHome() {
   $("homeLanterns").querySelector(".hb-label").textContent = lanterns.count ? `${fest.short} ${lanterns.count}` : fest.short;
   $("homeLanterns").setAttribute("aria-label", `${fest.name}: ${lanterns.count} ${festUnit(fest, lanterns.count)} ${fest.verb} this week`);
   $("homeFestIcon").innerHTML = festIcon(fest.id);
+  // Challenges: today's date on the calendar, and a dot while today's Daily or this week's Weekly is still to play
   const t = today(), played = playedOfficial();
-  $("homeDaily").querySelector(".hb-icon b").textContent = t.num;
-  $("homeDaily").querySelector(".hb-label").textContent = played ? `Done · ${liveStreak()}🔥` : "Daily";
-  $("homeDaily").classList.toggle("ready", !played);
-  $("homeKoi").querySelector(".hb-label").textContent = `Koi ${journey.koi.length}/${ALL_KOI.length}`;
-  $("homeWeekly").textContent = playedWeekly() ? "Weekly ✓" : "Weekly";
-  $("homeGarden").querySelector(".hb-label").textContent = gardenBoughtCount() ? `Garden ${gardenBoughtCount()}/${GARDEN.length * 5}` : "Garden";
-  // A dot when there are enough stars to restore something
+  $("homeChallenges").querySelector(".hb-icon b").textContent = t.num;
+  $("homeChallenges").querySelector(".hb-label").textContent = played && liveStreak() ? `Challenges ${liveStreak()}🔥` : "Challenges";
+  $("homeChallenges").classList.toggle("ready", !played || !playedWeekly());
+  // Collection: a dot when there are enough stars to restore something in the garden
   $("gardenDot").hidden = !gardenAffordable();
 }
+
+/* ---------- Challenges and Collection: one button each on the home screen, a card with the two ways in ---------- */
+function pickTile(id, img, title, status, ready) {
+  return `<button class="btn pick-tile${ready ? " ready" : ""}" data-pick="${id}"><img src="img/${img}" alt=""><b>${title}</b><small>${status}</small></button>`;
+}
+function openChallenges() {
+  const played = playedOfficial(), wPlayed = playedWeekly(), streak = liveStreak();
+  $("pickEyebrow").textContent = "Challenges";
+  $("pickTitle").textContent = "Same board for everyone";
+  $("pickTiles").innerHTML =
+    pickTile("daily", "ui/calendar.webp", "Daily", played ? `Done today${streak ? ` · ${streak}🔥` : ""}` : `New board today${streak ? ` · ${streak}🔥 streak` : ""}`, !played) +
+    pickTile("weekly", "ui/calendars.webp", "Weekly", wPlayed ? "Done this week ✓" : "One board all week", !wPlayed);
+  openCard("pickCard");
+}
+function openCollection() {
+  const bought = gardenBoughtCount(), canBuy = !!gardenAffordable();
+  $("pickEyebrow").textContent = "Collection";
+  $("pickTitle").textContent = "Your koi and your garden";
+  $("pickTiles").innerHTML =
+    pickTile("koi", "koi/01-kohaku.png", "Koi", `${journey.koi.length} of ${ALL_KOI.length} found`, false) +
+    pickTile("garden", "ui/bonsai.webp", "Garden", canBuy ? "You can restore something" : `${bought} of ${GARDEN.length * 5} restored`, canBuy);
+  openCard("pickCard");
+}
+$("pickTiles").addEventListener("click", e => {
+  const b = e.target.closest("[data-pick]");
+  if (!b) return;
+  const go = b.dataset.pick;
+  if (go === "daily" || go === "weekly") { closeOverlay(); enterGame(() => switchMode(go)); }
+  else if (go === "koi") { koiBack = openCollection; openKoi(); }
+  else if (go === "garden") { closeOverlay(); openGarden(); }
+});
+$("pickDone").addEventListener("click", closeOverlay);
 function sizeMoon() {
+  // The two badges on the right spread to the height of the three on the left
+  const l = homeEl.querySelector(".home-side.l");
+  if (l.offsetHeight) homeEl.style.setProperty("--side-h", l.offsetHeight + "px");
   const r = moonCv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
   moonCv.width = Math.max(1, r.width * dpr);
   moonCv.height = Math.max(1, r.height * dpr);
@@ -321,15 +354,13 @@ function homePlay() {
 $("homePlay").addEventListener("click", homePlay);
 $("homeMap").addEventListener("click", () => enterGame(openMap));
 $("homeEndless").addEventListener("click", () => enterGame(() => switchMode("endless")));
-$("homeWeekly").addEventListener("click", () => enterGame(() => switchMode("weekly")));
-$("homeDaily").addEventListener("click", () => enterGame(() => switchMode("daily")));
+$("homeChallenges").addEventListener("click", () => { if (overlay.hidden) openChallenges(); });
+$("homeCollection").addEventListener("click", () => { if (overlay.hidden) openCollection(); });
 $("homeTasks").addEventListener("click", () => openTasks(closeOverlay));
 $("homeShop").addEventListener("click", () => { if (overlay.hidden) openShop("board"); });
 // The pearl count opens the shop too: that is where pearls are spent
 $("homePearls").parentElement.addEventListener("click", () => { if (overlay.hidden) openShop(); });
 $("homeLanterns").addEventListener("click", () => { eventBack = closeOverlay; openEvent(); });
-$("homeKoi").addEventListener("click", () => { koiBack = closeOverlay; openKoi(); });
 $("homeSettings").addEventListener("click", () => openFromHeader("settingsCard"));
-$("homeHelp").addEventListener("click", () => openFromHeader("helpCard"));
 $("brand").addEventListener("click", () => { if (overlay.hidden) showHome(true); });
 $("mapHome").addEventListener("click", () => { closeMap(); showHome(true); });

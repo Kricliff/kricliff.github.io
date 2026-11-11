@@ -8,7 +8,7 @@
 <title>Koi Garden</title>
 <link rel="icon" href="img/icon-180.png" type="image/png">
 <link rel="apple-touch-icon" href="img/icon-180.png">
-<link rel="stylesheet" href="css/style.css?v=c9607db-1200">
+<link rel="stylesheet" href="css/style.css?v=f66f65d-1908">
 </head>
 <body>
 <div class="pond" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -73,7 +73,7 @@
     <div class="home-top">
       <span class="home-chip"><i class="pearl"></i><b id="homePearls">0</b></span>
       <span class="home-tools">
-        <button class="icon-btn" id="homeHelp" aria-label="How to play" title="How to play">?</button>
+        <button class="icon-btn" id="homeRecords" aria-label="Records" title="Records"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 6h2.5a1.5 1.5 0 0 1 0 3.5c-.9.6-1.8 1-2.8 1.2M7 6H4.5a1.5 1.5 0 0 0 0 3.5c.9.6 1.8 1 2.8 1.2"/></svg></button>
         <button class="icon-btn" id="homeSettings" aria-label="Settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       </span>
     </div>
@@ -84,17 +84,14 @@
       <button class="hb" id="homeLanterns"><span class="hb-icon" id="homeFestIcon"><img class="paint" src="img/ui/lantern.webp" alt=""></span><span class="hb-label">Lanterns</span></button>
     </div>
     <div class="home-side r">
-      <button class="hb" id="homeDaily"><span class="hb-icon cal"><b>1</b></span><span class="hb-label">Daily</span></button>
-      <button class="hb" id="homeKoi"><span class="hb-icon"><img src="img/koi/01-kohaku.png" alt=""></span><span class="hb-label">Koi</span></button>
-      <button class="hb" id="homeGarden"><span class="hb-icon"><img class="paint" src="img/ui/bonsai.webp" alt=""><i class="hb-dot" id="gardenDot" hidden></i></span><span class="hb-label">Garden</span></button>
+      <button class="hb" id="homeChallenges"><span class="hb-icon cal"><b>1</b></span><span class="hb-label">Challenges</span></button>
+      <button class="hb" id="homeCollection"><span class="hb-icon"><img class="paint" src="img/ui/saikei.webp" alt=""><i class="hb-dot" id="gardenDot" hidden></i></span><span class="hb-label">Collection</span></button>
     </div>
     <div class="home-bottom">
       <button class="home-play" id="homePlay"><b>Level 1</b><small></small><span class="home-boost" id="homeBoost" hidden>×1</span></button>
       <div class="home-links">
         <button class="home-link" id="homeMap">Map</button>
         <button class="home-link" id="homeEndless">Endless</button>
-        <button class="home-link" id="homeWeekly">Weekly</button>
-        <button class="home-link" id="homeRecords">Records</button>
       </div>
     </div>
   </div>
@@ -457,6 +454,14 @@
     <div class="btns"><button class="btn primary" id="recordsDone">Back</button></div>
   </div>
 
+  <!-- Challenges and Collection on the home screen: two ways in, each on its own painted tile -->
+  <div class="card" id="pickCard" hidden>
+    <p class="eyebrow" id="pickEyebrow"></p>
+    <h2 id="pickTitle"></h2>
+    <div class="pick-tiles" id="pickTiles"></div>
+    <div class="btns"><button class="btn" id="pickDone">Close</button></div>
+  </div>
+
   <div class="card" id="endlessCard" hidden>
     <p class="eyebrow">Endless</p>
     <h2>How do you want to play?</h2>
@@ -657,24 +662,24 @@
 
 <canvas class="fx" id="fx" aria-hidden="true"></canvas>
 
-<script src="js/native.js?v=c9607db-1200"></script>
-<script src="js/levels.js?v=c9607db-1200"></script>
-<script src="js/game/core.js?v=c9607db-1200"></script>
-<script src="js/game/stats.js?v=c9607db-1200"></script>
-<script src="js/game/rules.js?v=c9607db-1200"></script>
-<script src="js/game/map.js?v=c9607db-1200"></script>
-<script src="js/game/board.js?v=c9607db-1200"></script>
-<script src="js/game/jokers.js?v=c9607db-1200"></script>
-<script src="js/game/effects.js?v=c9607db-1200"></script>
-<script src="js/game/pond.js?v=c9607db-1200"></script>
-<script src="js/game/world.js?v=c9607db-1200"></script>
-<script src="js/game/ui.js?v=c9607db-1200"></script>
-<script src="js/game/home.js?v=c9607db-1200"></script>
-<script src="js/game/garden.js?v=c9607db-1200"></script>
-<script src="js/game/shop.js?v=c9607db-1200"></script>
-<script src="js/game/tester.js?v=c9607db-1200"></script>
-<script src="js/game/results.js?v=c9607db-1200"></script>
-<script src="js/game/audio.js?v=c9607db-1200"></script>
-<script src="js/game/boot.js?v=c9607db-1200"></script>
+<script src="js/native.js?v=f66f65d-1908"></script>
+<script src="js/levels.js?v=f66f65d-1908"></script>
+<script src="js/game/core.js?v=f66f65d-1908"></script>
+<script src="js/game/stats.js?v=f66f65d-1908"></script>
+<script src="js/game/rules.js?v=f66f65d-1908"></script>
+<script src="js/game/map.js?v=f66f65d-1908"></script>
+<script src="js/game/board.js?v=f66f65d-1908"></script>
+<script src="js/game/jokers.js?v=f66f65d-1908"></script>
+<script src="js/game/effects.js?v=f66f65d-1908"></script>
+<script src="js/game/pond.js?v=f66f65d-1908"></script>
+<script src="js/game/world.js?v=f66f65d-1908"></script>
+<script src="js/game/ui.js?v=f66f65d-1908"></script>
+<script src="js/game/home.js?v=f66f65d-1908"></script>
+<script src="js/game/garden.js?v=f66f65d-1908"></script>
+<script src="js/game/shop.js?v=f66f65d-1908"></script>
+<script src="js/game/tester.js?v=f66f65d-1908"></script>
+<script src="js/game/results.js?v=f66f65d-1908"></script>
+<script src="js/game/audio.js?v=f66f65d-1908"></script>
+<script src="js/game/boot.js?v=f66f65d-1908"></script>
 </body>
 </html>
