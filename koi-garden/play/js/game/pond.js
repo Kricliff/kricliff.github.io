@@ -158,7 +158,10 @@ function buildPondLayers() {
   // The decorations: rebuilt when they change, and every frame while one fades in
   const shown = pondUnlocked(p) ? p.items.filter(decorShown) : [];
   const masksReady = shown.every(d => imgReady(pondImage(pondFile(p, `mask-${d.key}.png`))));
-  const overKey = shown.map(d => d.id).join(",") + (pondFade ? `|${pondFade.id}:${pondFade.k.toFixed(2)}` : "") + `|${masksReady}`;
+  // The shade the decorations cast on the water (assets/pond/make_shade.py): kept out of the solid layer and laid over
+  // the koi as a darkening instead, so a koi swims through the shadow of the bridge rather than vanishing under it
+  const shade = pondImage(pondFile(p, "shade.webp"));
+  const overKey = shown.map(d => d.id).join(",") + (pondFade ? `|${pondFade.id}:${pondFade.k.toFixed(2)}` : "") + `|${masksReady}|${imgReady(shade)}`;
   if (imgReady(done) && pondCache.overKey !== overKey) {
     pondCache.overKey = overKey;
     const over = pondCache.over || picCanvas(), o = over.getContext("2d");
@@ -180,6 +183,19 @@ function buildPondLayers() {
       o.globalCompositeOperation = "source-over";
     }
     pondCache.over = over;
+    pondCache.shadeOver = null;
+    if (shown.length && imgReady(shade)) {
+      const sc = pondCache.shadeCv || (pondCache.shadeCv = picCanvas()), sx = sc.getContext("2d");
+      sx.clearRect(0, 0, POND_PIC.w, POND_PIC.h);
+      sx.drawImage(shade, 0, 0, POND_PIC.w, POND_PIC.h);
+      sx.globalCompositeOperation = "destination-in";
+      sx.drawImage(pondCache.maskCv, 0, 0);
+      sx.globalCompositeOperation = "source-over";
+      o.globalCompositeOperation = "destination-out";
+      o.drawImage(shade, 0, 0, POND_PIC.w, POND_PIC.h);
+      o.globalCompositeOperation = "source-over";
+      pondCache.shadeOver = sc;
+    }
     // Where decorations cover the water, at the water grid's size: koi pass under them but never aim for them
     pondCover = null;
     if (shown.length && pondWet) {
@@ -389,6 +405,12 @@ function drawPond() {
     pc.setTransform(1, 0, 0, 1, 0, 0);
     pc.drawImage(fishLayer, 0, 0);
     world(pc);
+  }
+  // The shade they cast on the water darkens the koi swimming through it
+  if (!locked && pondCache.shadeOver) {
+    pc.globalCompositeOperation = "multiply";
+    pc.drawImage(pondCache.shadeOver, f.x, f.y, f.w, f.h);
+    pc.globalCompositeOperation = "source-over";
   }
   // The decorations lie over the koi: the bridge, the pads, the trees leaning out over the water
   if (!locked && pondCache.over) pc.drawImage(pondCache.over, f.x, f.y, f.w, f.h);
