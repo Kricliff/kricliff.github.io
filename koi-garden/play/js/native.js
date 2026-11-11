@@ -205,6 +205,14 @@
     try { await P.KoiGames.show({ board, friends: true }); } catch (e) {}
   }
 
+  // Universal Links: the app was opened by a link to the web version (a friend's challenge). Both the link that started
+  // the app and links that bring it back from the background.
+  function onOpenUrl(cb) {
+    if (!P.App) return;
+    listen(P.App, "appUrlOpen", e => { if (e && e.url) cb(e.url); });
+    try { P.App.getLaunchUrl().then(r => { if (r && r.url) cb(r.url); }).catch(() => {}); } catch (e) {}
+  }
+
   async function init(opts = {}) {
     document.body.classList.add("native");
     try { await P.StatusBar.setStyle({ style: "DARK" }); } catch (e) {}
@@ -214,5 +222,5 @@
 
   window.MBNative = { isNative, init, haptic, showRewarded, showInterstitial, scheduleReminders,
     removeBanner, noAdsPrice, ownsNoAds, buyNoAds, restoreNoAds, cloudLoad, cloudSave, cloudOnChange,
-    hasGames, gcSignIn, gcSubmit, gcPlace, gcShow };
+    hasGames, gcSignIn, gcSubmit, gcPlace, gcShow, onOpenUrl };
 })();

@@ -307,8 +307,10 @@ function thisWeek() {
 // "weekly" for the weekly challenge, otherwise the game's mode
 const modeId = s => s && s.weekly ? "weekly" : s && s.mode;
 const piecesTotal = () => S.weekly ? WEEKLY_PIECES : DAILY_PIECES;
-// A link that opens the same board for a friend, with the score to beat (the web version of the game answers it)
-const CHALLENGE_URL = "https://kricliff.github.io/koi-garden/play/";
+// A link that opens the same board for a friend, with the score to beat. The game's own site answers it (published with
+// store/tools/publish-koi.sh), or the app when it is installed. Links shared before 12 November went to
+// kricliff.github.io/koi-garden/play/, which still works.
+const CHALLENGE_URL = "https://koi.cliffordcoaching.no/";
 // A streak shield: bought with pearls, it keeps the win streak the next time a Journey level is lost. One at a time.
 const SHIELD_COST = 60;
 function hashSeed(str) {

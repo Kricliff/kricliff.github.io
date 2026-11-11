@@ -243,17 +243,31 @@ function showHome(animate) {
    and the score to beat (?d=2026-11-10&s=532, and w=1 for the weekly). The link is read here, kept for as long as its
    board lasts, and shown once on the home screen. The result card then sets the two scores side by side. */
 let challenge = null;
-(function readChallenge() {
+// Keeps the challenge in a link's query (?d=…&s=…&w=1). True when the link held one.
+function takeChallenge(search) {
   try {
-    const q = new URLSearchParams(location.search), day = q.get("d"), score = Math.round(+q.get("s"));
-    if (/^\d{4}-\d{2}-\d{2}$/.test(day || "") && score > 0 && score < 1e6) {
-      localStorage.setItem("mb-challenge", JSON.stringify({ day, score, weekly: q.get("w") === "1" }));
-      // Keep the address clean, so a reload or a shared link does not carry the challenge along
-      history.replaceState(null, "", location.pathname);
-    }
-    challenge = JSON.parse(localStorage.getItem("mb-challenge") || "null");
-  } catch (e) { challenge = null; }
+    const q = new URLSearchParams(search), day = q.get("d"), score = Math.round(+q.get("s"));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day || "") || !(score > 0 && score < 1e6)) return false;
+    challenge = { day, score, weekly: q.get("w") === "1" };
+    localStorage.setItem("mb-challenge", JSON.stringify(challenge));
+    return true;
+  } catch (e) { return false; }
+}
+(function readChallenge() {
+  // In the browser the challenge comes in the page's own address; keep the address clean afterwards, so a reload or
+  // a shared link does not carry it along
+  if (takeChallenge(location.search)) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+  try { challenge = JSON.parse(localStorage.getItem("mb-challenge") || "null"); } catch (e) { challenge = null; }
 })();
+// In the app the challenge comes through a Universal Link: a tap on a link to the web version opens the app instead
+// (apple-app-site-association on kricliff.github.io, and Associated Domains in App.entitlements). Shown straight away
+// when nothing else is open, otherwise the next time the home screen opens.
+function challengeFromLink(url) {
+  let search = "";
+  try { search = new URL(url).search; } catch (e) { return; }
+  if (!takeChallenge(search)) return;
+  setTimeout(maybeShowChallenge, homeEl.hidden ? 300 : 900);
+}
 const challengeLive = () => challenge && challenge.day === (challenge.weekly ? thisWeek().key : today().key);
 function maybeShowChallenge() {
   if (!challenge || challenge.shown || !overlay.hidden) return;

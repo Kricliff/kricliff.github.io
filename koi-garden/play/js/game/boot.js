@@ -17,6 +17,7 @@ function start(data) {
     // A new iPhone or a reinstall: bring back the progress saved in iCloud
     safely(() => cloudRestore().then(more => { if (more) reloadOnce(); }));
     safely(() => window.MBNative.cloudOnChange(cloudChanged));
+    safely(() => window.MBNative.onOpenUrl(challengeFromLink));
   }
   checkLanternWeek();
   checkStyleUnlocks(true);
