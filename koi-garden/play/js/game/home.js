@@ -327,12 +327,19 @@ function maybeShowChallenge() {
     return;
   }
   const mine = (W ? weekly : daily).best[challenge.day];
+  // Exactly your own official score: your own link coming back (one shared before shared links were remembered).
+  // Dropped quietly, and remembered as yours, so the result card does not set you against yourself either.
+  if (mine === challenge.score) {
+    rememberOwnChallenge(challenge);
+    try { localStorage.removeItem("mb-challenge"); } catch (e) {}
+    challenge = null;
+    return;
+  }
   $("challengeScore").textContent = challenge.score;
   $("challengeTitle").textContent = `A friend scored ${challenge.score} on ${name}`;
   $("challengeText").innerHTML = mine === undefined ? "You get the same board and the same pieces. Your first try is the one that counts."
     : mine > challenge.score ? `Your official score is <b>${mine}</b>. You are ahead by ${mine - challenge.score}.`
-    : mine < challenge.score ? `Your official score is <b>${mine}</b>, ${challenge.score - mine} short. You can practise the board, but the official score stays.`
-    : `Your official score is <b>${mine}</b> too. Level!`;
+    : `Your official score is <b>${mine}</b>, ${challenge.score - mine} short. You can practise the board, but the official score stays.`;
   $("challengePlay").textContent = mine === undefined ? (W ? "Play the Weekly" : "Play the Daily") : "See my result";
   openCard("challengeCard");
 }
