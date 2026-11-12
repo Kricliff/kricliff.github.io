@@ -276,6 +276,10 @@ trayEl.addEventListener("pointerdown", e => {
   drag = { i, joker, slot, pid: e.pointerId, sx: e.clientX, sy: e.clientY, started: false, pos: null };
   try { slot.setPointerCapture(e.pointerId); } catch (err) {}
 });
+// iOS starts its own press-and-hold (the magnifying loupe, text selection) on a finger that rests before it moves.
+// Taking the touch's default away on the pieces leaves it to the game; the pointer events above still come.
+trayEl.addEventListener("touchstart", e => { if (e.target.closest(".slot")) e.preventDefault(); }, { passive: false });
+document.addEventListener("touchmove", e => { if (drag) e.preventDefault(); }, { passive: false });
 trayEl.addEventListener("pointermove", e => {
   if (!drag || e.pointerId !== drag.pid) return;
   if (!drag.started) {

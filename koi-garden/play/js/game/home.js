@@ -277,6 +277,8 @@ function showHome(animate) {
    and the score to beat (?d=2026-11-10&s=532, and w=1 for the weekly). The link is read here, kept for as long as its
    board lasts, and shown once on the home screen. The result card then sets the two scores side by side. */
 let challenge = null;
+// True when a link with a challenge was opened in this run of the game (not one kept from an earlier day)
+let challengeTapped = false;
 const sameChallenge = (a, b) => !!a && !!b && a.day === b.day && a.score === b.score && !!a.weekly === !!b.weekly;
 const saveChallenge = () => { try { localStorage.setItem("mb-challenge", JSON.stringify(challenge)); } catch (e) {} };
 // The challenges this player shared: their own link coming back (tapped in Messages, say) is not a friend's challenge
@@ -292,10 +294,10 @@ function takeChallenge(search) {
     const c = { day, score, weekly: q.get("w") === "1" };
     if (ownChallenges().some(o => sameChallenge(o, c))) return false;
     // The same link again (the app opened by it once more) keeps whether it has been shown
-    if (sameChallenge(challenge, c)) return !challenge.shown;
+    if (sameChallenge(challenge, c)) return (challengeTapped = !challenge.shown);
     challenge = c;
     saveChallenge();
-    return true;
+    return (challengeTapped = true);
   } catch (e) { return false; }
 }
 (function readChallenge() {
@@ -324,6 +326,9 @@ function maybeShowChallenge() {
   if (!challengeLive()) {
     try { localStorage.removeItem("mb-challenge"); } catch (e) {}
     challenge = null;
+    // Said only when the link was just opened. One kept from an earlier day goes quietly.
+    if (!challengeTapped) return;
+    challengeTapped = false;
     info("That challenge has ended", `It was for an earlier board. ${W ? "This week’s challenge" : "Today’s Daily"} is waiting for you instead.`);
     return;
   }
