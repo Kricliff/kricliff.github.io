@@ -5,7 +5,7 @@
    Seven quick taps on the logo on the home screen open a card for jumping ahead in the Journey.
    Turn TESTER_TOOLS off before sending a build to App Store review: Apple does not allow hidden
    features in apps on the App Store (guideline 2.3.1). */
-const TESTER_TOOLS = true;
+const TESTER_TOOLS = false;
 let logoTaps = [];
 $("homeLogo").addEventListener("click", () => {
   if (!TESTER_TOOLS || !overlay.hidden) return;
