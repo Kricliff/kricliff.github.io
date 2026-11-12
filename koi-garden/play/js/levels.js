@@ -59,11 +59,11 @@
     { goal: "harmony", target: 1, pieces: 20, stones: 8, s2: 480, s3: 550 },
     { goal: "koi", target: 6, pieces: 17, stones: 14, koi: 6, s2: 350, s3: 390 },
     { goal: "clear", pieces: 18, stones: 16, hard: true, s2: 450, s3: 500 },
-    { goal: "clear", pieces: 26, stones: 8, ice: 4, s2: 540, s3: 630 },
+    { goal: "clear", pieces: 26, stones: 8, ice: 2, s2: 540, s3: 630 },
     { goal: "koi", target: 5, pieces: 16, stones: 14, koi: 5, ice: 4, s2: 360, s3: 390 },
     { goal: "score", target: 400, pieces: 21, stones: 14, ice: 6, s2: 520, s3: 580 },
     { goal: "harmony", target: 1, pieces: 22, stones: 10, ice: 4, s2: 540, s3: 620 },
-    { goal: "clear", pieces: 27, stones: 20, ice: 6, hard: true, s2: 690, s3: 800 }
+    { goal: "clear", pieces: 27, stones: 20, ice: 3, hard: true, s2: 690, s3: 800 }
   ];
 
   const CHAPTERS = ["Koi Pond", "Bamboo Grove", "Lotus Lake", "Moon Bridge", "Cherry Hill",
@@ -136,6 +136,9 @@
     if (goal === "frog") { L.frogs = 3 + Math.round(2 * t) + (hard ? 1 : 0); L.target = L.frogs; L.hop = Math.max(2, 4 - Math.round(2 * t)); L.stones = 6 + Math.round(4 * t); }
     // Ice on some starting stones once chapter 2 is under way; Snow Temple has more
     if (c > 2 || i > 6) L.ice = Math.round((L.stones - (L.koi || 0)) * (0.12 + 0.2 * t) * (c === 9 ? 1.6 : 1));
+    // On "clear the starting stones" every frozen stone must be cleared twice, and the last ones turned into a slow hunt
+    // (11 November 2026, the owner: players will tire of them). At most 2 there, 3 on Hard levels, one more in Snow Temple.
+    if (goal === "clear" && L.ice) L.ice = Math.min(L.ice, (hard ? 3 : 2) + (c === 9 ? 1 : 0));
     // In later chapters a little bamboo sometimes grows on boards with another goal
     if (c >= 4 && goal !== "bamboo" && r() < 0.35) { L.bamboo = 2; L.grow = 6; }
     // Chapter 4 (Moon Bridge) shapes nearly every board; later chapters shape some
@@ -202,7 +205,7 @@
     {"goal":"bamboo","pieces":14,"bamboo":5,"grow":4,"stones":5,"ice":1,"shape":"islands","hard":true,"s2":310,"s3":350},
     {"goal":"bamboo","pieces":12,"bamboo":5,"grow":4,"stones":6,"ice":1,"blossom":2,"s2":250,"s3":300},
     {"goal":"koi","pieces":13,"koi":7,"target":7,"stones":13,"ice":2,"blossom":2,"s2":290,"s3":340},
-    {"goal":"clear","pieces":19,"stones":13,"ice":3,"bamboo":2,"grow":6,"blossom":3,"s2":420,"s3":470},
+    {"goal":"clear","pieces":20,"stones":13,"ice":2,"bamboo":2,"grow":6,"blossom":3,"s2":440,"s3":490},
     {"goal":"harmony","pieces":22,"target":1,"stones":8,"ice":2,"bamboo":2,"grow":6,"shape":"river","s2":640,"s3":890},
     {"goal":"lotus","pieces":20,"lotus":7,"target":7,"stones":8,"ice":2,"blossom":3,"hard":true,"s2":390,"s3":460},
     {"goal":"score","pieces":18,"target":360,"stones":13,"ice":3,"s2":460,"s3":490},
@@ -212,15 +215,15 @@
     {"goal":"clear","pieces":23,"stones":16,"ice":3,"bamboo":2,"grow":6,"shape":"stream","blossom":4,"hard":true,"s2":630,"s3":710},
     {"goal":"lotus","pieces":31,"lotus":6,"target":6,"stones":8,"ice":2,"shape":"diamond","blossom":3,"p2":4,"p3":11},
     {"goal":"harmony","pieces":9,"target":1,"stones":8,"ice":2,"bamboo":2,"grow":6,"shape":"corners","s2":380,"s3":490},
-    {"goal":"clear","pieces":23,"stones":13,"ice":3,"blossom":4,"s2":510,"s3":600},
+    {"goal":"clear","pieces":23,"stones":13,"ice":2,"blossom":4,"s2":480,"s3":550},
     {"goal":"lotus","pieces":16,"lotus":6,"target":6,"stones":8,"ice":2,"blossom":3,"s2":310,"s3":360},
-    {"goal":"clear","pieces":21,"stones":16,"ice":4,"shape":"islands","blossom":2,"hard":true,"s2":600,"s3":700},
+    {"goal":"clear","pieces":22,"stones":16,"ice":3,"shape":"islands","blossom":2,"hard":true,"s2":600,"s3":680},
     {"goal":"frog","pieces":17,"frogs":4,"target":4,"hop":3,"stones":8,"ice":2,"s2":370,"s3":410},
     {"goal":"score","pieces":18,"target":380,"stones":13,"ice":3,"s2":480,"s3":510},
     {"goal":"frog","pieces":10,"frogs":4,"target":4,"hop":3,"stones":8,"ice":2,"bamboo":2,"grow":6,"shape":"river","s2":360,"s3":530},
     {"goal":"koi","pieces":16,"koi":5,"target":5,"stones":13,"ice":2,"bamboo":2,"grow":6,"blossom":2,"s2":340,"s3":400},
     {"goal":"frog","pieces":12,"frogs":5,"target":5,"hop":3,"stones":8,"ice":2,"bamboo":2,"grow":6,"shape":"pond","blossom":2,"hard":true,"s2":290,"s3":330},
-    {"goal":"clear","pieces":23,"stones":14,"ice":3,"bamboo":2,"grow":6,"s2":530,"s3":610},
+    {"goal":"clear","pieces":23,"stones":14,"ice":2,"bamboo":2,"grow":6,"s2":530,"s3":590},
     {"goal":"frog","pieces":16,"frogs":4,"target":4,"hop":3,"stones":8,"ice":2,"bamboo":2,"grow":6,"s2":350,"s3":390},
     {"goal":"lotus","pieces":20,"lotus":7,"target":7,"stones":9,"ice":2,"shape":"river","s2":550,"s3":740},
     {"goal":"frog","pieces":9,"frogs":4,"target":4,"hop":3,"stones":8,"ice":2,"shape":"diamond","s2":1170,"s3":1880},
@@ -233,40 +236,40 @@
     {"goal":"harmony","pieces":12,"target":1,"stones":9,"ice":2,"s2":340,"s3":390},
     {"goal":"frog","pieces":13,"frogs":4,"target":4,"hop":3,"stones":9,"ice":2,"blossom":2,"s2":300,"s3":330},
     {"goal":"bamboo","pieces":13,"bamboo":5,"grow":4,"stones":7,"ice":2,"s2":280,"s3":330},
-    {"goal":"clear","pieces":27,"stones":15,"ice":4,"blossom":2,"s2":620,"s3":690},
+    {"goal":"clear","pieces":26,"stones":15,"ice":2,"blossom":2,"s2":590,"s3":690},
     {"goal":"koi","pieces":13,"koi":6,"target":6,"stones":15,"ice":2,"blossom":2,"hard":true,"s2":280,"s3":320},
-    {"goal":"clear","pieces":29,"stones":15,"ice":4,"shape":"river","blossom":2,"p2":3,"p3":9},
+    {"goal":"clear","pieces":30,"stones":15,"ice":2,"shape":"river","blossom":2,"p2":4,"p3":10},
     {"goal":"frog","pieces":12,"frogs":4,"target":4,"hop":3,"stones":9,"ice":2,"bamboo":2,"grow":6,"blossom":2,"s2":280,"s3":320},
-    {"goal":"clear","pieces":25,"stones":15,"ice":4,"bamboo":2,"grow":6,"blossom":2,"s2":610,"s3":680},
+    {"goal":"clear","pieces":23,"stones":15,"ice":2,"bamboo":2,"grow":6,"blossom":2,"s2":540,"s3":600},
     {"goal":"lotus","pieces":22,"lotus":7,"target":7,"stones":9,"ice":2,"shape":"stream","blossom":2,"s2":520,"s3":660},
-    {"goal":"clear","pieces":8,"stones":22,"ice":5,"shape":"diamond","blossom":2,"hard":true,"p2":1,"p3":2},
+    {"goal":"clear","pieces":9,"stones":22,"ice":3,"shape":"diamond","blossom":2,"hard":true,"p2":1,"p3":2},
     {"goal":"koi","pieces":13,"koi":7,"target":7,"stones":14,"ice":2,"bamboo":2,"grow":6,"s2":340,"s3":370},
     {"goal":"frog","pieces":14,"frogs":4,"target":4,"hop":3,"stones":9,"ice":2,"s2":290,"s3":330},
     {"goal":"lotus","pieces":27,"lotus":7,"target":7,"stones":10,"ice":3,"shape":"diamond","p2":1,"p3":6},
     {"goal":"score","pieces":18,"target":440,"stones":14,"ice":4,"bamboo":2,"grow":6,"s2":520,"s3":550},
     {"goal":"bamboo","pieces":10,"bamboo":6,"grow":4,"stones":7,"ice":2,"shape":"stream","blossom":2,"hard":true,"s2":240,"s3":270},
-    {"goal":"clear","pieces":17,"stones":15,"ice":4,"shape":"islands","fall":6,"s2":450,"s3":510},
+    {"goal":"clear","pieces":18,"stones":15,"ice":2,"shape":"islands","fall":6,"s2":460,"s3":530},
     {"goal":"koi","pieces":13,"koi":7,"target":7,"stones":15,"ice":2,"fall":6,"s2":300,"s3":350},
     {"goal":"frog","pieces":13,"frogs":5,"target":5,"hop":2,"stones":9,"ice":2,"bamboo":2,"grow":6,"shape":"islands","fall":6,"s2":310,"s3":360},
     {"goal":"score","pieces":19,"target":450,"stones":15,"ice":4,"s2":540,"s3":570},
     {"goal":"frog","pieces":14,"frogs":6,"target":6,"hop":2,"stones":9,"ice":2,"fall":4,"hard":true,"s2":320,"s3":360},
     {"goal":"harmony","pieces":22,"target":1,"stones":9,"ice":3,"shape":"river","fall":5,"s2":640,"s3":910},
-    {"goal":"clear","pieces":22,"stones":16,"ice":4,"fall":6,"s2":550,"s3":610},
+    {"goal":"clear","pieces":22,"stones":16,"ice":2,"fall":6,"s2":540,"s3":610},
     {"goal":"harmony","pieces":16,"target":1,"stones":9,"ice":3,"fall":4,"s2":420,"s3":480},
     {"goal":"bamboo","pieces":13,"bamboo":5,"grow":3,"stones":7,"ice":2,"shape":"pond","fall":6,"s2":300,"s3":350},
-    {"goal":"clear","pieces":20,"stones":19,"ice":5,"bamboo":2,"grow":6,"blossom":2,"fall":6,"hard":true,"s2":540,"s3":620},
+    {"goal":"clear","pieces":19,"stones":19,"ice":3,"bamboo":2,"grow":6,"blossom":2,"fall":6,"hard":true,"s2":480,"s3":560},
     {"goal":"frog","pieces":12,"frogs":5,"target":5,"hop":2,"stones":9,"ice":3,"bamboo":2,"grow":6,"shape":"stream","fall":5,"s2":300,"s3":340},
     {"goal":"lotus","pieces":15,"lotus":8,"target":8,"stones":10,"ice":3,"fall":4,"s2":330,"s3":390},
     {"goal":"koi","pieces":12,"koi":6,"target":6,"stones":15,"ice":3,"bamboo":2,"grow":6,"shape":"islands","fall":5,"s2":280,"s3":350},
-    {"goal":"clear","pieces":21,"stones":16,"ice":5,"bamboo":2,"grow":6,"shape":"corners","fall":6,"s2":790,"s3":1060},
+    {"goal":"clear","pieces":18,"stones":16,"ice":2,"bamboo":2,"grow":6,"shape":"corners","fall":6,"s2":600,"s3":770},
     {"goal":"frog","pieces":14,"frogs":6,"target":6,"hop":2,"stones":9,"ice":3,"fall":6,"hard":true,"s2":310,"s3":360},
     {"goal":"score","pieces":20,"target":470,"stones":15,"ice":7,"s2":560,"s3":600},
-    {"goal":"clear","pieces":27,"stones":16,"ice":8,"s2":640,"s3":730},
+    {"goal":"clear","pieces":25,"stones":16,"ice":3,"s2":580,"s3":660},
     {"goal":"frog","pieces":13,"frogs":5,"target":5,"hop":2,"stones":10,"ice":5,"blossom":2,"fall":5,"s2":300,"s3":330},
     {"goal":"score","pieces":20,"target":480,"stones":15,"ice":7,"s2":570,"s3":610},
-    {"goal":"clear","pieces":22,"stones":19,"ice":9,"blossom":2,"fall":6,"hard":true,"s2":600,"s3":670},
+    {"goal":"clear","pieces":22,"stones":19,"ice":4,"blossom":2,"fall":6,"hard":true,"s2":560,"s3":640},
     {"goal":"bamboo","pieces":15,"bamboo":6,"grow":3,"stones":8,"ice":4,"shape":"diamond","blossom":2,"p2":1,"p3":2},
-    {"goal":"clear","pieces":27,"stones":16,"ice":8,"fall":4,"s2":700,"s3":840},
+    {"goal":"clear","pieces":25,"stones":16,"ice":3,"fall":4,"s2":610,"s3":690},
     {"goal":"lotus","pieces":21,"lotus":8,"target":8,"stones":11,"ice":5,"bamboo":2,"grow":6,"blossom":2,"s2":470,"s3":560},
     {"goal":"frog","pieces":12,"frogs":5,"target":5,"hop":2,"stones":10,"ice":5,"shape":"stream","blossom":2,"s2":290,"s3":320},
     {"goal":"lotus","pieces":20,"lotus":9,"target":9,"stones":11,"ice":5,"bamboo":2,"grow":6,"shape":"pond","hard":true,"s2":540,"s3":590},
@@ -289,7 +292,7 @@
     {"goal":"harmony","pieces":12,"target":1,"stones":10,"ice":3,"blossom":2,"fall":5,"s2":340,"s3":370},
     {"goal":"koi","pieces":14,"koi":9,"target":9,"stones":16,"ice":3,"s2":330,"s3":370},
     {"goal":"lotus","pieces":19,"lotus":8,"target":8,"stones":12,"ice":4,"bamboo":2,"grow":6,"fall":6,"s2":450,"s3":510},
-    {"goal":"clear","pieces":27,"stones":21,"ice":7,"bamboo":2,"grow":6,"hard":true,"s2":720,"s3":820}
+    {"goal":"clear","pieces":24,"stones":21,"ice":3,"bamboo":2,"grow":6,"hard":true,"s2":650,"s3":740}
   ]/*END*/;
 
   function levelDef(n) {

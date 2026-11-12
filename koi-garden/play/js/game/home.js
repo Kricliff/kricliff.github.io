@@ -179,8 +179,9 @@ function paintHome() {
   $("homeLanterns").setAttribute("aria-label", `${fest.name}: ${lanterns.count} ${festUnit(fest, lanterns.count)} ${fest.verb} this week`);
   $("homeFestIcon").innerHTML = festIcon(fest.id);
   // Challenges: today's date on the calendar, and a dot while today's Daily or this week's Weekly is still to play
-  const t = today(), played = playedOfficial();
-  $("homeChallenges").querySelector(".hb-icon b").textContent = t.num;
+  const played = playedOfficial();
+  // The day of the month, as on a real calendar page (the Daily's own number, #43, stays inside the game and in what is shared)
+  $("homeChallenges").querySelector(".hb-icon b").textContent = new Date().getDate();
   $("homeChallenges").querySelector(".hb-label").textContent = played && liveStreak() ? `Challenges ${liveStreak()}🔥` : "Challenges";
   $("homeChallenges").classList.toggle("ready", !played || !playedWeekly());
   // Collection: a dot when there are enough stars to restore something in the garden
